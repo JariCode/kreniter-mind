@@ -1,14 +1,15 @@
 .sidebar {
   width: 198px;
   min-width: 198px;
-  min-height: 100vh;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
   background: #080b10;
   border-right: 1px solid #202730;
   color: #718092;
 }
-
 /* -------------------------------- */
 /* Logo                             */
 /* -------------------------------- */

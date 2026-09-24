@@ -1,0 +1,146 @@
+/* TimeTracker */
+
+.time-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.time-tracker-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-tracker-time {
+  display: block;
+  margin: 0;
+  color: #e7edf5;
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-tracker-task {
+  display: block;
+  color: #e7edf5;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.time-tracker-project {
+  display: block;
+  margin-top: 4px;
+  color: #687583;
+  font-size: 0.68rem;
+}
+
+.time-tracker-status {
+  color: #6eb7f5;
+  font-size: 0.61rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.time-tracker-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+
+.time-tracker-details strong {
+  color: #e7edf5;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time-tracker-details span {
+  color: #687583;
+  font-size: 0.68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time-tracker-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.time-tracker-button {
+  min-width: 78px;
+  padding: 7px 13px;
+  border: 1px solid #29343f;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.1s ease;
+}
+
+.time-tracker-button:hover {
+  opacity: 0.9;
+}
+
+.time-tracker-button:active {
+  transform: translateY(1px);
+}
+
+.time-tracker-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.time-tracker-button-start,
+.time-tracker-button-resume {
+  border-color: rgba(22, 136, 255, 0.35);
+  background: rgba(22, 136, 255, 0.08);
+  color: #b9e1ff;
+}
+
+.time-tracker-button-start:hover,
+.time-tracker-button-resume:hover {
+  background: rgba(22, 136, 255, 0.14);
+}
+
+.time-tracker-button-pause {
+  border-color: rgba(255, 180, 70, 0.3);
+  background: rgba(255, 180, 70, 0.07);
+  color: #f0c987;
+}
+
+.time-tracker-button-pause:hover {
+  background: rgba(255, 180, 70, 0.12);
+}
+
+.time-tracker-button-stop {
+  border-color: rgba(220, 80, 80, 0.3);
+  background: rgba(220, 80, 80, 0.07);
+  color: #e99a9a;
+}
+
+.time-tracker-button-stop:hover {
+  background: rgba(220, 80, 80, 0.12);
+}
+
+.time-tracker-error {
+  margin: 0;
+  color: #e99a9a;
+  font-size: 0.68rem;
+}

@@ -5,12 +5,16 @@ import LandingPage from './pages/LandingPage/LandingPage'
 import Dashboard from './pages/Dashboard/Dashboard'
 import { getCurrentUser } from './api/userApi'
 import { setAuthTokenGetter } from './api/api'
+import {
+  TimeTrackerProvider,
+} from './components/TimeTracker/TimeTracker'
 
 function App() {
   const { isLoaded, isSignedIn } = useUser()
   const { getToken } = useAuth()
 
-  const [authInitialized, setAuthInitialized] = useState(false)
+  const [authInitialized, setAuthInitialized] =
+    useState(false)
 
   useEffect(() => {
     if (!isLoaded) {
@@ -62,7 +66,11 @@ function App() {
     return null
   }
 
-  return <Dashboard />
+  return (
+    <TimeTrackerProvider>
+      <Dashboard />
+    </TimeTrackerProvider>
+  )
 }
 
 export default App

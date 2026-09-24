@@ -7,9 +7,22 @@ import {
 } from '../../api/tasks'
 import { getProjects } from '../../api/projects'
 import { getTimeEntries } from '../../api/timeEntries'
+import { useTimeTracker } from '../../components/TimeTracker/TimeTracker'
 import './Task.css'
 
 function Task() {
+  const {
+    activeTimer,
+    elapsedSeconds,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    stopTimer,
+    isSaving: timerSaving,
+    error: timerError,
+    timeEntriesVersion,
+  } = useTimeTracker()
+
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
   const [timeEntries, setTimeEntries] = useState([])
@@ -32,11 +45,17 @@ function Task() {
   async function loadData() {
     try {
       setError('')
-      const [tasksData, projectsData, timeEntriesData] = await Promise.all([
+
+      const [
+        tasksData,
+        projectsData,
+        timeEntriesData,
+      ] = await Promise.all([
         getTasks(),
         getProjects(),
         getTimeEntries(),
       ])
+
       setTasks(tasksData)
       setProjects(projectsData)
       setTimeEntries(timeEntriesData)
@@ -50,6 +69,26 @@ function Task() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (timeEntriesVersion === 0) {
+      return
+    }
+
+    async function refreshTimeEntries() {
+      try {
+        const data = await getTimeEntries()
+        setTimeEntries(data)
+      } catch (error) {
+        console.error(
+          'Failed to refresh time entries:',
+          error
+        )
+      }
+    }
+
+    refreshTimeEntries()
+  }, [timeEntriesVersion])
 
   function resetForm() {
     setTitle('')
@@ -74,18 +113,31 @@ function Task() {
     setDescription(task.description || '')
     setProjectId(task.projectId || '')
     setParentTaskId(task.parentTaskId || '')
+
     setEstimatedHours(
-      task.estimatedMinutes !== undefined && task.estimatedMinutes !== null
-        ? String(Number((task.estimatedMinutes / 60).toFixed(2)))
+      task.estimatedMinutes !== undefined &&
+        task.estimatedMinutes !== null
+        ? String(
+            Number(
+              (
+                task.estimatedMinutes / 60
+              ).toFixed(2)
+            )
+          )
         : ''
     )
+
     setStatus(task.status || 'todo')
     setPriority(task.priority || 'medium')
+
     setDueDate(
       task.dueDate
-        ? new Date(task.dueDate).toISOString().split('T')[0]
+        ? new Date(task.dueDate)
+            .toISOString()
+            .split('T')[0]
         : ''
     )
+
     setEditingTask(task)
     setShowForm(true)
   }
@@ -103,10 +155,14 @@ function Task() {
 
     if (
       normalizedHours &&
-      (!Number.isFinite(Number(normalizedHours)) ||
+      (!Number.isFinite(
+        Number(normalizedHours)
+      ) ||
         Number(normalizedHours) < 0)
     ) {
-      setError('Estimated time must be a valid positive number.')
+      setError(
+        'Estimated time must be a valid positive number.'
+      )
       return
     }
 
@@ -120,7 +176,9 @@ function Task() {
         projectId: projectId || null,
         parentTaskId: parentTaskId || null,
         estimatedMinutes: normalizedHours
-          ? Math.round(Number(normalizedHours) * 60)
+          ? Math.round(
+              Number(normalizedHours) * 60
+            )
           : 0,
         status,
         priority,
@@ -128,7 +186,10 @@ function Task() {
       }
 
       if (editingTask) {
-        await updateTask(editingTask._id, task)
+        await updateTask(
+          editingTask._id,
+          task
+        )
       } else {
         await createTask(task)
       }
@@ -154,17 +215,21 @@ function Task() {
     try {
       setDeleting(true)
       setError('')
+
       await deleteTask(taskToDelete._id)
 
       setTasks((currentTasks) =>
         currentTasks.filter(
-          (item) => item._id !== taskToDelete._id
+          (item) =>
+            item._id !== taskToDelete._id
         )
       )
 
       setTimeEntries((currentEntries) =>
         currentEntries.filter(
-          (entry) => String(entry.taskId) !== String(taskToDelete._id)
+          (entry) =>
+            String(entry.taskId) !==
+            String(taskToDelete._id)
         )
       )
 
@@ -176,24 +241,34 @@ function Task() {
     }
   }
 
-  async function handleStatusChange(task, newStatus) {
+  async function handleStatusChange(
+    task,
+    newStatus
+  ) {
     try {
       setError('')
 
-      const updatedTask = await updateTask(task._id, {
-        title: task.title,
-        description: task.description || '',
-        projectId: task.projectId || null,
-        parentTaskId: task.parentTaskId || null,
-        estimatedMinutes: task.estimatedMinutes || 0,
-        status: newStatus,
-        priority: task.priority || 'medium',
-        dueDate: task.dueDate || null,
-      })
+      const updatedTask = await updateTask(
+        task._id,
+        {
+          title: task.title,
+          description: task.description || '',
+          projectId: task.projectId || null,
+          parentTaskId:
+            task.parentTaskId || null,
+          estimatedMinutes:
+            task.estimatedMinutes || 0,
+          status: newStatus,
+          priority: task.priority || 'medium',
+          dueDate: task.dueDate || null,
+        }
+      )
 
       setTasks((currentTasks) =>
         currentTasks.map((item) =>
-          item._id === updatedTask._id ? updatedTask : item
+          item._id === updatedTask._id
+            ? updatedTask
+            : item
         )
       )
     } catch (error) {
@@ -203,22 +278,39 @@ function Task() {
 
   function getProjectName(projectId) {
     const project = projects.find(
-      (item) => String(item._id) === String(projectId)
+      (item) =>
+        String(item._id) ===
+        String(projectId)
     )
 
-    return project ? project.name : 'No project'
+    return project
+      ? project.name
+      : 'No project'
   }
 
-  function isDescendant(taskId, candidateParentId) {
+  function isDescendant(
+    taskId,
+    candidateParentId
+  ) {
     let currentTask = tasks.find(
-      (task) => String(task._id) === String(candidateParentId)
+      (task) =>
+        String(task._id) ===
+        String(candidateParentId)
     )
+
     const visited = new Set()
 
-    while (currentTask && currentTask.parentTaskId) {
-      const parentId = String(currentTask.parentTaskId)
+    while (
+      currentTask &&
+      currentTask.parentTaskId
+    ) {
+      const parentId = String(
+        currentTask.parentTaskId
+      )
 
-      if (parentId === String(taskId)) {
+      if (
+        parentId === String(taskId)
+      ) {
         return true
       }
 
@@ -229,7 +321,8 @@ function Task() {
       visited.add(parentId)
 
       currentTask = tasks.find(
-        (task) => String(task._id) === parentId
+        (task) =>
+          String(task._id) === parentId
       )
     }
 
@@ -238,13 +331,20 @@ function Task() {
 
   function getAvailableParentTasks() {
     return tasks.filter((task) => {
-      if (editingTask && String(task._id) === String(editingTask._id)) {
+      if (
+        editingTask &&
+        String(task._id) ===
+          String(editingTask._id)
+      ) {
         return false
       }
 
       if (
         editingTask &&
-        isDescendant(editingTask._id, task._id)
+        isDescendant(
+          editingTask._id,
+          task._id
+        )
       ) {
         return false
       }
@@ -255,45 +355,77 @@ function Task() {
 
   function getChildTasks(parentId) {
     return tasks.filter(
-      (task) => String(task.parentTaskId) === String(parentId)
+      (task) =>
+        String(task.parentTaskId) ===
+        String(parentId)
     )
   }
 
-  function getTotalEstimatedMinutes(taskId, visited = new Set()) {
+  function getTotalEstimatedMinutes(
+    taskId,
+    visited = new Set()
+  ) {
     const task = tasks.find(
-      (item) => String(item._id) === String(taskId)
+      (item) =>
+        String(item._id) ===
+        String(taskId)
     )
 
-    if (!task || visited.has(String(taskId))) {
+    if (
+      !task ||
+      visited.has(String(taskId))
+    ) {
       return 0
     }
 
     const nextVisited = new Set(visited)
     nextVisited.add(String(taskId))
 
-    const ownMinutes = Number(task.estimatedMinutes) || 0
+    const ownMinutes =
+      Number(task.estimatedMinutes) || 0
 
-    const childMinutes = getChildTasks(taskId).reduce(
-      (total, childTask) =>
-        total + getTotalEstimatedMinutes(childTask._id, nextVisited),
-      0
-    )
+    const childMinutes =
+      getChildTasks(taskId).reduce(
+        (total, childTask) =>
+          total +
+          getTotalEstimatedMinutes(
+            childTask._id,
+            nextVisited
+          ),
+        0
+      )
 
     return ownMinutes + childMinutes
   }
 
   function getOwnTrackedMinutes(taskId) {
-    return timeEntries
+    const savedMinutes = timeEntries
       .filter(
-        (entry) => String(entry.taskId) === String(taskId)
+        (entry) =>
+          String(entry.taskId) ===
+          String(taskId)
       )
       .reduce(
-        (total, entry) => total + (Number(entry.duration) || 0),
+        (total, entry) =>
+          total +
+          (Number(entry.duration) || 0),
         0
       )
+
+    const activeMinutes =
+      activeTimer &&
+      String(activeTimer.taskId) ===
+        String(taskId)
+        ? elapsedSeconds / 60
+        : 0
+
+    return savedMinutes + activeMinutes
   }
 
-  function getTotalTrackedMinutes(taskId, visited = new Set()) {
+  function getTotalTrackedMinutes(
+    taskId,
+    visited = new Set()
+  ) {
     if (visited.has(String(taskId))) {
       return 0
     }
@@ -301,13 +433,19 @@ function Task() {
     const nextVisited = new Set(visited)
     nextVisited.add(String(taskId))
 
-    const ownMinutes = getOwnTrackedMinutes(taskId)
+    const ownMinutes =
+      getOwnTrackedMinutes(taskId)
 
-    const childMinutes = getChildTasks(taskId).reduce(
-      (total, childTask) =>
-        total + getTotalTrackedMinutes(childTask._id, nextVisited),
-      0
-    )
+    const childMinutes =
+      getChildTasks(taskId).reduce(
+        (total, childTask) =>
+          total +
+          getTotalTrackedMinutes(
+            childTask._id,
+            nextVisited
+          ),
+        0
+      )
 
     return ownMinutes + childMinutes
   }
@@ -317,8 +455,15 @@ function Task() {
       return '0 min'
     }
 
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
+    const roundedMinutes =
+      Math.floor(minutes)
+
+    const hours = Math.floor(
+      roundedMinutes / 60
+    )
+
+    const remainingMinutes =
+      roundedMinutes % 60
 
     if (hours === 0) {
       return `${remainingMinutes} min`
@@ -331,16 +476,74 @@ function Task() {
     return `${hours} h ${remainingMinutes} min`
   }
 
+  function formatTimerTime(seconds) {
+    const hours = Math.floor(
+      seconds / 3600
+    )
+
+    const minutes = Math.floor(
+      (seconds % 3600) / 60
+    )
+
+    const remainingSeconds =
+      seconds % 60
+
+    return `${String(hours).padStart(
+      2,
+      '0'
+    )}:${String(minutes).padStart(
+      2,
+      '0'
+    )}:${String(remainingSeconds).padStart(
+      2,
+      '0'
+    )}`
+  }
+
+  function isTaskBeingTracked(task) {
+    return (
+      activeTimer &&
+      String(activeTimer.taskId) ===
+        String(task._id)
+    )
+  }
+
+  function handleStartTimer(task) {
+    if (activeTimer) {
+      return
+    }
+
+    startTimer({
+      taskId: task._id,
+      projectId: task.projectId || null,
+      description: task.title || '',
+    })
+  }
+
   function renderTask(task, level = 0) {
-    const childTasks = getChildTasks(task._id)
-    const totalEstimatedMinutes = getTotalEstimatedMinutes(task._id)
-    const totalTrackedMinutes = getTotalTrackedMinutes(task._id)
+    const childTasks =
+      getChildTasks(task._id)
+
+    const totalEstimatedMinutes =
+      getTotalEstimatedMinutes(
+        task._id
+      )
+
+    const totalTrackedMinutes =
+      getTotalTrackedMinutes(
+        task._id
+      )
+
+    const isActive =
+      isTaskBeingTracked(task)
 
     return (
       <div key={task._id}>
         <article
           className={`task-item status-${task.status}`}
-          style={{ paddingLeft: `${20 + level * 28}px` }}
+          style={{
+            paddingLeft: `${20 + level * 28}px`,
+          }}
         >
           <div className="task-status-indicator" />
 
@@ -351,9 +554,16 @@ function Task() {
               <span
                 className={`task-status ${task.status}`}
               >
-                {task.status === 'todo' && 'Added'}
-                {task.status === 'in-progress' && 'Started'}
-                {task.status === 'completed' && 'Completed'}
+                {task.status === 'todo' &&
+                  'Added'}
+
+                {task.status ===
+                  'in-progress' &&
+                  'Started'}
+
+                {task.status ===
+                  'completed' &&
+                  'Completed'}
               </span>
 
               <span
@@ -361,6 +571,18 @@ function Task() {
               >
                 {task.priority}
               </span>
+
+              {isActive && (
+                <span className="task-timer-active">
+                  {activeTimer.status ===
+                  'paused'
+                    ? 'Paused'
+                    : 'Tracking'}{' '}
+                  {formatTimerTime(
+                    elapsedSeconds
+                  )}
+                </span>
+              )}
             </div>
 
             {task.description && (
@@ -371,25 +593,39 @@ function Task() {
 
             <div className="task-meta">
               <span>
-                Project: {getProjectName(task.projectId)}
+                Project:{' '}
+                {getProjectName(
+                  task.projectId
+                )}
               </span>
 
-              {totalEstimatedMinutes > 0 && (
+              {totalEstimatedMinutes >
+                0 && (
                 <span>
-                  Estimated: {formatDuration(totalEstimatedMinutes)}
+                  Estimated:{' '}
+                  {formatDuration(
+                    totalEstimatedMinutes
+                  )}
                 </span>
               )}
 
-              {totalTrackedMinutes > 0 && (
+              {totalTrackedMinutes >
+                0 && (
                 <span>
-                  Tracked: {formatDuration(totalTrackedMinutes)}
+                  Tracked:{' '}
+                  {formatDuration(
+                    totalTrackedMinutes
+                  )}
                 </span>
               )}
 
-              {childTasks.length > 0 && (
+              {childTasks.length >
+                0 && (
                 <span>
                   {childTasks.length}{' '}
-                  {childTasks.length === 1 ? 'subtask' : 'subtasks'}
+                  {childTasks.length === 1
+                    ? 'subtask'
+                    : 'subtasks'}
                 </span>
               )}
 
@@ -398,7 +634,9 @@ function Task() {
                   Due:{' '}
                   {new Date(
                     task.dueDate
-                  ).toLocaleDateString('fi-FI')}
+                  ).toLocaleDateString(
+                    'fi-FI'
+                  )}
                 </span>
               )}
             </div>
@@ -415,31 +653,92 @@ function Task() {
               }
               aria-label={`Change status for ${task.title}`}
             >
-              <option value="todo">Added</option>
-              <option value="in-progress">Started</option>
+              <option value="todo">
+                Added
+              </option>
+
+              <option value="in-progress">
+                Started
+              </option>
+
               <option value="completed">
                 Completed
               </option>
             </select>
 
+            {!activeTimer && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleStartTimer(task)
+                }
+              >
+                Start
+              </button>
+            )}
+
+            {isActive &&
+              activeTimer.status ===
+                'running' && (
+                <button
+                  type="button"
+                  onClick={pauseTimer}
+                  disabled={timerSaving}
+                >
+                  Pause
+                </button>
+              )}
+
+            {isActive &&
+              activeTimer.status ===
+                'paused' && (
+                <button
+                  type="button"
+                  onClick={resumeTimer}
+                  disabled={timerSaving}
+                >
+                  Resume
+                </button>
+              )}
+
+            {isActive && (
+              <button
+                type="button"
+                onClick={stopTimer}
+                disabled={timerSaving}
+              >
+                {timerSaving
+                  ? 'Saving...'
+                  : 'Stop'}
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => startEdit(task)}
+              onClick={() =>
+                startEdit(task)
+              }
             >
               Edit
             </button>
 
             <button
               type="button"
-              onClick={() => handleDelete(task)}
+              onClick={() =>
+                handleDelete(task)
+              }
             >
               Delete
             </button>
           </div>
         </article>
 
-        {childTasks.map((childTask) =>
-          renderTask(childTask, level + 1)
+        {childTasks.map(
+          (childTask) =>
+            renderTask(
+              childTask,
+              level + 1
+            )
         )}
       </div>
     )
@@ -466,7 +765,9 @@ function Task() {
           <span className="tasks-kicker">
             Task management
           </span>
+
           <h2>Tasks</h2>
+
           <p>
             Manage your work and track task progress.
           </p>
@@ -487,11 +788,19 @@ function Task() {
         </div>
       )}
 
+      {timerError && (
+        <div className="tasks-error">
+          {timerError}
+        </div>
+      )}
+
       {showForm && (
         <section className="task-form-panel">
           <div className="task-form-header">
             <h3>
-              {editingTask ? 'Edit task' : 'New task'}
+              {editingTask
+                ? 'Edit task'
+                : 'New task'}
             </h3>
           </div>
 
@@ -499,11 +808,14 @@ function Task() {
             <div className="task-form-grid">
               <label className="task-form-full">
                 <span>Title</span>
+
                 <input
                   type="text"
                   value={title}
                   onChange={(event) =>
-                    setTitle(event.target.value)
+                    setTitle(
+                      event.target.value
+                    )
                   }
                   placeholder="Task title"
                   maxLength={200}
@@ -513,57 +825,76 @@ function Task() {
 
               <label>
                 <span>Project</span>
+
                 <select
                   value={projectId}
                   onChange={(event) => {
-                    setProjectId(event.target.value)
+                    setProjectId(
+                      event.target.value
+                    )
                   }}
                 >
-                  <option value="">No project</option>
+                  <option value="">
+                    No project
+                  </option>
 
-                  {projects.map((project) => (
-                    <option
-                      key={project._id}
-                      value={project._id}
-                    >
-                      {project.name}
-                    </option>
-                  ))}
+                  {projects.map(
+                    (project) => (
+                      <option
+                        key={project._id}
+                        value={
+                          project._id
+                        }
+                      >
+                        {project.name}
+                      </option>
+                    )
+                  )}
                 </select>
               </label>
 
               <label>
                 <span>Parent task</span>
+
                 <select
                   value={parentTaskId}
                   onChange={(event) =>
-                    setParentTaskId(event.target.value)
+                    setParentTaskId(
+                      event.target.value
+                    )
                   }
                 >
                   <option value="">
                     No parent task
                   </option>
 
-                  {getAvailableParentTasks().map((task) => (
-                    <option
-                      key={task._id}
-                      value={task._id}
-                    >
-                      {task.title}
-                    </option>
-                  ))}
+                  {getAvailableParentTasks().map(
+                    (task) => (
+                      <option
+                        key={task._id}
+                        value={task._id}
+                      >
+                        {task.title}
+                      </option>
+                    )
+                  )}
                 </select>
               </label>
 
               <label>
-                <span>Estimated time (hours)</span>
+                <span>
+                  Estimated time (hours)
+                </span>
+
                 <input
                   className="task-estimated-input"
                   type="text"
                   inputMode="decimal"
                   value={estimatedHours}
                   onChange={(event) =>
-                    setEstimatedHours(event.target.value)
+                    setEstimatedHours(
+                      event.target.value
+                    )
                   }
                   placeholder="e.g. 1.5"
                 />
@@ -571,50 +902,78 @@ function Task() {
 
               <label>
                 <span>Status</span>
+
                 <select
                   value={status}
                   onChange={(event) =>
-                    setStatus(event.target.value)
+                    setStatus(
+                      event.target.value
+                    )
                   }
                 >
-                  <option value="todo">Added</option>
-                  <option value="in-progress">Started</option>
-                  <option value="completed">Completed</option>
+                  <option value="todo">
+                    Added
+                  </option>
+
+                  <option value="in-progress">
+                    Started
+                  </option>
+
+                  <option value="completed">
+                    Completed
+                  </option>
                 </select>
               </label>
 
               <label>
                 <span>Priority</span>
+
                 <select
                   value={priority}
                   onChange={(event) =>
-                    setPriority(event.target.value)
+                    setPriority(
+                      event.target.value
+                    )
                   }
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="low">
+                    Low
+                  </option>
+
+                  <option value="medium">
+                    Medium
+                  </option>
+
+                  <option value="high">
+                    High
+                  </option>
                 </select>
               </label>
 
               <label>
                 <span>Due date</span>
+
                 <input
                   className="task-date-input"
                   type="date"
                   value={dueDate}
                   onChange={(event) =>
-                    setDueDate(event.target.value)
+                    setDueDate(
+                      event.target.value
+                    )
                   }
                 />
               </label>
 
               <label className="task-form-full">
                 <span>Description</span>
+
                 <textarea
                   value={description}
                   onChange={(event) =>
-                    setDescription(event.target.value)
+                    setDescription(
+                      event.target.value
+                    )
                   }
                   placeholder="Task description"
                   maxLength={2000}
@@ -650,7 +1009,10 @@ function Task() {
       <section className="tasks-list">
         <div className="tasks-list-header">
           <span>
-            {tasks.length} {tasks.length === 1 ? 'TASK' : 'TASKS'}
+            {tasks.length}{' '}
+            {tasks.length === 1
+              ? 'TASK'
+              : 'TASKS'}
           </span>
         </div>
 
@@ -658,12 +1020,15 @@ function Task() {
           {tasks.length === 0 ? (
             <div className="tasks-empty">
               <h3>No tasks yet</h3>
+
               <p>
                 Create your first task to start tracking your work.
               </p>
             </div>
           ) : (
-            rootTasks.map((task) => renderTask(task))
+            rootTasks.map((task) =>
+              renderTask(task)
+            )
           )}
         </div>
       </section>
@@ -679,7 +1044,9 @@ function Task() {
         >
           <div
             className="delete-dialog"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             <span className="delete-dialog-kicker">
               CONFIRM ACTION
@@ -691,14 +1058,18 @@ function Task() {
 
             <p>
               Are you sure you want to delete{' '}
-              <strong>{taskToDelete.title}</strong>?
-              This action cannot be undone.
+              <strong>
+                {taskToDelete.title}
+              </strong>
+              ? This action cannot be undone.
             </p>
 
             <div className="delete-dialog-actions">
               <button
                 type="button"
-                onClick={() => setTaskToDelete(null)}
+                onClick={() =>
+                  setTaskToDelete(null)
+                }
                 disabled={deleting}
               >
                 Cancel
@@ -710,7 +1081,9 @@ function Task() {
                 onClick={confirmDelete}
                 disabled={deleting}
               >
-                {deleting ? 'Deleting...' : 'Delete task'}
+                {deleting
+                  ? 'Deleting...'
+                  : 'Delete task'}
               </button>
             </div>
           </div>

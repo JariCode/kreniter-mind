@@ -67,15 +67,15 @@
 
 .dashboard-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 30px;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .dashboard-card {
   position: relative;
-  min-height: 140px;
-  padding: 21px 22px;
+  min-height: 92px;
+  padding: 14px 16px;
   overflow: hidden;
   background:
     linear-gradient(
@@ -133,7 +133,7 @@
 
 .dashboard-card strong {
   display: block;
-  margin-top: 14px;
+  margin-top: 8px;
   color: #e7edf5;
   font-size: 1.9rem;
   font-weight: 400;
@@ -141,9 +141,84 @@
 }
 
 .dashboard-card p {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: #687583;
   font-size: 0.68rem;
+}
+
+
+/* -------------------------------- */
+/* Tracked time and active task     */
+/* -------------------------------- */
+
+.tracked-time-card {
+  min-height: 180px;
+}
+
+.tracked-time-layout {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(220px, 1fr);
+  align-items: center;
+  gap: 28px;
+  margin-top: 18px;
+}
+
+.tracked-time-main {
+  min-width: 0;
+}
+
+.tracked-time-main > p {
+  margin-top: 8px;
+}
+
+.tracked-time-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-task-summary {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.4fr) minmax(180px, 1fr);
+  align-items: center;
+  gap: 28px;
+  margin-top: 14px;
+}
+
+.dashboard-task-count {
+  min-width: 0;
+}
+
+.dashboard-task-count strong {
+  margin-top: 0;
+}
+
+.time-tracker-active-task {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.time-tracker-active-task span {
+  color: #6eb7f5;
+  font-size: 0.61rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.time-tracker-active-task strong {
+  margin-top: 0;
+  color: #e7edf5;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* -------------------------------- */
@@ -641,6 +716,19 @@
 @media (max-width: 700px) {
   .main-content {
     padding: 28px 22px 40px;
+  }
+
+  .tracked-time-layout,
+  .dashboard-task-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .time-tracker-active-task {
+    padding-left: 0;
+    padding-top: 14px;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
   }
 
   .dashboard-intro {
