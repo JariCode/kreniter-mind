@@ -1,0 +1,56 @@
+:root {
+  --color-background: #08090b;
+  --color-background-deep: #050608;
+  --color-surface: #101216;
+  --color-surface-light: #16191e;
+  --color-surface-hover: #1b1f24;
+  --color-border: #242930;
+  --color-border-soft: rgba(255, 255, 255, 0.055);
+  --color-text: #e7e7e5;
+  --color-text-soft: #b7b9bd;
+  --color-muted: #85888d;
+  --color-accent: #c6a875;
+  --color-accent-dark: #9a7848;
+  --color-accent-soft: rgba(198, 168, 117, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+html {
+  background: var(--color-background);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}

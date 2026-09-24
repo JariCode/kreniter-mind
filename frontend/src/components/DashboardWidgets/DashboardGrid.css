@@ -1,0 +1,45 @@
+.dashboard-widget-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.dashboard-widget {
+  min-width: 0;
+}
+
+.dashboard-widget.widget-stat {
+  grid-column: span 4;
+}
+
+.dashboard-widget.widget-wide {
+  grid-column: span 8;
+}
+
+.dashboard-widget.widget-half {
+  grid-column: span 4;
+}
+
+.dashboard-widget.widget-full {
+  grid-column: span 12;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-widget.widget-stat,
+  .dashboard-widget.widget-wide,
+  .dashboard-widget.widget-half {
+    grid-column: span 6;
+  }
+
+}
+
+@media (max-width: 760px) {
+  .dashboard-widget.widget-stat,
+  .dashboard-widget.widget-wide,
+  .dashboard-widget.widget-half,
+  .dashboard-widget.widget-full {
+    grid-column: span 12;
+  }
+
+}
