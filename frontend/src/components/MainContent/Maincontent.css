@@ -15,7 +15,7 @@
 
 .dashboard-kicker {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 4px;
   color: #5f9ed8;
   font-size: 0.62rem;
   font-weight: 600;
@@ -32,7 +32,7 @@
 }
 
 .dashboard-intro p {
-  margin: 7px 0 0;
+  margin: 4px 0 0;
   color: #858f9c;
   font-size: 0.82rem;
 }

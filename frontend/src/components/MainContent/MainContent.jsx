@@ -372,37 +372,31 @@ function MainContent({
     {
       type: 'projects',
       title: 'Projects',
-      kicker: 'WORKSPACE',
       width: 4,
     },
     {
       type: 'tasks',
       title: 'Tasks',
-      kicker: 'WORKSPACE',
       width: 4,
     },
     {
       type: 'tracked-time',
       title: 'Tracked time',
-      kicker: 'TIME',
       width: 4,
     },
     {
       type: 'recent-projects',
       title: 'Recent projects',
-      kicker: 'WORKSPACE',
       width: 4,
     },
     {
       type: 'notes',
       title: 'Notes',
-      kicker: 'WORKSPACE',
       width: 4,
     },
     {
       type: 'ai-assistant',
       title: 'AI Assistant',
-      kicker: 'INTELLIGENCE',
       width: 4,
     },
   ]

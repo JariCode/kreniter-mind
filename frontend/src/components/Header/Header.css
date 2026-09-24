@@ -1,6 +1,6 @@
 .header {
-  min-height: 92px;
-  padding: 24px 38px;
+  min-height: 72px;
+  padding: 16px 38px;
   position: sticky;
   top: 0;
   z-index: 1000;
