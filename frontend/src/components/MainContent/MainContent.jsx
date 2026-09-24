@@ -5,9 +5,10 @@ import { getTimeEntries } from '../../api/timeEntries'
 import { getDashboardLayout, saveDashboardLayout } from '../../api/dashboardLayoutApi'
 import DashboardGrid from '../DashboardWidgets/DashboardGrid'
 import WidgetLibrary from '../DashboardWidgets/WidgetLibrary'
+import Project from '../../pages/Projects/Project'
 import './MainContent.css'
 
-function MainContent() {
+function MainContent({ activeView }) {
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
   const [timeEntries, setTimeEntries] = useState([])
@@ -80,6 +81,24 @@ function MainContent() {
   }, [])
 
   useEffect(() => {
+    if (activeView !== 'dashboard') {
+      return
+    }
+
+    async function refreshProjects() {
+      try {
+        const data = await getProjects()
+        setProjects(data)
+        setError('')
+      } catch (error) {
+        setError(error.message)
+      }
+    }
+
+    refreshProjects()
+  }, [activeView])
+
+  useEffect(() => {
     async function loadDashboardLayout() {
       try {
         const data = await getDashboardLayout()
@@ -112,6 +131,10 @@ function MainContent() {
       console.error('Failed to save dashboard layout:', error)
     })
   }, [widgets, layoutLoaded])
+
+  if (activeView === 'projects') {
+    return <Project />
+  }
 
   const openTasks = tasks.filter(
     (task) => task.status !== 'completed'

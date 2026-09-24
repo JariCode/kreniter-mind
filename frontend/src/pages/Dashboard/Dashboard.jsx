@@ -1,16 +1,22 @@
+import { useState } from 'react'
 import Sidebar from '../../components/Sidebar/Sidebar'
 import Header from '../../components/Header/Header'
 import MainContent from '../../components/MainContent/MainContent'
 import './Dashboard.css'
 
 function Dashboard() {
+  const [activeView, setActiveView] = useState('dashboard')
+
   return (
     <div className="dashboard">
-      <Sidebar />
+      <Sidebar
+        activeView={activeView}
+        onViewChange={setActiveView}
+      />
 
       <div className="dashboard-main">
-        <Header />
-        <MainContent />
+        <Header activeView={activeView} />
+        <MainContent activeView={activeView} />
       </div>
     </div>
   )
