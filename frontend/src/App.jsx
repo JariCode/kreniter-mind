@@ -4,7 +4,7 @@ import { useAuth, useUser } from '@clerk/react'
 import LandingPage from './pages/LandingPage/LandingPage'
 import Dashboard from './pages/Dashboard/Dashboard'
 import { getCurrentUser } from './api/userApi'
-import { setAuthToken } from './api/api'
+import { setAuthTokenGetter } from './api/api'
 
 function App() {
   const { isLoaded, isSignedIn } = useUser()
@@ -22,23 +22,32 @@ function App() {
       return
     }
 
+    let cancelled = false
+
     async function initializeAuth() {
       try {
-        const token = await getToken()
+        setAuthTokenGetter(getToken)
 
-        setAuthToken(token)
+        await getCurrentUser(getToken)
 
-        const data = await getCurrentUser(getToken)
-
-        console.log('Current user:', data.user)
-
-        setAuthInitialized(true)
+        if (!cancelled) {
+          setAuthInitialized(true)
+        }
       } catch (error) {
-        console.error('Failed to initialize authentication:', error)
+        if (!cancelled) {
+          console.error(
+            'Failed to initialize authentication:',
+            error
+          )
+        }
       }
     }
 
     initializeAuth()
+
+    return () => {
+      cancelled = true
+    }
   }, [isLoaded, isSignedIn, getToken])
 
   if (!isLoaded) {
