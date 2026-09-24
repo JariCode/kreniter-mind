@@ -254,6 +254,32 @@ export function TimeTrackerProvider({ children }) {
     setNow(Date.now())
   }, [])
 
+  const cancelTimer = useCallback(async () => {
+    if (!timer) {
+      return
+    }
+
+    try {
+      setError('')
+
+      await deleteActiveTimer()
+
+      setTimer(null)
+    } catch (err) {
+      console.error(
+        'Failed to cancel active timer:',
+        err
+      )
+
+      setError(
+        err.message ||
+          'Failed to cancel active timer.'
+      )
+
+      throw err
+    }
+  }, [timer])
+
   const stopTimer = useCallback(async () => {
     if (!timer || isSaving) {
       return null
@@ -325,6 +351,7 @@ export function TimeTrackerProvider({ children }) {
       pauseTimer,
       resumeTimer,
       stopTimer,
+      cancelTimer,
     }),
     [
       timer,
@@ -338,6 +365,7 @@ export function TimeTrackerProvider({ children }) {
       pauseTimer,
       resumeTimer,
       stopTimer,
+      cancelTimer,
     ]
   )
 

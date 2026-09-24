@@ -18,6 +18,7 @@ function Task() {
     pauseTimer,
     resumeTimer,
     stopTimer,
+    cancelTimer,
     isSaving: timerSaving,
     error: timerError,
     timeEntriesVersion,
@@ -215,6 +216,21 @@ function Task() {
     try {
       setDeleting(true)
       setError('')
+
+      if (
+        activeTimer &&
+        String(activeTimer.taskId) ===
+          String(taskToDelete._id)
+      ) {
+        try {
+          await cancelTimer()
+        } catch (error) {
+          console.error(
+            'Failed to cancel active timer while deleting task:',
+            error
+          )
+        }
+      }
 
       await deleteTask(taskToDelete._id)
 
@@ -754,9 +770,17 @@ function Task() {
     )
   }
 
-  const rootTasks = tasks.filter(
-    (task) => !task.parentTaskId
-  )
+  const rootTasks = tasks.filter((task) => {
+    if (!task.parentTaskId) {
+      return true
+    }
+
+    return !tasks.some(
+      (parentTask) =>
+        String(parentTask._id) ===
+        String(task.parentTaskId)
+    )
+  })
 
   return (
     <main className="tasks-page">
