@@ -16,7 +16,10 @@ function Dashboard() {
 
       <div className="dashboard-main">
         <Header activeView={activeView} />
-        <MainContent activeView={activeView} />
+        <MainContent
+          activeView={activeView}
+          onViewChange={setActiveView}
+        />
       </div>
     </div>
   )

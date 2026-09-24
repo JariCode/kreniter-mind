@@ -14,7 +14,10 @@ import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
 
-function MainContent({ activeView }) {
+function MainContent({
+  activeView,
+  onViewChange,
+}) {
   const {
     activeTimer,
     elapsedSeconds,
@@ -33,8 +36,7 @@ function MainContent({ activeView }) {
 
   const [loading, setLoading] = useState(true)
   const [tasksLoading, setTasksLoading] = useState(true)
-  const [timeEntriesLoading, setTimeEntriesLoading] =
-    useState(true)
+  const [timeEntriesLoading, setTimeEntriesLoading] = useState(true)
 
   const [error, setError] = useState('')
   const [tasksError, setTasksError] = useState('')
@@ -304,7 +306,7 @@ function MainContent({ activeView }) {
     return `${hours} h ${remainingMinutes} min`
   }
 
-  function getProjectTaskMinutes(projectId) {
+  function getProjectTotalMinutes(projectId) {
     return tasks
       .filter(
         (task) =>
@@ -319,41 +321,25 @@ function MainContent({ activeView }) {
       )
   }
 
-  function getProjectTrackedMinutes(projectId) {
-    const projectTaskIds = new Set(
-      tasks
-        .filter(
-          (task) =>
-            String(task.projectId) ===
-            String(projectId)
-        )
-        .map((task) => String(task._id))
-    )
+  const totalProjectMinutes = projects.reduce(
+    (total, project) =>
+      total +
+      getProjectTotalMinutes(project._id),
+    0
+  )
 
-    return timeEntries
-      .filter(
-        (entry) =>
-          String(entry.projectId) ===
-            String(projectId) ||
-          (entry.taskId &&
-            projectTaskIds.has(
-              String(entry.taskId)
-            ))
-      )
-      .reduce(
-        (total, entry) =>
-          total +
-          (Number(entry.duration) || 0),
-        0
-      )
-  }
+  const totalProjectTime = formatProjectTime(
+    totalProjectMinutes
+  )
 
-  function getProjectTotalMinutes(projectId) {
-    return (
-      getProjectTaskMinutes(projectId) +
-      getProjectTrackedMinutes(projectId)
-    )
-  }
+  const recentProjects = [...projects]
+    .sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime()
+      const dateB = new Date(b.createdAt).getTime()
+
+      return dateB - dateA
+    })
+    .slice(0, 2)
 
   const widgetDefinitions = [
     {
@@ -494,13 +480,40 @@ function MainContent({ activeView }) {
                 <span>Projects</span>
               </div>
 
-              <strong>
-                {projects.length}
-              </strong>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-end',
+                  gap: '24px',
+                }}
+              >
+                <div>
+                  <strong>
+                    {projects.length}
+                  </strong>
 
-              <p>
-                Active workspaces
-              </p>
+                  <p>
+                    Active workspaces
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    textAlign: 'right',
+                  }}
+                >
+                  <strong>
+                    {loading || tasksLoading
+                      ? '...'
+                      : totalProjectTime}
+                  </strong>
+
+                  <p>
+                    Project hours
+                  </p>
+                </div>
+              </div>
             </article>
           </section>
         )
@@ -672,7 +685,12 @@ function MainContent({ activeView }) {
                   </h3>
                 </div>
 
-                <button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('projects')
+                  }
+                >
                   View all
                 </button>
               </div>
@@ -692,7 +710,7 @@ function MainContent({ activeView }) {
 
                 {!loading &&
                   !error &&
-                  projects.map((project) => (
+                  recentProjects.map((project) => (
                     <div
                       className="project-item"
                       key={project._id}
