@@ -1,6 +1,15 @@
+import { useClerk } from '@clerk/react'
 import './LandingPage.css'
 
 function LandingPage({ onEnter }) {
+  const { openSignIn } = useClerk()
+
+  function handleEnter() {
+    openSignIn({
+      fallbackRedirectUrl: '/',
+    })
+  }
+
   return (
     <main className="landing-page">
       <div className="landing-content">
@@ -156,7 +165,7 @@ function LandingPage({ onEnter }) {
 
         <button
           className="landing-button"
-          onClick={onEnter}
+          onClick={handleEnter}
         >
           ENTER WORKSPACE
         </button>

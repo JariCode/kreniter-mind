@@ -1,21 +1,19 @@
-import { useState } from 'react'
+import { useUser } from '@clerk/react'
 import LandingPage from './pages/LandingPage/LandingPage'
 import Dashboard from './pages/Dashboard/Dashboard'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('landing')
+  const { isLoaded, isSignedIn } = useUser()
 
-  return (
-    <>
-      {currentPage === 'landing' && (
-        <LandingPage onEnter={() => setCurrentPage('dashboard')} />
-      )}
+  if (!isLoaded) {
+    return null
+  }
 
-      {currentPage === 'dashboard' && (
-        <Dashboard />
-      )}
-    </>
-  )
+  if (!isSignedIn) {
+    return <LandingPage />
+  }
+
+  return <Dashboard />
 }
 
 export default App
