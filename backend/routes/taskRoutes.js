@@ -53,14 +53,38 @@ router.post('/', async (req, res, next) => {
       }
     }
 
+    if (req.body.parentTaskId) {
+      const parentTask = await Task.findOne({
+        _id: req.body.parentTaskId,
+        userId: req.user._id,
+      })
+
+      if (!parentTask) {
+        return res.status(404).json({
+          error: 'Parent task not found',
+        })
+      }
+
+      if (
+        req.body.projectId &&
+        String(parentTask.projectId) !== String(req.body.projectId)
+      ) {
+        return res.status(400).json({
+          error: 'Parent task must belong to the same project',
+        })
+      }
+    }
+
     const task = await Task.create({
       userId: req.user._id,
       projectId: req.body.projectId,
+      parentTaskId: req.body.parentTaskId,
       title: req.body.title,
       description: req.body.description,
       status: req.body.status,
       priority: req.body.priority,
       dueDate: req.body.dueDate,
+      estimatedMinutes: req.body.estimatedMinutes,
     })
 
     res.status(201).json(task)
@@ -96,12 +120,42 @@ router.patch('/:id', async (req, res, next) => {
       }
     }
 
+    if (req.body.parentTaskId) {
+      if (String(req.body.parentTaskId) === String(task._id)) {
+        return res.status(400).json({
+          error: 'Task cannot be its own parent',
+        })
+      }
+
+      const parentTask = await Task.findOne({
+        _id: req.body.parentTaskId,
+        userId: req.user._id,
+      })
+
+      if (!parentTask) {
+        return res.status(404).json({
+          error: 'Parent task not found',
+        })
+      }
+
+      if (
+        req.body.projectId &&
+        String(parentTask.projectId) !== String(req.body.projectId)
+      ) {
+        return res.status(400).json({
+          error: 'Parent task must belong to the same project',
+        })
+      }
+    }
+
     task.projectId = req.body.projectId
+    task.parentTaskId = req.body.parentTaskId
     task.title = req.body.title
     task.description = req.body.description
     task.status = req.body.status
     task.priority = req.body.priority
     task.dueDate = req.body.dueDate
+    task.estimatedMinutes = req.body.estimatedMinutes
 
     await task.save()
 

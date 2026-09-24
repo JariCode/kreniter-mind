@@ -412,6 +412,13 @@
   cursor: not-allowed;
 }
 
+.project-tracked-time {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+}
+
 @media (max-width: 760px) {
   .projects-page {
     padding: 20px;

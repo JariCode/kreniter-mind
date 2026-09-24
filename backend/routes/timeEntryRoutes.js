@@ -1,6 +1,7 @@
 const express = require('express')
 const TimeEntry = require('../models/TimeEntry')
 const Project = require('../models/Project')
+const Task = require('../models/Task')
 
 const router = express.Router()
 
@@ -53,9 +54,33 @@ router.post('/', async (req, res, next) => {
       }
     }
 
+    if (req.body.taskId) {
+      const task = await Task.findOne({
+        _id: req.body.taskId,
+        userId: req.user._id,
+      })
+
+      if (!task) {
+        return res.status(404).json({
+          error: 'Task not found',
+        })
+      }
+
+      if (
+        req.body.projectId &&
+        task.projectId &&
+        String(task.projectId) !== String(req.body.projectId)
+      ) {
+        return res.status(400).json({
+          error: 'Task must belong to the selected project',
+        })
+      }
+    }
+
     const timeEntry = await TimeEntry.create({
       userId: req.user._id,
       projectId: req.body.projectId,
+      taskId: req.body.taskId,
       description: req.body.description,
       duration: req.body.duration,
       startedAt: req.body.startedAt,
@@ -94,7 +119,31 @@ router.patch('/:id', async (req, res, next) => {
       }
     }
 
+    if (req.body.taskId) {
+      const task = await Task.findOne({
+        _id: req.body.taskId,
+        userId: req.user._id,
+      })
+
+      if (!task) {
+        return res.status(404).json({
+          error: 'Task not found',
+        })
+      }
+
+      if (
+        req.body.projectId &&
+        task.projectId &&
+        String(task.projectId) !== String(req.body.projectId)
+      ) {
+        return res.status(400).json({
+          error: 'Task must belong to the selected project',
+        })
+      }
+    }
+
     timeEntry.projectId = req.body.projectId
+    timeEntry.taskId = req.body.taskId
     timeEntry.description = req.body.description
     timeEntry.duration = req.body.duration
     timeEntry.startedAt = req.body.startedAt

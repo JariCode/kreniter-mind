@@ -16,6 +16,12 @@ const timeEntrySchema = new mongoose.Schema(
       default: null,
     },
 
+    taskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task',
+      default: null,
+    },
+
     description: {
       type: String,
       trim: true,

@@ -16,6 +16,12 @@ const taskSchema = new mongoose.Schema(
       default: null,
     },
 
+    parentTaskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task',
+      default: null,
+    },
+
     title: {
       type: String,
       required: true,
@@ -45,6 +51,12 @@ const taskSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
       default: null,
+    },
+
+    estimatedMinutes: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {

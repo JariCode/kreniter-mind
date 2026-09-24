@@ -154,23 +154,50 @@ function MainContent({ activeView }) {
     (task) => task.status !== 'completed'
   ).length
 
-  const startOfWeek = new Date()
-  const day = startOfWeek.getDay()
-  const difference = day === 0 ? -6 : 1 - day
-
-  startOfWeek.setDate(startOfWeek.getDate() + difference)
-  startOfWeek.setHours(0, 0, 0, 0)
-
-  const trackedMinutes = timeEntries
-    .filter((entry) => new Date(entry.startedAt) >= startOfWeek)
-    .reduce((total, entry) => total + entry.duration, 0)
+  const trackedMinutes = timeEntries.reduce(
+    (total, entry) =>
+      total + (Number(entry.duration) || 0),
+    0
+  )
 
   const trackedHours = Math.floor(trackedMinutes / 60)
-  const remainingMinutes = trackedMinutes % 60
+  const trackedRemainingMinutes = trackedMinutes % 60
 
   const trackedTime = `${String(trackedHours).padStart(2, '0')}:${String(
-    remainingMinutes
+    trackedRemainingMinutes
   ).padStart(2, '0')}`
+
+  function getProjectTotalMinutes(projectId) {
+    return tasks
+      .filter(
+        (task) =>
+          String(task.projectId) === String(projectId)
+      )
+      .reduce(
+        (total, task) =>
+          total + (Number(task.estimatedMinutes) || 0),
+        0
+      )
+  }
+
+  function formatProjectTime(minutes) {
+    if (!minutes || minutes <= 0) {
+      return '0 h'
+    }
+
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+
+    if (hours === 0) {
+      return `${remainingMinutes} min`
+    }
+
+    if (remainingMinutes === 0) {
+      return `${hours} h`
+    }
+
+    return `${hours} h ${remainingMinutes} min`
+  }
 
   const widgetDefinitions = [
     {
@@ -260,7 +287,9 @@ function MainContent({ activeView }) {
 
   const availableWidgets = widgetDefinitions.filter(
     (widget) =>
-      !widgets.some((currentWidget) => currentWidget.type === widget.type)
+      !widgets.some(
+        (currentWidget) => currentWidget.type === widget.type
+      )
   )
 
   const dashboardWidgets = widgets
@@ -326,7 +355,7 @@ function MainContent({ activeView }) {
               </strong>
 
               <p>
-                This week
+                Total tracked
               </p>
             </article>
           </section>
@@ -384,6 +413,12 @@ function MainContent({ activeView }) {
                         {project.description}
                       </p>
                     </div>
+
+                    <span className="project-time">
+                      {formatProjectTime(
+                        getProjectTotalMinutes(project._id)
+                      )}
+                    </span>
 
                     <span className="project-status">
                       {project.status}

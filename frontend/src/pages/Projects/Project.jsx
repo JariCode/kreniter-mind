@@ -5,10 +5,14 @@ import {
   getProjects,
   updateProject,
 } from '../../api/projects'
+import { getTasks } from '../../api/tasks'
+import { getTimeEntries } from '../../api/timeEntries'
 import './Project.css'
 
 function Projects() {
   const [projects, setProjects] = useState([])
+  const [tasks, setTasks] = useState([])
+  const [timeEntries, setTimeEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -24,8 +28,17 @@ function Projects() {
   async function loadProjects() {
     try {
       setError('')
-      const data = await getProjects()
-      setProjects(data)
+
+      const [projectsData, tasksData, timeEntriesData] =
+        await Promise.all([
+          getProjects(),
+          getTasks(),
+          getTimeEntries(),
+        ])
+
+      setProjects(projectsData)
+      setTasks(tasksData)
+      setTimeEntries(timeEntriesData)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -113,12 +126,91 @@ function Projects() {
         )
       )
 
+      setTasks((currentTasks) =>
+        currentTasks.filter(
+          (task) =>
+            String(task.projectId) !==
+            String(projectToDelete._id)
+        )
+      )
+
+      setTimeEntries((currentEntries) =>
+        currentEntries.filter(
+          (entry) =>
+            String(entry.projectId) !==
+            String(projectToDelete._id)
+        )
+      )
+
       setProjectToDelete(null)
     } catch (error) {
       setError(error.message)
     } finally {
       setDeleting(false)
     }
+  }
+
+  function getProjectTaskMinutes(projectId) {
+    return tasks
+      .filter(
+        (task) =>
+          String(task.projectId) === String(projectId)
+      )
+      .reduce(
+        (total, task) =>
+          total + (Number(task.estimatedMinutes) || 0),
+        0
+      )
+  }
+
+  function getProjectTrackedMinutes(projectId) {
+    const projectTaskIds = new Set(
+      tasks
+        .filter(
+          (task) =>
+            String(task.projectId) === String(projectId)
+        )
+        .map((task) => String(task._id))
+    )
+
+    return timeEntries
+      .filter(
+        (entry) =>
+          String(entry.projectId) === String(projectId) ||
+          (entry.taskId &&
+            projectTaskIds.has(String(entry.taskId)))
+      )
+      .reduce(
+        (total, entry) =>
+          total + (Number(entry.duration) || 0),
+        0
+      )
+  }
+
+  function getProjectTotalMinutes(projectId) {
+    const taskMinutes = getProjectTaskMinutes(projectId)
+    const trackedMinutes = getProjectTrackedMinutes(projectId)
+
+    return taskMinutes + trackedMinutes
+  }
+
+  function formatDuration(minutes) {
+    if (!minutes || minutes <= 0) {
+      return '0 h'
+    }
+
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+
+    if (hours === 0) {
+      return `${remainingMinutes} min`
+    }
+
+    if (remainingMinutes === 0) {
+      return `${hours} h`
+    }
+
+    return `${hours} h ${remainingMinutes} min`
   }
 
   return (
@@ -299,6 +391,12 @@ function Projects() {
                   <p>
                     {project.description || 'No description'}
                   </p>
+
+                  <span className="project-tracked-time">
+                    {formatDuration(
+                      getProjectTotalMinutes(project._id)
+                    )}
+                  </span>
                 </div>
 
                 <div className="project-actions">

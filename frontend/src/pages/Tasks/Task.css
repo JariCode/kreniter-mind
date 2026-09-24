@@ -450,6 +450,10 @@
   cursor: not-allowed;
 }
 
+.task-date-input {
+  color-scheme: dark;
+}
+
 @media (max-width: 760px) {
   .tasks-page {
     padding: 20px;
