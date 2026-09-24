@@ -49,11 +49,23 @@ function LandingPage({ onEnter }) {
                 <stop offset="100%" stopColor="#0753a6" />
               </linearGradient>
 
-              <filter id="entityBlur">
+              <filter
+                id="entityBlur"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
                 <feGaussianBlur stdDeviation="12" />
               </filter>
 
-              <filter id="entityGlow">
+              <filter
+                id="entityGlow"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
                 <feGaussianBlur stdDeviation="4" />
               </filter>
 
