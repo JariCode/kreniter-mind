@@ -1,16 +1,16 @@
-.projects-page {
+.tasks-page {
   flex: 1;
   padding: 32px;
   overflow-y: auto;
 }
-.projects-intro {
+.tasks-intro {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 28px;
 }
-.projects-kicker {
+.tasks-kicker {
   display: block;
   margin-bottom: 8px;
   color: var(--color-muted);
@@ -19,18 +19,18 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.projects-intro h2 {
+.tasks-intro h2 {
   margin: 0;
   color: var(--color-text);
   font-size: 30px;
   font-weight: 600;
 }
-.projects-intro p {
+.tasks-intro p {
   margin: 8px 0 0;
   color: var(--color-text-soft);
   font-size: 14px;
 }
-.projects-create-button {
+.tasks-create-button {
   padding: 11px 16px;
   border: 1px solid rgba(22, 136, 255, 0.45);
   border-radius: 7px;
@@ -44,12 +44,12 @@
     border-color 0.18s ease,
     box-shadow 0.18s ease;
 }
-.projects-create-button:hover {
+.tasks-create-button:hover {
   border-color: rgba(22, 136, 255, 0.75);
   background: rgba(22, 136, 255, 0.16);
   box-shadow: 0 0 20px rgba(22, 136, 255, 0.12);
 }
-.projects-error {
+.tasks-error {
   margin-bottom: 20px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 80, 80, 0.3);
@@ -58,45 +58,50 @@
   color: #ff9b9b;
   font-size: 13px;
 }
-.project-form-panel {
+.tasks-loading {
+  padding: 40px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+.task-form-panel {
   margin-bottom: 28px;
   padding: 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
 }
-.project-form-header {
+.task-form-header {
   margin-bottom: 24px;
 }
-.project-form-header h3 {
+.task-form-header h3 {
   margin: 0;
   color: var(--color-text);
   font-size: 20px;
   font-weight: 600;
 }
-.project-form-grid {
+.task-form-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
   gap: 18px;
 }
-.project-form-grid label {
+.task-form-grid label {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.project-form-grid label span {
+.task-form-grid label span {
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.project-form-full {
+.task-form-full {
   grid-column: 1 / -1;
 }
-.project-form-grid input,
-.project-form-grid select,
-.project-form-grid textarea {
+.task-form-grid input,
+.task-form-grid select,
+.task-form-grid textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 11px 12px;
@@ -110,29 +115,29 @@
     border-color 0.18s ease,
     box-shadow 0.18s ease;
 }
-.project-form-grid select {
+.task-form-grid select {
   color-scheme: dark;
   cursor: pointer;
 }
-.project-form-grid select option {
+.task-form-grid select option {
   background: #0d131d;
   color: #e7edf5;
 }
-.project-form-grid select option:checked {
+.task-form-grid select option:checked {
   background: #1688ff;
   color: #ffffff;
 }
-.project-form-grid textarea {
+.task-form-grid textarea {
   resize: vertical;
   min-height: 100px;
 }
-.project-form-grid input:focus,
-.project-form-grid textarea:focus {
+.task-form-grid input:focus,
+.task-form-grid textarea:focus {
   border-color: rgba(22, 136, 255, 0.65);
   box-shadow: 0 0 0 3px rgba(22, 136, 255, 0.08);
 }
-.project-form-grid select:focus,
-.project-form-grid select:focus-visible {
+.task-form-grid select:focus,
+.task-form-grid select:focus-visible {
   border-color: #1688ff;
   outline: 1px solid #1688ff;
   outline-offset: 0;
@@ -140,20 +145,13 @@
     0 0 0 1px #1688ff,
     0 0 0 4px rgba(22, 136, 255, 0.08);
 }
-.project-color-input {
-  width: 180px !important;
-  max-width: 100%;
-  height: 42px;
-  padding: 4px !important;
-  cursor: pointer;
-}
-.project-form-actions {
+.task-form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 22px;
 }
-.project-form-actions button {
+.task-form-actions button {
   padding: 10px 15px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
@@ -162,30 +160,30 @@
   font-size: 13px;
   cursor: pointer;
 }
-.project-form-actions button:hover {
+.task-form-actions button:hover {
   border-color: rgba(22, 136, 255, 0.4);
   color: var(--color-text);
 }
-.project-form-actions .project-save-button {
+.task-form-actions .task-save-button {
   border-color: rgba(22, 136, 255, 0.55);
   background: #1688ff;
   color: #ffffff;
 }
-.project-form-actions .project-save-button:hover {
+.task-form-actions .task-save-button:hover {
   border-color: #1688ff;
   background: #0f7be8;
 }
-.project-form-actions button:disabled {
+.task-form-actions button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
-.projects-list {
+.tasks-list {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
 }
-.projects-list-header {
+.tasks-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -196,25 +194,25 @@
   font-weight: 600;
   letter-spacing: 0.14em;
 }
-.project-list {
+.task-list {
   display: flex;
   flex-direction: column;
 }
-.projects-empty {
+.tasks-empty {
   padding: 60px 24px;
   text-align: center;
 }
-.projects-empty h3 {
+.tasks-empty h3 {
   margin: 0 0 8px;
   color: var(--color-text);
   font-size: 18px;
 }
-.projects-empty p {
+.tasks-empty p {
   margin: 0;
   color: var(--color-muted);
   font-size: 13px;
 }
-.projects-list .project-item {
+.task-item {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -222,41 +220,41 @@
   padding: 18px 20px;
   border-bottom: 1px solid var(--color-border-soft);
 }
-.projects-list .project-item:last-child {
+.task-item:last-child {
   border-bottom: 0;
 }
-.project-color {
+.task-status-indicator {
   flex: 0 0 4px;
   width: 4px;
-  min-height: 46px;
+  min-height: 52px;
   border-radius: 4px;
+  background: var(--color-muted);
 }
-.projects-list .project-info {
+.task-item.status-in-progress .task-status-indicator {
+  background: #1688ff;
+}
+.task-item.status-completed .task-status-indicator {
+  background: #8fbfa5;
+}
+.task-info {
   flex: 1;
   min-width: 0;
 }
-.project-name-row {
+.task-name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
   min-width: 0;
 }
-.project-name-row h3 {
+.task-name-row h3 {
   margin: 0;
   color: var(--color-text);
   font-size: 15px;
   font-weight: 600;
 }
-.projects-list .project-info p {
-  margin: 5px 0 0;
-  overflow: hidden;
-  color: var(--color-muted);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.project-status {
-  flex-shrink: 0;
+.task-status,
+.task-priority {
   padding: 4px 8px;
   border: 1px solid var(--color-border);
   border-radius: 5px;
@@ -265,23 +263,53 @@
   font-weight: 600;
   text-transform: uppercase;
 }
-.project-status.active {
+.task-status.todo {
+  border-color: rgba(22, 136, 255, 0.25);
+  background: rgba(22, 136, 255, 0.06);
+  color: var(--color-muted);
+}
+.task-status.in-progress {
   border-color: rgba(22, 136, 255, 0.3);
   background: rgba(22, 136, 255, 0.08);
   color: #1688ff;
 }
-.project-status.completed {
+.task-status.completed {
   color: #8fbfa5;
 }
-.project-status.archived {
+.task-priority.low {
   color: var(--color-muted);
 }
-.project-actions {
+.task-priority.medium {
+  color: var(--color-text-soft);
+}
+.task-priority.high {
+  border-color: rgba(255, 160, 80, 0.25);
+  color: #dca878;
+}
+.task-description {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 7px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.task-actions {
   display: flex;
   flex-shrink: 0;
+  align-items: center;
   gap: 8px;
 }
-.project-actions button {
+.task-actions select,
+.task-actions button {
   padding: 7px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -289,50 +317,60 @@
   color: var(--color-muted);
   font-size: 12px;
   cursor: pointer;
+}
+.task-actions select {
+  color-scheme: dark;
+}
+.task-actions select option {
+  background: #0d131d;
+  color: #e7edf5;
+}
+.task-actions button {
   transition:
     color 0.18s ease,
     border-color 0.18s ease,
     background 0.18s ease;
 }
-.project-actions button:hover {
+.task-actions button:hover,
+.task-actions select:hover {
   border-color: rgba(22, 136, 255, 0.4);
   background: rgba(22, 136, 255, 0.08);
   color: #1688ff;
 }
-.projects-page {
+.tasks-page {
   scrollbar-width: thin;
   scrollbar-color: #263545 #080b10;
 }
-.projects-page::-webkit-scrollbar {
+.tasks-page::-webkit-scrollbar {
   width: 10px;
 }
-.projects-page::-webkit-scrollbar-track {
+.tasks-page::-webkit-scrollbar-track {
   background: #080b10;
 }
-.projects-page::-webkit-scrollbar-thumb {
+.tasks-page::-webkit-scrollbar-thumb {
   border: 2px solid #080b10;
   border-radius: 6px;
   background: #263545;
 }
-.projects-page::-webkit-scrollbar-thumb:hover {
+.tasks-page::-webkit-scrollbar-thumb:hover {
   background: #1688ff;
 }
-.project-form-grid textarea {
+.task-form-grid textarea {
   scrollbar-width: thin;
   scrollbar-color: #263545 #080b10;
 }
-.project-form-grid textarea::-webkit-scrollbar {
+.task-form-grid textarea::-webkit-scrollbar {
   width: 10px;
 }
-.project-form-grid textarea::-webkit-scrollbar-track {
+.task-form-grid textarea::-webkit-scrollbar-track {
   background: #080b10;
 }
-.project-form-grid textarea::-webkit-scrollbar-thumb {
+.task-form-grid textarea::-webkit-scrollbar-thumb {
   border: 2px solid #080b10;
   border-radius: 6px;
   background: #263545;
 }
-.project-form-grid textarea::-webkit-scrollbar-thumb:hover {
+.task-form-grid textarea::-webkit-scrollbar-thumb:hover {
   background: #1688ff;
 }
 
@@ -413,28 +451,26 @@
 }
 
 @media (max-width: 760px) {
-  .projects-page {
+  .tasks-page {
     padding: 20px;
   }
-  .projects-intro {
+  .tasks-intro {
     align-items: flex-start;
     flex-direction: column;
   }
-  .project-form-grid {
+  .task-form-grid {
     grid-template-columns: 1fr;
   }
-  .project-form-full {
+  .task-form-full {
     grid-column: auto;
   }
-  .projects-list .project-item {
+  .task-item {
     align-items: flex-start;
     flex-wrap: wrap;
   }
-  .project-actions {
+  .task-actions {
     width: 100%;
     margin-left: 20px;
-  }
-  .project-color-input {
-    width: 180px !important;
+    flex-wrap: wrap;
   }
 }

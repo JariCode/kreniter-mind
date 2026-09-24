@@ -6,6 +6,7 @@ import { getDashboardLayout, saveDashboardLayout } from '../../api/dashboardLayo
 import DashboardGrid from '../DashboardWidgets/DashboardGrid'
 import WidgetLibrary from '../DashboardWidgets/WidgetLibrary'
 import Project from '../../pages/Projects/Project'
+import Task from '../../pages/Tasks/Task'
 import './MainContent.css'
 
 function MainContent({ activeView }) {
@@ -85,17 +86,26 @@ function MainContent({ activeView }) {
       return
     }
 
-    async function refreshProjects() {
+    async function refreshDashboardData() {
       try {
-        const data = await getProjects()
-        setProjects(data)
+        const [projectsData, tasksData, timeEntriesData] = await Promise.all([
+          getProjects(),
+          getTasks(),
+          getTimeEntries(),
+        ])
+
+        setProjects(projectsData)
+        setTasks(tasksData)
+        setTimeEntries(timeEntriesData)
         setError('')
+        setTasksError('')
+        setTimeEntriesError('')
       } catch (error) {
-        setError(error.message)
+        console.error('Failed to refresh dashboard data:', error)
       }
     }
 
-    refreshProjects()
+    refreshDashboardData()
   }, [activeView])
 
   useEffect(() => {
@@ -134,6 +144,10 @@ function MainContent({ activeView }) {
 
   if (activeView === 'projects') {
     return <Project />
+  }
+
+  if (activeView === 'tasks') {
+    return <Task />
   }
 
   const openTasks = tasks.filter(
@@ -267,7 +281,6 @@ function MainContent({ activeView }) {
             <article className="dashboard-card">
               <div className="card-top">
                 <span>Projects</span>
-                <span className="card-index">01</span>
               </div>
 
               <strong>{projects.length}</strong>
@@ -286,7 +299,6 @@ function MainContent({ activeView }) {
             <article className="dashboard-card">
               <div className="card-top">
                 <span>Tasks</span>
-                <span className="card-index">02</span>
               </div>
 
               <strong>
@@ -307,7 +319,6 @@ function MainContent({ activeView }) {
             <article className="dashboard-card">
               <div className="card-top">
                 <span>Tracked time</span>
-                <span className="card-index">03</span>
               </div>
 
               <strong>

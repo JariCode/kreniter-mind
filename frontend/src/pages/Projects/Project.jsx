@@ -13,11 +13,13 @@ function Projects() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
+  const [projectToDelete, setProjectToDelete] = useState(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState('active')
   const [color, setColor] = useState('#1688ff')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function loadProjects() {
     try {
@@ -91,25 +93,31 @@ function Projects() {
     }
   }
 
-  async function handleDelete(project) {
-    const confirmed = window.confirm(
-      `Delete project "${project.name}"?`
-    )
+  function handleDelete(project) {
+    setProjectToDelete(project)
+  }
 
-    if (!confirmed) {
+  async function confirmDelete() {
+    if (!projectToDelete) {
       return
     }
 
     try {
+      setDeleting(true)
       setError('')
-      await deleteProject(project._id)
+      await deleteProject(projectToDelete._id)
+
       setProjects((currentProjects) =>
         currentProjects.filter(
-          (item) => item._id !== project._id
+          (item) => item._id !== projectToDelete._id
         )
       )
+
+      setProjectToDelete(null)
     } catch (error) {
       setError(error.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -313,6 +321,55 @@ function Projects() {
           </div>
         )}
       </section>
+
+      {projectToDelete && (
+        <div
+          className="delete-dialog-overlay"
+          onClick={() => {
+            if (!deleting) {
+              setProjectToDelete(null)
+            }
+          }}
+        >
+          <div
+            className="delete-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="delete-dialog-kicker">
+              CONFIRM ACTION
+            </span>
+
+            <h3>
+              Delete project?
+            </h3>
+
+            <p>
+              Are you sure you want to delete{' '}
+              <strong>{projectToDelete.name}</strong>?
+              This action cannot be undone.
+            </p>
+
+            <div className="delete-dialog-actions">
+              <button
+                type="button"
+                onClick={() => setProjectToDelete(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="delete-dialog-confirm"
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
