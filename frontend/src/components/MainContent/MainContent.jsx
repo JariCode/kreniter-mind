@@ -56,6 +56,9 @@ function MainContent({
       type: 'recent-projects',
     },
     {
+      type: 'notes',
+    },
+    {
       type: 'ai-assistant',
     },
   ])
@@ -165,8 +168,20 @@ function MainContent({
         const data = await getDashboardLayout()
 
         if (Array.isArray(data.widgets)) {
+          const widgetTypes = [...data.widgets]
+
+          if (!widgetTypes.includes('notes')) {
+            const aiIndex = widgetTypes.indexOf('ai-assistant')
+
+            if (aiIndex === -1) {
+              widgetTypes.push('notes')
+            } else {
+              widgetTypes.splice(aiIndex, 0, 'notes')
+            }
+          }
+
           setWidgets(
-            data.widgets.map((type) => ({
+            widgetTypes.map((type) => ({
               type,
             }))
           )
@@ -341,6 +356,18 @@ function MainContent({
     })
     .slice(0, 2)
 
+  const activeTasks = tasks
+    .filter((task) => task.status !== 'completed')
+    .slice(0, 2)
+
+  const activeProjects = projects
+    .filter(
+      (project) =>
+        String(project.status || '').toLowerCase() ===
+        'active'
+    )
+    .slice(0, 2)
+
   const widgetDefinitions = [
     {
       type: 'projects',
@@ -364,7 +391,13 @@ function MainContent({
       type: 'recent-projects',
       title: 'Recent projects',
       kicker: 'WORKSPACE',
-      width: 8,
+      width: 4,
+    },
+    {
+      type: 'notes',
+      title: 'Notes',
+      kicker: 'WORKSPACE',
+      width: 4,
     },
     {
       type: 'ai-assistant',
@@ -476,8 +509,15 @@ function MainContent({
         content = (
           <section className="dashboard-stats">
             <article className="dashboard-card">
-              <div className="card-top">
-                <span>Projects</span>
+              <div className="panel-header">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('projects')
+                  }
+                >
+                  View all
+                </button>
               </div>
 
               <div
@@ -490,7 +530,15 @@ function MainContent({
               >
                 <div>
                   <strong>
-                    {projects.length}
+                    {loading
+                      ? '...'
+                      : projects.filter(
+                          (project) =>
+                            String(
+                              project.status || ''
+                            ).toLowerCase() ===
+                            'active'
+                        ).length}
                   </strong>
 
                   <p>
@@ -514,6 +562,31 @@ function MainContent({
                   </p>
                 </div>
               </div>
+
+              <div className="project-list">
+                {!loading &&
+                  !error &&
+                  activeProjects.map((project) => (
+                    <div
+                      className="project-item"
+                      key={project._id}
+                    >
+                      <div className="project-marker">
+                        <span />
+                      </div>
+
+                      <div className="project-info">
+                        <strong>
+                          {project.name}
+                        </strong>
+                      </div>
+
+                      <span className="project-status">
+                        {project.status}
+                      </span>
+                    </div>
+                  ))}
+              </div>
             </article>
           </section>
         )
@@ -524,8 +597,6 @@ function MainContent({
           <section className="dashboard-stats">
             <article className="dashboard-card tasks-card">
               <div className="card-top">
-                <span>Tasks</span>
-
                 {activeTimer && (
                   <span className="time-tracker-status">
                     Tracking
@@ -560,6 +631,50 @@ function MainContent({
                   </div>
                 )}
               </div>
+
+              <div className="panel-header">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('tasks')
+                  }
+                >
+                  View all
+                </button>
+              </div>
+
+              <div className="project-list">
+                {!tasksLoading &&
+                  !tasksError &&
+                  activeTasks.map((task) => (
+                    <div
+                      className="project-item"
+                      key={task._id}
+                    >
+                      <div className="project-marker">
+                        <span />
+                      </div>
+
+                      <div className="project-info">
+                        <strong>
+                          {task.title ||
+                            task.name ||
+                            'Untitled task'}
+                        </strong>
+
+                        {task.description && (
+                          <p>
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className="project-status">
+                        {task.status}
+                      </span>
+                    </div>
+                  ))}
+              </div>
             </article>
           </section>
         )
@@ -570,8 +685,6 @@ function MainContent({
           <section className="dashboard-stats">
             <article className="dashboard-card tracked-time-card">
               <div className="card-top">
-                <span>Tracked time</span>
-
                 {activeTimer && (
                   <span className="time-tracker-status">
                     {activeTimer.status ===
@@ -675,16 +788,6 @@ function MainContent({
           <section className="dashboard-grid">
             <article className="dashboard-panel projects-panel">
               <div className="panel-header">
-                <div>
-                  <span className="panel-kicker">
-                    WORKSPACE
-                  </span>
-
-                  <h3>
-                    Recent projects
-                  </h3>
-                </div>
-
                 <button
                   type="button"
                   onClick={() =>
@@ -756,21 +859,44 @@ function MainContent({
         )
       }
 
+      if (widget.type === 'notes') {
+        content = (
+          <section className="dashboard-grid">
+            <article className="dashboard-panel notes-panel">
+              <div className="panel-header">
+                <button
+                  type="button"
+                >
+                  View all
+                </button>
+              </div>
+
+              <div className="notes-list">
+                <div className="note-item">
+                  <strong>Project ideas</strong>
+                  <p>Ideas and plans for upcoming projects.</p>
+                </div>
+
+                <div className="note-item">
+                  <strong>Meeting notes</strong>
+                  <p>Things to remember from the latest meeting.</p>
+                </div>
+
+                <div className="note-item">
+                  <strong>Todo ideas</strong>
+                  <p>Small things to work on later.</p>
+                </div>
+              </div>
+            </article>
+          </section>
+        )
+      }
+
       if (widget.type === 'ai-assistant') {
         content = (
           <section className="dashboard-grid">
             <article className="dashboard-panel ai-panel">
               <div className="panel-header">
-                <div>
-                  <span className="panel-kicker">
-                    INTELLIGENCE
-                  </span>
-
-                  <h3>
-                    AI Assistant
-                  </h3>
-                </div>
-
                 <button>
                   Open
                 </button>

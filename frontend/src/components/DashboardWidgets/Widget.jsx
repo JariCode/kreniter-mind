@@ -17,7 +17,13 @@ function Widget({
   return (
     <article
       className={`dashboard-widget ${
-        widget.width === 8 ? 'widget-wide' : 'widget-stat'
+        widget.width === 8
+          ? 'widget-wide'
+          : widget.width === 6
+            ? 'widget-six'
+            : widget.width === 3
+              ? 'widget-third'
+              : 'widget-stat'
       }`}
       draggable
       onDragStart={handleDragStart}
