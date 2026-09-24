@@ -1,4 +1,5 @@
 import { UserButton } from '@clerk/react'
+import clerkAppearance from '../../clerkAppearance'
 import './Header.css'
 
 function Header() {
@@ -11,7 +12,12 @@ function Header() {
 
       <div className="header-actions">
         <div className="header-user">
-          <UserButton />
+          <UserButton
+            appearance={clerkAppearance}
+            userProfileProps={{
+              appearance: clerkAppearance,
+            }}
+          />
         </div>
       </div>
     </header>

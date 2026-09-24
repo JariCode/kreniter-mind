@@ -54,3 +54,231 @@ select {
 button {
   color: inherit;
 }
+
+/* =========================================================
+   Clerk modal - keskitys ja Kreniter-glow
+   ========================================================= */
+
+.cl-modal {
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cl-modalBackdrop {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cl-card {
+  margin: auto !important;
+}
+
+/* Koko Clerk-modalin ympärille Kreniter-sininen glow */
+.cl-cardBox {
+  border: 1px solid rgba(22, 136, 255, 0.38) !important;
+  border-radius: 10px !important;
+
+  box-shadow:
+    0 0 0 1px rgba(22, 136, 255, 0.14),
+    0 0 24px rgba(22, 136, 255, 0.16),
+    0 10px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* =========================================================
+   Clerk verification code / OTP
+   ========================================================= */
+
+.cl-otpCodeField {
+  gap: 8px !important;
+}
+
+.cl-otpCodeFieldInput {
+  background-color: #080b10 !important;
+  border: 1px solid #202730 !important;
+  border-radius: 6px !important;
+  color: #e7edf5 !important;
+  box-shadow: none !important;
+}
+
+/* Aktiivinen numeroruutu */
+.cl-otpCodeFieldInput:focus {
+  border-color: #1688ff !important;
+  box-shadow:
+    0 0 0 1px rgba(22, 136, 255, 0.22),
+    0 0 10px rgba(22, 136, 255, 0.16) !important;
+  outline: none !important;
+}
+
+/* =========================================================
+   Clerk - UserButton dropdown
+   ========================================================= */
+
+.cl-userButtonPopoverCard {
+  background-color: #0d131d !important;
+  border: 1px solid rgba(22, 136, 255, 0.28) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 0 0 1px rgba(22, 136, 255, 0.10),
+    0 0 24px rgba(22, 136, 255, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.30) !important;
+}
+
+.cl-userButtonPopoverActionButton {
+  color: #b7c2ce !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background-color: #151f2c !important;
+  color: #e7edf5 !important;
+}
+
+.cl-userButtonPopoverActionButtonIcon {
+  color: #b7c2ce !important;
+}
+
+.cl-userButtonPopoverFooter {
+  background-color: #0d131d !important;
+  border-top: 1px solid #202730 !important;
+}
+
+
+/* =========================================================
+   Clerk - UserProfile
+   ========================================================= */
+
+.cl-profileSection {
+  border-color: #202730 !important;
+}
+
+.cl-profileSectionTitle {
+  color: #e7edf5 !important;
+}
+
+.cl-profileSectionContent {
+  color: #b7c2ce !important;
+}
+
+
+/* Upload / avatar section */
+.cl-profileSectionPrimaryButton {
+  color: #1688ff !important;
+}
+
+.cl-avatarBox {
+  border: 1px solid rgba(22, 136, 255, 0.30) !important;
+}
+
+
+/* Primary badge */
+.cl-badge {
+  background-color: rgba(22, 136, 255, 0.10) !important;
+  border: 1px solid rgba(22, 136, 255, 0.30) !important;
+  color: #1688ff !important;
+}
+
+
+/* =========================================================
+   Clerk - Connected accounts / Google
+   ========================================================= */
+
+.cl-menuButton {
+  color: #b7c2ce !important;
+}
+
+.cl-menuButton:hover {
+  background-color: #151f2c !important;
+  color: #e7edf5 !important;
+}
+
+.cl-menuList__connectedAccounts {
+  background-color: #0d131d !important;
+  border: 1px solid #202730 !important;
+}
+
+.cl-menuItem__connectedAccounts {
+  background-color: #111a26 !important;
+  border: 1px solid #202730 !important;
+  color: #e7edf5 !important;
+}
+
+.cl-menuItem__connectedAccounts:hover {
+  background-color: #151f2c !important;
+  border-color: rgba(22, 136, 255, 0.45) !important;
+}
+
+
+/* =========================================================
+   Clerk - UserProfile modal
+   ========================================================= */
+
+.cl-modalBackdrop {
+  background-color: rgba(5, 7, 11, 0.82) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.cl-userProfile {
+  border: 1px solid rgba(22, 136, 255, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(22, 136, 255, 0.12),
+    0 0 28px rgba(22, 136, 255, 0.16),
+    0 16px 40px rgba(0, 0, 0, 0.30) !important;
+}
+
+
+/* =========================================================
+   Clerk - General buttons inside UserProfile
+   ========================================================= */
+
+.cl-button {
+  color: #b7c2ce !important;
+}
+
+.cl-button:hover {
+  color: #e7edf5 !important;
+  background-color: #151f2c !important;
+}
+
+
+/* Primary buttons */
+.cl-formButtonPrimary {
+  background-color: #1688ff !important;
+  color: #ffffff !important;
+}
+
+.cl-formButtonPrimary:hover {
+  background-color: #1688ff !important;
+}
+
+
+/* =========================================================
+   Clerk - Inputs
+   ========================================================= */
+
+.cl-formFieldInput {
+  background-color: #080b10 !important;
+  border-color: #202730 !important;
+  color: #e7edf5 !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: #1688ff !important;
+  box-shadow:
+    0 0 0 1px rgba(22, 136, 255, 0.20),
+    0 0 10px rgba(22, 136, 255, 0.12) !important;
+}
+
+
+/* =========================================================
+   Clerk - Links
+   ========================================================= */
+
+.cl-footerActionLink,
+.cl-profileSectionPrimaryButton {
+  color: #1688ff !important;
+}
+
+.cl-footerActionLink:hover,
+.cl-profileSectionPrimaryButton:hover {
+  color: #4da3ff !important;
+}
