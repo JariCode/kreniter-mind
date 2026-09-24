@@ -3,14 +3,17 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
+const { clerkMiddleware } = require('@clerk/express')
 
 const connectDatabase = require('./utils/database')
 const { apiLimiter } = require('./middleware/rateLimiter')
+const authMiddleware = require('./middleware/authMiddleware')
 
 const projectRoutes = require('./routes/projectRoutes')
 const taskRoutes = require('./routes/taskRoutes')
 const noteRoutes = require('./routes/noteRoutes')
 const timeEntryRoutes = require('./routes/timeEntryRoutes')
+const userRoutes = require('./routes/userRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -28,6 +31,8 @@ app.set('trust proxy', 1)
 app.disable('x-powered-by')
 
 app.use(helmet())
+
+app.use(clerkMiddleware())
 
 app.use(
   cors({
@@ -75,11 +80,12 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-//Routes
-app.use('/api/projects', projectRoutes)
-app.use('/api/tasks', taskRoutes)
-app.use('/api/notes', noteRoutes)
-app.use('/api/time-entries', timeEntryRoutes)
+// Routes
+app.use('/api/projects', authMiddleware, projectRoutes)
+app.use('/api/tasks', authMiddleware, taskRoutes)
+app.use('/api/notes', authMiddleware, noteRoutes)
+app.use('/api/time-entries', authMiddleware, timeEntryRoutes)
+app.use('/api/users', authMiddleware, userRoutes)
 
 // 404 handler
 app.use((req, res) => {
