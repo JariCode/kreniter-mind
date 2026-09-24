@@ -1,3 +1,4 @@
+import { UserButton } from '@clerk/react'
 import './Header.css'
 
 function Header() {
@@ -9,12 +10,8 @@ function Header() {
       </div>
 
       <div className="header-actions">
-        <button className="header-search">
-          Search
-        </button>
-
         <div className="header-user">
-          User
+          <UserButton />
         </div>
       </div>
     </header>
