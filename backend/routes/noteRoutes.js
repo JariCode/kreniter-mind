@@ -1,12 +1,15 @@
 const express = require('express')
 const Note = require('../models/Note')
+const Project = require('../models/Project')
 
 const router = express.Router()
 
-// Get all notes
+// Get all notes for current user
 router.get('/', async (req, res, next) => {
   try {
-    const notes = await Note.find().sort({ createdAt: -1 })
+    const notes = await Note.find({
+      userId: req.user._id,
+    }).sort({ createdAt: -1 })
 
     res.json(notes)
   } catch (error) {
@@ -14,10 +17,13 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-// Get one note
+// Get one note for current user
 router.get('/:id', async (req, res, next) => {
   try {
-    const note = await Note.findById(req.params.id)
+    const note = await Note.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!note) {
       return res.status(404).json({
@@ -34,7 +40,21 @@ router.get('/:id', async (req, res, next) => {
 // Create note
 router.post('/', async (req, res, next) => {
   try {
+    if (req.body.projectId) {
+      const project = await Project.findOne({
+        _id: req.body.projectId,
+        userId: req.user._id,
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          error: 'Project not found',
+        })
+      }
+    }
+
     const note = await Note.create({
+      userId: req.user._id,
       projectId: req.body.projectId,
       title: req.body.title,
       content: req.body.content,
@@ -49,24 +69,35 @@ router.post('/', async (req, res, next) => {
 // Update note
 router.patch('/:id', async (req, res, next) => {
   try {
-    const note = await Note.findByIdAndUpdate(
-      req.params.id,
-      {
-        projectId: req.body.projectId,
-        title: req.body.title,
-        content: req.body.content,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
+    const note = await Note.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!note) {
       return res.status(404).json({
         error: 'Note not found',
       })
     }
+
+    if (req.body.projectId) {
+      const project = await Project.findOne({
+        _id: req.body.projectId,
+        userId: req.user._id,
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          error: 'Project not found',
+        })
+      }
+    }
+
+    note.projectId = req.body.projectId
+    note.title = req.body.title
+    note.content = req.body.content
+
+    await note.save()
 
     res.json(note)
   } catch (error) {
@@ -77,7 +108,10 @@ router.patch('/:id', async (req, res, next) => {
 // Delete note
 router.delete('/:id', async (req, res, next) => {
   try {
-    const note = await Note.findByIdAndDelete(req.params.id)
+    const note = await Note.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!note) {
       return res.status(404).json({

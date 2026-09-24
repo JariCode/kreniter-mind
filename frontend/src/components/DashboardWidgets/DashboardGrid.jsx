@@ -5,7 +5,6 @@ function DashboardGrid({
   widgets,
   onRemoveWidget,
   onMoveWidget,
-  onResizeWidget,
 }) {
   function handleDragStart(event, widgetId) {
     event.dataTransfer.setData('text/plain', widgetId)
@@ -41,7 +40,6 @@ function DashboardGrid({
           onRemove={onRemoveWidget}
           onDragStart={handleDragStart}
           onDrop={handleDrop}
-          onResize={onResizeWidget}
         />
       ))}
     </section>

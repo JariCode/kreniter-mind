@@ -12,7 +12,6 @@
     transform 0.18s ease,
     opacity 0.18s ease;
 }
-
 .dashboard-widget:hover {
   border-color: rgba(22, 136, 255, 0.65);
   box-shadow:
@@ -20,15 +19,12 @@
     0 0 24px rgba(22, 136, 255, 0.16),
     0 10px 30px rgba(0, 0, 0, 0.18);
 }
-
 .dashboard-widget[draggable='true'] {
   cursor: grab;
 }
-
 .dashboard-widget:active {
   cursor: grabbing;
 }
-
 .widget-header {
   display: flex;
   align-items: flex-start;
@@ -36,13 +32,11 @@
   gap: 16px;
   margin-bottom: 20px;
 }
-
 .widget-title {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
-
 .widget-kicker {
   display: block;
   margin-bottom: 5px;
@@ -52,20 +46,17 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-
 .widget-header h3 {
   margin: 0;
   color: var(--color-text);
   font-size: 18px;
   font-weight: 600;
 }
-
 .widget-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .widget-drag-handle {
   color: #718092;
   font-size: 15px;
@@ -75,11 +66,9 @@
   user-select: none;
   transition: color 0.18s ease;
 }
-
 .dashboard-widget:hover .widget-drag-handle {
   color: #1688ff;
 }
-
 .widget-remove {
   width: 28px;
   height: 28px;
@@ -96,49 +85,14 @@
     background 0.18s ease,
     border-color 0.18s ease;
 }
-
 .widget-remove:hover {
   border-color: rgba(22, 136, 255, 0.28);
   background: rgba(22, 136, 255, 0.10);
   color: #1688ff;
 }
-
 .widget-content {
   color: var(--color-text-soft);
 }
-
-.widget-resize-handle {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 24px;
-  height: 24px;
-  cursor: nwse-resize;
-  opacity: 0.7;
-  transition:
-    border-color 0.18s ease,
-    opacity 0.18s ease;
-}
-
-.widget-resize-handle::after {
-  content: "";
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 12px;
-  height: 12px;
-  border-right: 2px solid #718092;
-  border-bottom: 2px solid #718092;
-}
-
-.dashboard-widget:hover .widget-resize-handle {
-  opacity: 1;
-}
-
-.dashboard-widget:hover .widget-resize-handle::after {
-  border-color: #1688ff;
-}
-
 @media (max-width: 760px) {
   .dashboard-widget {
     padding: 18px;

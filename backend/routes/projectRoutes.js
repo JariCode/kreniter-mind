@@ -3,10 +3,12 @@ const Project = require('../models/Project')
 
 const router = express.Router()
 
-// Get all projects
+// Get all projects for current user
 router.get('/', async (req, res, next) => {
   try {
-    const projects = await Project.find().sort({ createdAt: -1 })
+    const projects = await Project.find({
+      userId: req.user._id,
+    }).sort({ createdAt: -1 })
 
     res.json(projects)
   } catch (error) {
@@ -14,10 +16,13 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-// Get one project
+// Get one project for current user
 router.get('/:id', async (req, res, next) => {
   try {
-    const project = await Project.findById(req.params.id)
+    const project = await Project.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!project) {
       return res.status(404).json({
@@ -35,6 +40,7 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const project = await Project.create({
+      userId: req.user._id,
       name: req.body.name,
       description: req.body.description,
       status: req.body.status,
@@ -50,8 +56,11 @@ router.post('/', async (req, res, next) => {
 // Update project
 router.patch('/:id', async (req, res, next) => {
   try {
-    const project = await Project.findByIdAndUpdate(
-      req.params.id,
+    const project = await Project.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        userId: req.user._id,
+      },
       {
         name: req.body.name,
         description: req.body.description,
@@ -79,7 +88,10 @@ router.patch('/:id', async (req, res, next) => {
 // Delete project
 router.delete('/:id', async (req, res, next) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id)
+    const project = await Project.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!project) {
       return res.status(404).json({

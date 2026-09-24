@@ -1,12 +1,15 @@
 const express = require('express')
 const Task = require('../models/Task')
+const Project = require('../models/Project')
 
 const router = express.Router()
 
-// Get all tasks
+// Get all tasks for current user
 router.get('/', async (req, res, next) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 })
+    const tasks = await Task.find({
+      userId: req.user._id,
+    }).sort({ createdAt: -1 })
 
     res.json(tasks)
   } catch (error) {
@@ -14,10 +17,13 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-// Get one task
+// Get one task for current user
 router.get('/:id', async (req, res, next) => {
   try {
-    const task = await Task.findById(req.params.id)
+    const task = await Task.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!task) {
       return res.status(404).json({
@@ -34,7 +40,21 @@ router.get('/:id', async (req, res, next) => {
 // Create task
 router.post('/', async (req, res, next) => {
   try {
+    if (req.body.projectId) {
+      const project = await Project.findOne({
+        _id: req.body.projectId,
+        userId: req.user._id,
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          error: 'Project not found',
+        })
+      }
+    }
+
     const task = await Task.create({
+      userId: req.user._id,
       projectId: req.body.projectId,
       title: req.body.title,
       description: req.body.description,
@@ -52,27 +72,38 @@ router.post('/', async (req, res, next) => {
 // Update task
 router.patch('/:id', async (req, res, next) => {
   try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      {
-        projectId: req.body.projectId,
-        title: req.body.title,
-        description: req.body.description,
-        status: req.body.status,
-        priority: req.body.priority,
-        dueDate: req.body.dueDate,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
+    const task = await Task.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!task) {
       return res.status(404).json({
         error: 'Task not found',
       })
     }
+
+    if (req.body.projectId) {
+      const project = await Project.findOne({
+        _id: req.body.projectId,
+        userId: req.user._id,
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          error: 'Project not found',
+        })
+      }
+    }
+
+    task.projectId = req.body.projectId
+    task.title = req.body.title
+    task.description = req.body.description
+    task.status = req.body.status
+    task.priority = req.body.priority
+    task.dueDate = req.body.dueDate
+
+    await task.save()
 
     res.json(task)
   } catch (error) {
@@ -83,7 +114,10 @@ router.patch('/:id', async (req, res, next) => {
 // Delete task
 router.delete('/:id', async (req, res, next) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id)
+    const task = await Task.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user._id,
+    })
 
     if (!task) {
       return res.status(404).json({
