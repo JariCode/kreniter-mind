@@ -1,34 +1,38 @@
 .projects-page {
   flex: 1;
-  padding: 32px;
+  padding: 36px 38px 46px;
   overflow-y: auto;
 }
 .projects-intro {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 30px;
   margin-bottom: 28px;
 }
+
 .projects-kicker {
   display: block;
-  margin-bottom: 8px;
-  color: var(--color-muted);
-  font-size: 10px;
+  margin-bottom: 4px;
+  color: #5f9ed8;
+  font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+
 .projects-intro h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 30px;
-  font-weight: 600;
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: -0.025em;
 }
+
 .projects-intro p {
-  margin: 8px 0 0;
-  color: var(--color-text-soft);
-  font-size: 14px;
+  margin: 4px 0 0;
+  color: #858f9c;
+  font-size: 0.82rem;
 }
 .projects-create-button {
   padding: 11px 16px;
