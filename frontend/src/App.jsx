@@ -23,6 +23,9 @@ function App() {
 
     if (!isSignedIn) {
       setAuthInitialized(false)
+
+      window.history.replaceState({}, '')
+
       return
     }
 
