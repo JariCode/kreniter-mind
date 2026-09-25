@@ -44,6 +44,8 @@ function Task() {
   const [dueDate, setDueDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [draggedTask, setDraggedTask] = useState(null)
+  const [dragOverStatus, setDragOverStatus] = useState(null)
 
   async function loadData() {
     try {
@@ -342,6 +344,36 @@ function Task() {
     }
   }
 
+  function handleTaskDragStart(event, task) {
+    setDraggedTask(task)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', task._id)
+  }
+
+  function handleTaskDragEnd() {
+    setDraggedTask(null)
+    setDragOverStatus(null)
+  }
+
+  function handleTaskDragOver(event, status) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    setDragOverStatus(status)
+  }
+
+  async function handleTaskDrop(event, newStatus) {
+    event.preventDefault()
+    setDragOverStatus(null)
+
+    if (!draggedTask || draggedTask.status === newStatus) {
+      setDraggedTask(null)
+      return
+    }
+
+    await handleStatusChange(draggedTask, newStatus)
+    setDraggedTask(null)
+  }
+
   function getProjectName(projectId) {
     const project = projects.find(
       (item) =>
@@ -615,6 +647,11 @@ function Task() {
       <article
         key={task._id}
         className={`task-item status-${task.status}`}
+        draggable
+        onDragStart={(event) =>
+          handleTaskDragStart(event, task)
+        }
+        onDragEnd={handleTaskDragEnd}
       >
         <div className="task-info">
           <div className="task-name-row">
@@ -1108,7 +1145,31 @@ function Task() {
               return (
                 <section
                   key={column.status}
-                  className="task-column"
+                  className={`task-column ${
+                    dragOverStatus === column.status
+                      ? 'task-column-drag-over'
+                      : ''
+                  }`}
+                  onDragOver={(event) =>
+                    handleTaskDragOver(
+                      event,
+                      column.status
+                    )
+                  }
+                  onDrop={(event) =>
+                    handleTaskDrop(
+                      event,
+                      column.status
+                    )
+                  }
+                  onDragLeave={(event) => {
+                    if (
+                      event.currentTarget ===
+                      event.target
+                    ) {
+                      setDragOverStatus(null)
+                    }
+                  }}
                 >
                   <div className="task-column-header">
                     <div>
