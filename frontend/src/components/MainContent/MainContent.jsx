@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getProjects } from '../../api/projects'
 import { getTasks } from '../../api/tasks'
 import { getTimeEntries } from '../../api/timeEntries'
@@ -17,6 +17,10 @@ import Note from '../../pages/Notes/Note'
 import Timeline from '../../pages/Timeline/Timeline'
 import Time from '../../pages/Time/Time'
 import Assistant from '../../pages/AI/Assistant'
+import {
+  createConversation,
+  sendMessage,
+} from '../../api/ai'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
@@ -53,6 +57,24 @@ function MainContent({
   const [tasksError, setTasksError] = useState('')
   const [timeEntriesError, setTimeEntriesError] = useState('')
   const [notesError, setNotesError] = useState('')
+
+  const [aiChatOpen, setAiChatOpen] = useState(false)
+  const [aiConversation, setAiConversation] = useState(null)
+  const [aiMessages, setAiMessages] = useState([])
+  const [aiInput, setAiInput] = useState('')
+  const [aiSending, setAiSending] = useState(false)
+  const aiMessagesEndRef = useRef(null)
+
+  useEffect(() => {
+    if (!aiChatOpen) {
+      return
+    }
+
+    aiMessagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'end',
+    })
+  }, [aiMessages, aiSending, aiChatOpen])
 
   const [widgets, setWidgets] = useState([
     {
@@ -616,6 +638,75 @@ function MainContent({
     })
   }
 
+  function openAiChat() {
+    setAiChatOpen(true)
+  }
+
+  function closeAiChat() {
+    setAiChatOpen(false)
+  }
+
+  async function handleAiChatSubmit(event) {
+    event.preventDefault()
+
+    const content = aiInput.trim()
+
+    if (!content || aiSending) {
+      return
+    }
+
+    try {
+      setAiSending(true)
+
+      let conversation = aiConversation
+
+      if (!conversation) {
+        conversation = await createConversation()
+        setAiConversation(conversation)
+      }
+
+      const userMessage = {
+        _id: `dashboard-user-${Date.now()}`,
+        role: 'user',
+        content,
+      }
+
+      setAiMessages((current) => [
+        ...current,
+        userMessage,
+      ])
+
+      setAiInput('')
+
+      const data = await sendMessage(
+        conversation._id,
+        content
+      )
+
+      setAiMessages((current) => [
+        ...current.filter(
+          (message) =>
+            message._id !== userMessage._id
+        ),
+        data.userMessage,
+        data.assistantMessage,
+      ])
+    } catch (error) {
+      setAiMessages((current) => [
+        ...current,
+        {
+          _id: `dashboard-error-${Date.now()}`,
+          role: 'assistant',
+          content:
+            error.message ||
+            'Something went wrong.',
+        },
+      ])
+    } finally {
+      setAiSending(false)
+    }
+  }
+
   const availableWidgets =
     widgetDefinitions.filter(
       (widget) =>
@@ -725,94 +816,95 @@ function MainContent({
         )
       }
 
-if (widget.type === 'tasks') {
-  content = (
-    <section className="dashboard-stats">
-      <article className="dashboard-card tasks-card">
-        <div className="card-top">
-          {activeTimer && (
-            <span className="time-tracker-status">
-              Tracking
-            </span>
-          )}
-        </div>
+      if (widget.type === 'tasks') {
+        content = (
+          <section className="dashboard-stats">
+            <article className="dashboard-card tasks-card">
+              <div className="card-top">
+                {activeTimer && (
+                  <span className="time-tracker-status">
+                    Tracking
+                  </span>
+                )}
+              </div>
 
-        <div className="panel-header">
-          <button
-            type="button"
-            onClick={() =>
-              onViewChange('tasks')
-            }
-          >
-            View all
-          </button>
-        </div>
+              <div className="panel-header">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('tasks')
+                  }
+                >
+                  View all
+                </button>
+              </div>
 
-        <div className="dashboard-task-summary">
-          <div className="dashboard-task-count">
-            <strong>
-              {tasksLoading
-                ? '...'
-                : openTasks}
-            </strong>
-
-            <p>
-              Open tasks
-            </p>
-          </div>
-
-          {activeTimer && (
-            <div className="time-tracker-active-task">
-              <span className="tracking-status">
-                <span className="tracking-status-dot" />
-                Tracking
-              </span>
-
-              <strong>
-                {activeTask?.title ||
-                  activeTask?.name ||
-                  'Untitled task'}
-              </strong>
-            </div>
-          )}
-        </div>
-
-        <div className="project-list">
-          {!tasksLoading &&
-            !tasksError &&
-            activeTasks.map((task) => (
-              <div
-                className="project-item"
-                key={task._id}
-              >
-                <div className="project-marker">
-                  <span />
-                </div>
-
-                <div className="project-info">
+              <div className="dashboard-task-summary">
+                <div className="dashboard-task-count">
                   <strong>
-                    {task.title ||
-                      task.name ||
-                      'Untitled task'}
+                    {tasksLoading
+                      ? '...'
+                      : openTasks}
                   </strong>
 
-                  {task.description && (
-                    <p>
-                      {task.description}
-                    </p>
-                  )}
+                  <p>
+                    Open tasks
+                  </p>
                 </div>
 
-                <span className="project-status">
-                  {task.status}
-                </span>
+                {activeTimer && (
+                  <div className="time-tracker-active-task">
+                    <span className="tracking-status">
+                      <span className="tracking-status-dot" />
+                      Tracking
+                    </span>
+
+                    <strong>
+                      {activeTask?.title ||
+                        activeTask?.name ||
+                        'Untitled task'}
+                    </strong>
+                  </div>
+                )}
               </div>
-            ))}
-        </div>
-      </article>
-    </section>
-  )
-}
+
+              <div className="project-list">
+                {!tasksLoading &&
+                  !tasksError &&
+                  activeTasks.map((task) => (
+                    <div
+                      className="project-item"
+                      key={task._id}
+                    >
+                      <div className="project-marker">
+                        <span />
+                      </div>
+
+                      <div className="project-info">
+                        <strong>
+                          {task.title ||
+                            task.name ||
+                            'Untitled task'}
+                        </strong>
+
+                        {task.description && (
+                          <p>
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className="project-status">
+                        {task.status}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </article>
+          </section>
+        )
+      }
+
       if (widget.type === 'tracked-time') {
         content = (
           <section className="dashboard-stats">
@@ -1518,24 +1610,100 @@ if (widget.type === 'tasks') {
                 </button>
               </div>
 
-              <div className="ai-preview">
-                <div className="ai-entity">
-                  <div className="ai-entity-line ai-entity-line-one" />
-                  <div className="ai-entity-line ai-entity-line-two" />
+              {!aiChatOpen ? (
+                <div className="ai-preview">
+                  <div className="ai-entity">
+                    <div className="ai-entity-line ai-entity-line-one" />
+                    <div className="ai-entity-line ai-entity-line-two" />
 
-                  <div className="ai-entity-core">
-                    K
+                    <div className="ai-entity-core">
+                      K
+                    </div>
                   </div>
+
+                  <p className="ai-message">
+                    What are you working on today?
+                  </p>
+
+                  <button
+                    type="button"
+                    className="ai-action"
+                    onClick={openAiChat}
+                  >
+                    Ask AI
+                  </button>
                 </div>
+              ) : (
+                <div className="ai-chat">
+                  <div className="ai-chat-header">
+                    <span>Kreniter</span>
 
-                <p className="ai-message">
-                  What are you working on today?
-                </p>
+                    <button
+                      type="button"
+                      className="ai-chat-close"
+                      onClick={closeAiChat}
+                      aria-label="Close AI chat"
+                    >
+                      ×
+                    </button>
+                  </div>
 
-                <button className="ai-action">
-                  Ask AI
-                </button>
-              </div>
+                  <div className="ai-chat-messages">
+                    {aiMessages.length === 0 && (
+                      <p className="ai-chat-empty">
+                        What can I help you with?
+                      </p>
+                    )}
+
+                    {aiMessages.map((message) => (
+                      <div
+                        key={message._id}
+                        className={`ai-chat-message ai-chat-message-${message.role}`}
+                      >
+                        {message.content}
+                      </div>
+                    ))}
+
+                    {aiSending && (
+                      <div className="ai-chat-message ai-chat-message-assistant">
+                        <span className="ai-chat-typing">
+                          <span />
+                          <span />
+                          <span />
+                        </span>
+                      </div>
+                    )}
+
+                    <div ref={aiMessagesEndRef} />
+                  </div>
+
+                  <form
+                    className="ai-chat-form"
+                    onSubmit={handleAiChatSubmit}
+                  >
+                    <input
+                      type="text"
+                      value={aiInput}
+                      onChange={(event) =>
+                        setAiInput(event.target.value)
+                      }
+                      placeholder="Ask something..."
+                      disabled={aiSending}
+                      autoFocus
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={
+                        !aiInput.trim() || aiSending
+                      }
+                      aria-label="Send message"
+                    >
+                      →
+                    </button>
+                  </form>
+                </div>
+              )}
             </article>
           </section>
         )
