@@ -690,6 +690,41 @@
 /* Responsive                       */
 /* -------------------------------- */
 
+@container (max-width: 500px) {
+  .tracked-time-layout,
+  .dashboard-task-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .tracked-time-side {
+    width: 100%;
+  }
+
+  .time-tracker-details {
+    min-width: 0;
+  }
+
+  .time-tracker-details strong {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .time-tracker-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .project-item {
+    min-width: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .dashboard-stats {
     grid-template-columns: 1fr;

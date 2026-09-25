@@ -3,9 +3,11 @@
   min-width: 0;
   min-height: 0;
   height: 100%;
+  max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+  container-type: inline-size;
   padding: 22px;
-
   background:
     linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
     linear-gradient(
@@ -14,10 +16,8 @@
       rgba(22, 136, 255, 0.12) 45%,
       rgba(22, 136, 255, 0.28)
     ) border-box;
-
   border: 1px solid transparent;
   border-radius: 10px;
-
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -46,6 +46,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
   margin-bottom: 10px;
 }
 
@@ -54,16 +56,20 @@
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .widget-kicker {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   margin-bottom: 5px;
   color: var(--color-muted);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .widget-actions {
@@ -112,7 +118,17 @@
 
 .widget-content {
   min-width: 0;
+  max-width: 100%;
   color: var(--color-text-soft);
+}
+
+.widget-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.widget-content * {
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {
