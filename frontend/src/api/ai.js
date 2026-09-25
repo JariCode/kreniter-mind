@@ -42,6 +42,13 @@ export function generateSpeech(text) {
   })
 }
 
+export function generateImage(prompt) {
+  return apiRequest('/ai/image', {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  })
+}
+
 export function deleteConversation(conversationId) {
   return apiRequest(
     `/ai/conversations/${conversationId}`,

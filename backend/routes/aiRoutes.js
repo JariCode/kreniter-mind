@@ -326,6 +326,78 @@ router.post(
   }
 )
 
+// Generate image
+router.post(
+  '/image',
+  async (req, res, next) => {
+    try {
+      const { prompt } = req.body
+
+      if (
+        typeof prompt !== 'string' ||
+        !prompt.trim()
+      ) {
+        return res.status(400).json({
+          error: 'Image prompt is required',
+        })
+      }
+
+      const openAIResponse =
+        await fetch(
+          'https://api.openai.com/v1/images/generations',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization:
+                `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model:
+                process.env.OPENAI_IMAGE_MODEL ||
+                'gpt-image-2',
+              prompt: prompt.trim(),
+              size: '1024x1024',
+              quality: 'medium',
+            }),
+          }
+        )
+
+      if (!openAIResponse.ok) {
+        const errorData =
+          await openAIResponse.text()
+
+        console.error(
+          'OpenAI image error:',
+          errorData
+        )
+
+        return res.status(502).json({
+          error: 'Image generation service error',
+        })
+      }
+
+      const imageData =
+        await openAIResponse.json()
+
+      const image =
+        imageData.data?.[0]?.b64_json
+
+      if (!image) {
+        return res.status(502).json({
+          error: 'Image generation returned no image',
+        })
+      }
+
+      res.json({
+        image: `data:image/png;base64,${image}`,
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
 // Send a message
 router.post(
   '/conversations/:conversationId/messages',
@@ -396,8 +468,31 @@ router.post(
             model:
               process.env.OPENAI_MODEL ||
               'gpt-5.6-terra',
-            instructions: systemInstructions,
+            instructions: `${systemInstructions}
+
+When the user asks you to create, generate, draw, or make an image, decide yourself whether an image should actually be generated. If an image is appropriate and you can fulfill the request, call the generate_image function. Do not merely say that you cannot generate an image when the generate_image function can fulfill the request. If the user is not asking for an image, answer normally without calling the function.`,
             input,
+            tools: [
+              {
+                type: 'function',
+                name: 'generate_image',
+                description:
+                  'Generate an image when the user is asking for an image and the request can be fulfilled by image generation. Use the user request as the basis for a clear image-generation prompt.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    prompt: {
+                      type: 'string',
+                      description:
+                        'A clear image-generation prompt based on the user request.',
+                    },
+                  },
+                  required: ['prompt'],
+                  additionalProperties: false,
+                },
+                strict: true,
+              },
+            ],
           }),
         }
       )
@@ -419,7 +514,14 @@ router.post(
       const openAIData =
         await openAIResponse.json()
 
-      const assistantContent =
+      const imageFunctionCall =
+        openAIData.output?.find(
+          (item) =>
+            item.type === 'function_call' &&
+            item.name === 'generate_image'
+        )
+
+      let assistantContent =
         openAIData.output
           ?.flatMap(
             (item) => item.content || []
@@ -432,6 +534,93 @@ router.post(
             (item) => item.text
           )
           .join('') || ''
+
+      let generatedImage = null
+
+      if (imageFunctionCall) {
+        let imagePrompt
+
+        try {
+          const argumentsData =
+            JSON.parse(
+              imageFunctionCall.arguments || '{}'
+            )
+
+          imagePrompt = argumentsData.prompt
+        } catch (error) {
+          console.error(
+            'Invalid image function arguments:',
+            error
+          )
+        }
+
+        if (
+          typeof imagePrompt !== 'string' ||
+          !imagePrompt.trim()
+        ) {
+          return res.status(502).json({
+            error:
+              'Image generation returned an invalid prompt',
+          })
+        }
+
+        const imageResponse =
+          await fetch(
+            'https://api.openai.com/v1/images/generations',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization:
+                  `Bearer ${process.env.OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model:
+                  process.env.OPENAI_IMAGE_MODEL ||
+                  'gpt-image-2',
+                prompt: imagePrompt.trim(),
+                size: '1024x1024',
+                quality: 'medium',
+              }),
+            }
+          )
+
+        if (!imageResponse.ok) {
+          const errorData =
+            await imageResponse.text()
+
+          console.error(
+            'OpenAI image error:',
+            errorData
+          )
+
+          return res.status(502).json({
+            error:
+              'Image generation service error',
+          })
+        }
+
+        const imageData =
+          await imageResponse.json()
+
+        const image =
+          imageData.data?.[0]?.b64_json
+
+        if (!image) {
+          return res.status(502).json({
+            error:
+              'Image generation returned no image',
+          })
+        }
+
+        generatedImage =
+          `data:image/png;base64,${image}`
+
+        if (!assistantContent) {
+          assistantContent =
+            'Here is the generated image.'
+        }
+      }
 
       if (!assistantContent) {
         return res.status(502).json({
@@ -460,7 +649,12 @@ router.post(
 
       res.json({
         userMessage,
-        assistantMessage,
+        assistantMessage: generatedImage
+          ? {
+              ...assistantMessage.toObject(),
+              image: generatedImage,
+            }
+          : assistantMessage,
       })
     } catch (error) {
       next(error)

@@ -580,6 +580,52 @@
   background: #1688ff;
 }
 
+.assistant-image {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: min(680px, 80%);
+  margin-top: 8px;
+}
+
+.assistant-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid rgba(22, 136, 255, 0.25);
+  border-radius: 7px;
+  box-shadow:
+    0 0 24px rgba(22, 136, 255, 0.06);
+}
+
+.assistant-download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(22, 136, 255, 0.45);
+  border-radius: 6px;
+  background: rgba(22, 136, 255, 0.10);
+  color: #1688ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease;
+}
+
+.assistant-download-button:hover {
+  border-color: rgba(22, 136, 255, 0.75);
+  background: rgba(22, 136, 255, 0.16);
+  color: #1688ff;
+  box-shadow: 0 0 20px rgba(22, 136, 255, 0.12);
+}
+
 @media (max-width: 860px) {
   .assistant-page {
     padding: 20px;
@@ -630,5 +676,9 @@
 
   .assistant-message-body {
     max-width: 86%;
+  }
+
+  .assistant-image {
+    width: 100%;
   }
 }
