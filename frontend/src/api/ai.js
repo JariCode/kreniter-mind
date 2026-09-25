@@ -25,6 +25,13 @@ export function sendMessage(conversationId, content) {
   )
 }
 
+export function transcribeAudio(audio) {
+  return apiRequest('/ai/transcribe', {
+    method: 'POST',
+    body: JSON.stringify({ audio }),
+  })
+}
+
 export function deleteConversation(conversationId) {
   return apiRequest(
     `/ai/conversations/${conversationId}`,

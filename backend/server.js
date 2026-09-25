@@ -62,14 +62,14 @@ app.use('/api', apiLimiter)
 // Request body limits
 app.use(
   express.json({
-    limit: '1mb',
+    limit: '10mb',
   })
 )
 
 app.use(
   express.urlencoded({
     extended: false,
-    limit: '1mb',
+    limit: '10mb',
   })
 )
 

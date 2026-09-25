@@ -5,6 +5,7 @@ import {
   getConversation,
   createConversation,
   sendMessage,
+  transcribeAudio,
   deleteConversation,
 } from '../../api/ai'
 import './Assistant.css'
@@ -18,8 +19,11 @@ function Assistant() {
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [sending, setSending] = useState(false)
+  const [recording, setRecording] = useState(false)
   const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
 
   useEffect(() => {
     async function loadConversations() {
@@ -194,6 +198,114 @@ function Assistant() {
     } finally {
       setSending(false)
     }
+  }
+
+  async function handleStartRecording() {
+    if (
+      recording ||
+      sending ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      return
+    }
+
+    try {
+      setError('')
+
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        })
+
+      const mediaRecorder =
+        new MediaRecorder(stream)
+
+      mediaRecorderRef.current =
+        mediaRecorder
+
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (
+        event
+      ) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(
+            event.data
+          )
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        try {
+          setSending(true)
+
+          const audioBlob =
+            new Blob(
+              audioChunksRef.current,
+              {
+                type:
+                  mediaRecorder.mimeType ||
+                  'audio/webm',
+              }
+            )
+
+          const reader =
+            new FileReader()
+
+          reader.onloadend = async () => {
+            try {
+              const result =
+                await transcribeAudio(
+                  reader.result
+                )
+
+              if (result.text) {
+                setInput((current) =>
+                  current
+                    ? `${current} ${result.text}`
+                    : result.text
+                )
+              }
+            } catch (error) {
+              setError(error.message)
+            } finally {
+              setSending(false)
+            }
+          }
+
+          reader.readAsDataURL(audioBlob)
+        } catch (error) {
+          setError(error.message)
+          setSending(false)
+        } finally {
+          stream
+            .getTracks()
+            .forEach((track) =>
+              track.stop()
+            )
+        }
+      }
+
+      mediaRecorder.start()
+      setRecording(true)
+    } catch (error) {
+      setError(
+        'Microphone access was denied or unavailable.'
+      )
+    }
+  }
+
+  function handleStopRecording() {
+    if (
+      !mediaRecorderRef.current ||
+      !recording
+    ) {
+      return
+    }
+
+    mediaRecorderRef.current.stop()
+    mediaRecorderRef.current = null
+    setRecording(false)
   }
 
   function handleKeyDown(event) {
@@ -378,6 +490,14 @@ function Assistant() {
             onSubmit={handleSubmit}
           >
             <div className="assistant-input-wrapper">
+              <button
+                type="button"
+                className="assistant-file-button"
+                aria-label="Attach file"
+              >
+                📎
+              </button>
+
               <textarea
                 value={input}
                 onChange={(event) =>
@@ -386,14 +506,39 @@ function Assistant() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Kreniter anything..."
                 rows={1}
-                disabled={sending}
+                disabled={
+                  sending || recording
+                }
               />
+
+              <button
+                type="button"
+                className={`assistant-mic-button ${
+                  recording
+                    ? 'is-recording'
+                    : ''
+                }`}
+                onClick={
+                  recording
+                    ? handleStopRecording
+                    : handleStartRecording
+                }
+                disabled={sending}
+                aria-label={
+                  recording
+                    ? 'Stop recording'
+                    : 'Start voice input'
+                }
+              >
+                {recording ? '■' : '🎤'}
+              </button>
 
               <button
                 type="submit"
                 className="assistant-send-button"
                 disabled={
                   sending ||
+                  recording ||
                   !input.trim()
                 }
                 aria-label="Send message"

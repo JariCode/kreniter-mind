@@ -107,6 +107,154 @@ router.get(
   }
 )
 
+// Transcribe audio
+router.post(
+  '/transcribe',
+  async (req, res, next) => {
+    try {
+      const { audio } = req.body
+
+      if (
+        typeof audio !== 'string' ||
+        !audio
+      ) {
+        return res.status(400).json({
+          error: 'Audio is required',
+        })
+      }
+
+      const match = audio.match(
+        /^data:(audio\/[a-zA-Z0-9.+-]+|application\/octet-stream)(;[^;,]+)*;base64,(.+)$/
+      )
+
+      if (!match) {
+        return res.status(400).json({
+          error: 'Invalid audio data',
+        })
+      }
+
+      const mimeType = match[1]
+      const base64Data = match[3]
+
+      const buffer =
+        Buffer.from(
+          base64Data,
+          'base64'
+        )
+
+      if (
+        buffer.length >
+        10 * 1024 * 1024
+      ) {
+        return res.status(400).json({
+          error: 'Audio file is too large',
+        })
+      }
+
+      let extension = 'webm'
+
+      if (
+        mimeType ===
+        'audio/ogg'
+      ) {
+        extension = 'ogg'
+      } else if (
+        mimeType ===
+        'audio/mp4'
+      ) {
+        extension = 'mp4'
+      } else if (
+        mimeType ===
+        'audio/mpeg'
+      ) {
+        extension = 'mp3'
+      }
+
+      const { toFile } =
+        require('openai')
+
+      const file = await toFile(
+        buffer,
+        `audio.${extension}`,
+        {
+          type: mimeType,
+        }
+      )
+
+      const transcriptionResponse =
+        await fetch(
+          'https://api.openai.com/v1/audio/transcriptions',
+          {
+            method: 'POST',
+            headers: {
+              Authorization:
+                `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: (() => {
+              const formData =
+                new FormData()
+
+              formData.append(
+                'file',
+                new Blob(
+                  [buffer],
+                  {
+                    type: mimeType,
+                  }
+                ),
+                `audio.${extension}`
+              )
+
+              formData.append(
+                'model',
+                'whisper-1'
+              )
+
+              formData.append(
+                'prompt',
+                'Puhe voi olla suomeksi tai englanniksi.'
+              )
+
+              formData.append(
+                'temperature',
+                '0'
+              )
+
+              return formData
+            })(),
+          }
+        )
+
+      if (
+        !transcriptionResponse.ok
+      ) {
+        const errorData =
+          await transcriptionResponse.text()
+
+        console.error(
+          'OpenAI transcription error:',
+          errorData
+        )
+
+        return res.status(502).json({
+          error:
+            'Transcription service error',
+        })
+      }
+
+      const transcription =
+        await transcriptionResponse.json()
+
+      res.json({
+        text:
+          transcription.text || '',
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
 // Send a message
 router.post(
   '/conversations/:conversationId/messages',
