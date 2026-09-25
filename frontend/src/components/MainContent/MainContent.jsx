@@ -16,6 +16,7 @@ import Task from '../../pages/Tasks/Task'
 import Note from '../../pages/Notes/Note'
 import Timeline from '../../pages/Timeline/Timeline'
 import Time from '../../pages/Time/Time'
+import Assistant from '../../pages/AI/Assistant'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
@@ -313,6 +314,10 @@ function MainContent({
 
   if (activeView === 'time') {
     return <Time />
+  }
+
+  if (activeView === 'ai-assistant') {
+    return <Assistant />
   }
 
   const openTasks = tasks.filter(
@@ -1503,7 +1508,12 @@ if (widget.type === 'tasks') {
           <section className="dashboard-grid">
             <article className="dashboard-panel ai-panel">
               <div className="panel-header">
-                <button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('ai-assistant')
+                  }
+                >
                   Open
                 </button>
               </div>
