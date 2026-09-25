@@ -4,6 +4,7 @@ import { getTasks } from '../../api/tasks'
 import { getTimeEntries } from '../../api/timeEntries'
 import { getNotes } from '../../api/notes'
 import { getTimeline } from '../../api/timeline'
+import { getTimeView } from '../../api/timeView'
 import {
   getDashboardLayout,
   saveDashboardLayout,
@@ -40,6 +41,7 @@ function MainContent({
   const [timeEntries, setTimeEntries] = useState([])
   const [notes, setNotes] = useState([])
   const [timelineProjectId, setTimelineProjectId] = useState('')
+  const [timeProjectId, setTimeProjectId] = useState('')
 
   const [loading, setLoading] = useState(true)
   const [tasksLoading, setTasksLoading] = useState(true)
@@ -186,6 +188,31 @@ function MainContent({
     }
 
     loadTimelineSelection()
+  }, [activeView])
+
+  useEffect(() => {
+    if (activeView !== 'dashboard') {
+      return
+    }
+
+    async function loadTimeSelection() {
+      try {
+        const data = await getTimeView()
+
+        setTimeProjectId(
+          data?.selectedProjectId
+            ? String(data.selectedProjectId)
+            : ''
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load time selection:',
+          error
+        )
+      }
+    }
+
+    loadTimeSelection()
   }, [activeView])
 
   useEffect(() => {
@@ -486,6 +513,12 @@ function MainContent({
       type: 'timeline',
       title: 'Timeline',
       kicker: 'Timeline',
+      width: 4,
+    },
+    {
+      type: 'time',
+      title: 'Time',
+      kicker: 'Time',
       width: 4,
     },
     {
@@ -1129,6 +1162,171 @@ if (widget.type === 'tasks') {
                       </div>
                     )
                   })}
+              </div>
+            </article>
+          </section>
+        )
+      }
+
+      if (widget.type === 'time') {
+        const selectedTimeProject =
+          projects.find(
+            (project) =>
+              String(project._id) ===
+              String(timeProjectId)
+          ) || projects[0]
+
+        const timeTasks = tasks
+          .filter(
+            (task) =>
+              String(task.projectId) ===
+              String(selectedTimeProject?._id)
+          )
+          .slice(0, 3)
+
+        function getTaskTotalMinutes(taskId) {
+          const task = tasks.find(
+            (item) =>
+              String(item._id) ===
+              String(taskId)
+          )
+
+          const estimatedMinutes =
+            Number(task?.estimatedMinutes) || 0
+
+          const trackedMinutes = timeEntries
+            .filter((entry) => {
+              const entryTaskId =
+                typeof entry.taskId === 'object'
+                  ? entry.taskId?._id
+                  : entry.taskId
+
+              return (
+                String(entryTaskId) ===
+                String(taskId)
+              )
+            })
+            .reduce(
+              (total, entry) =>
+                total +
+                (Number(entry.duration) || 0),
+              0
+            )
+
+          return estimatedMinutes + trackedMinutes
+        }
+
+        const selectedTimeProjectTotal =
+          selectedTimeProject
+            ? getProjectTotalMinutes(
+                selectedTimeProject._id
+              )
+            : 0
+
+        content = (
+          <section className="dashboard-grid">
+            <article className="dashboard-panel projects-panel">
+              <div className="panel-header">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('time')
+                  }
+                >
+                  View all
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  gap: '20px',
+                  marginBottom: '18px',
+                }}
+              >
+                <div>
+                  <strong
+                    style={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      color: 'var(--color-text)',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {selectedTimeProject?.name ||
+                      'No project selected'}
+                  </strong>
+
+                  <p
+                    style={{
+                      margin: '5px 0 0',
+                      color: 'var(--color-muted)',
+                      fontSize: '11px',
+                    }}
+                  >
+                    Project total time
+                  </p>
+                </div>
+
+                <strong
+                  style={{
+                    flex: '0 0 auto',
+                    color: 'var(--color-text)',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {formatProjectTime(
+                    selectedTimeProjectTotal
+                  )}
+                </strong>
+              </div>
+
+              <div className="project-list">
+                {tasksLoading && (
+                  <p>Loading time...</p>
+                )}
+
+                {!tasksLoading &&
+                  timeTasks.map((task) => (
+                    <div
+                      className="project-item"
+                      key={task._id}
+                    >
+                      <div className="project-marker">
+                        <span />
+                      </div>
+
+                      <div className="project-info">
+                        <strong>
+                          {task.title ||
+                            task.name ||
+                            'Untitled task'}
+                        </strong>
+                      </div>
+
+                      <span className="project-time">
+                        {formatProjectTime(
+                          getTaskTotalMinutes(
+                            task._id
+                          )
+                        )}
+                      </span>
+                    </div>
+                  ))}
+
+                {!tasksLoading &&
+                  timeTasks.length === 0 && (
+                    <p>
+                      No tasks in this project.
+                    </p>
+                  )}
               </div>
             </article>
           </section>
