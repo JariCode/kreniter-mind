@@ -3,6 +3,7 @@ import { getProjects } from '../../api/projects'
 import { getTasks } from '../../api/tasks'
 import { getTimeEntries } from '../../api/timeEntries'
 import { getNotes } from '../../api/notes'
+import { getTimeline } from '../../api/timeline'
 import {
   getDashboardLayout,
   saveDashboardLayout,
@@ -37,6 +38,7 @@ function MainContent({
   const [tasks, setTasks] = useState([])
   const [timeEntries, setTimeEntries] = useState([])
   const [notes, setNotes] = useState([])
+  const [timelineProjectId, setTimelineProjectId] = useState('')
 
   const [loading, setLoading] = useState(true)
   const [tasksLoading, setTasksLoading] = useState(true)
@@ -158,6 +160,31 @@ function MainContent({
     }
 
     refreshDashboardData()
+  }, [activeView])
+
+  useEffect(() => {
+    if (activeView !== 'dashboard') {
+      return
+    }
+
+    async function loadTimelineSelection() {
+      try {
+        const data = await getTimeline()
+
+        setTimelineProjectId(
+          data?.selectedProjectId
+            ? String(data.selectedProjectId)
+            : ''
+        )
+      } catch (error) {
+        console.error(
+          'Failed to load timeline selection:',
+          error
+        )
+      }
+    }
+
+    loadTimelineSelection()
   }, [activeView])
 
   useEffect(() => {
@@ -430,6 +457,12 @@ function MainContent({
       type: 'recent-projects',
       title: 'Recent projects',
       kicker: 'Recent projects',
+      width: 4,
+    },
+    {
+      type: 'timeline',
+      title: 'Timeline',
+      kicker: 'Timeline',
       width: 4,
     },
     {
@@ -857,6 +890,223 @@ if (widget.type === 'tasks') {
                   {timeEntriesError}
                 </p>
               )}
+            </article>
+          </section>
+        )
+      }
+
+      if (widget.type === 'timeline') {
+        const selectedTimelineProject =
+          projects.find(
+            (project) =>
+              String(project._id) ===
+              String(timelineProjectId)
+          ) || projects[0]
+
+        const timelineTasks = tasks
+          .filter(
+            (task) =>
+              String(task.projectId) ===
+              String(selectedTimelineProject?._id)
+          )
+          .filter(
+            (task) =>
+              task.startDate ||
+              task.completedDate ||
+              task.dueDate
+          )
+          .sort((a, b) => {
+            const dateA = new Date(
+              a.startDate ||
+                a.completedDate ||
+                a.dueDate
+            ).getTime()
+
+            const dateB = new Date(
+              b.startDate ||
+                b.completedDate ||
+                b.dueDate
+            ).getTime()
+
+            return dateA - dateB
+          })
+          .slice(0, 7)
+
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const timelineStart = new Date(today)
+        timelineStart.setDate(
+          timelineStart.getDate() - 7
+        )
+
+        const timelineEnd = new Date(today)
+        timelineEnd.setDate(
+          timelineEnd.getDate() + 21
+        )
+
+        const timelineTotalDays =
+          Math.max(
+            1,
+            Math.ceil(
+              (
+                timelineEnd -
+                timelineStart
+              ) /
+                86400000
+            )
+          )
+
+        function getTimelinePosition(
+          date
+        ) {
+          const value =
+            (
+              new Date(date) -
+              timelineStart
+            ) /
+            86400000
+
+          return Math.max(
+            0,
+            Math.min(
+              100,
+              (value /
+                timelineTotalDays) *
+                100
+            )
+          )
+        }
+
+        content = (
+          <section className="dashboard-grid">
+            <article className="dashboard-panel">
+              <div className="panel-header">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onViewChange('timeline')
+                  }
+                >
+                  View all
+                </button>
+              </div>
+
+              <div
+                style={{
+                  marginTop: '22px',
+                  overflow: 'hidden',
+                }}
+              >
+                {tasksLoading && (
+                  <p>
+                    Loading timeline...
+                  </p>
+                )}
+
+                {!tasksLoading &&
+                  timelineTasks.length === 0 && (
+                    <p>
+                      No dated tasks in this project.
+                    </p>
+                  )}
+
+                {!tasksLoading &&
+                  timelineTasks.map((task) => {
+                    const startDate =
+                      task.startDate ||
+                      task.completedDate ||
+                      task.dueDate
+
+                    const endDate =
+                      task.completedDate ||
+                      task.dueDate ||
+                      today
+
+                    const startPosition =
+                      getTimelinePosition(
+                        startDate
+                      )
+
+                    const endPosition =
+                      getTimelinePosition(
+                        endDate
+                      )
+
+                    const width =
+                      Math.max(
+                        2,
+                        endPosition -
+                          startPosition
+                      )
+
+                    const statusClass =
+                      task.status ===
+                      'completed'
+                        ? '#8fbfa5'
+                        : task.status ===
+                            'in-progress'
+                          ? '#1688ff'
+                          : '#7f8b98'
+
+                    return (
+                      <div
+                        key={task._id}
+                        style={{
+                          marginBottom: '15px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            marginBottom: '6px',
+                            overflow: 'hidden',
+                            color:
+                              'var(--color-text)',
+                            fontSize: '0.72rem',
+                            fontWeight: 500,
+                            textOverflow:
+                              'ellipsis',
+                            whiteSpace:
+                              'nowrap',
+                          }}
+                        >
+                          {task.title ||
+                            task.name ||
+                            'Untitled task'}
+                        </div>
+
+                        <div
+                          style={{
+                            position:
+                              'relative',
+                            height: '7px',
+                            borderRadius:
+                              '4px',
+                            background:
+                              'rgba(255, 255, 255, 0.045)',
+                          }}
+                        >
+                          <div
+                            style={{
+                              position:
+                                'absolute',
+                              top: 0,
+                              left: `${startPosition}%`,
+                              width: `${width}%`,
+                              height: '100%',
+                              minWidth:
+                                '4px',
+                              borderRadius:
+                                '4px',
+                              background:
+                                statusClass,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
             </article>
           </section>
         )
