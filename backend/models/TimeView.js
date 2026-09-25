@@ -9,9 +9,9 @@ const timeViewSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+
     selectedProjectId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Project',
+      type: String,
       default: null,
     },
   },

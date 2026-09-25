@@ -10,8 +10,7 @@ const tasksViewSchema = new mongoose.Schema(
       index: true,
     },
     selectedProjectId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Project',
+      type: String,
       default: null,
     },
   },

@@ -5,6 +5,8 @@ import { getTimeEntries } from '../../api/timeEntries'
 import { getTimeView, saveTimeView } from '../../api/timeView'
 import './Time.css'
 
+const NO_PROJECT = 'no-project'
+
 function formatDuration(minutes) {
   const totalMinutes = Math.round(Number(minutes) || 0)
 
@@ -60,12 +62,14 @@ function Time() {
             String(project._id) === String(savedProjectId)
         )
 
-        if (savedProjectExists) {
+        if (savedProjectId === NO_PROJECT) {
+          setSelectedProjectId(NO_PROJECT)
+        } else if (savedProjectExists) {
           setSelectedProjectId(String(savedProjectId))
         } else if (projectsData.length > 0) {
           setSelectedProjectId(String(projectsData[0]._id))
         } else {
-          setSelectedProjectId('')
+          setSelectedProjectId(NO_PROJECT)
         }
 
         setTimeViewLoaded(true)
@@ -95,10 +99,18 @@ function Time() {
   }, [projects, selectedProjectId])
 
   const projectTasks = useMemo(() => {
-    return tasks.filter(
-      (task) =>
-        String(task.projectId) === String(selectedProjectId)
-    )
+    return tasks.filter((task) => {
+      const taskProjectId =
+        typeof task.projectId === 'object'
+          ? task.projectId?._id
+          : task.projectId
+
+      if (selectedProjectId === NO_PROJECT) {
+        return !taskProjectId
+      }
+
+      return String(taskProjectId) === String(selectedProjectId)
+    })
   }, [tasks, selectedProjectId])
 
   const taskTotals = useMemo(() => {
@@ -138,14 +150,21 @@ function Time() {
     )
 
     const trackedTotal = timeEntries
-      .filter(
-        (entry) =>
-          String(
-            typeof entry.projectId === 'object'
-              ? entry.projectId?._id
-              : entry.projectId
-          ) === String(selectedProjectId)
-      )
+      .filter((entry) => {
+        const entryProjectId =
+          typeof entry.projectId === 'object'
+            ? entry.projectId?._id
+            : entry.projectId
+
+        if (selectedProjectId === NO_PROJECT) {
+          return !entryProjectId
+        }
+
+        return (
+          String(entryProjectId) ===
+          String(selectedProjectId)
+        )
+      })
       .reduce(
         (total, entry) =>
           total + (Number(entry.duration) || 0),
@@ -192,18 +211,24 @@ function Time() {
             disabled={projects.length === 0}
           >
             {projects.length === 0 ? (
-              <option value="">
-                No projects
+              <option value={NO_PROJECT}>
+                No project
               </option>
             ) : (
-              projects.map((project) => (
-                <option
-                  key={project._id}
-                  value={project._id}
-                >
-                  {project.name}
+              <>
+                <option value={NO_PROJECT}>
+                  No project
                 </option>
-              ))
+
+                {projects.map((project) => (
+                  <option
+                    key={project._id}
+                    value={project._id}
+                  >
+                    {project.name}
+                  </option>
+                ))}
+              </>
             )}
           </select>
         </div>
@@ -243,7 +268,7 @@ function Time() {
 
         <div className="time-project-total">
           <span className="time-project-total-project">
-            {selectedProject?.name || 'No project selected'}
+            {selectedProject?.name || 'No project'}
           </span>
 
           <span className="time-project-total-label">

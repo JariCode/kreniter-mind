@@ -14,6 +14,8 @@ import { getTimeEntries } from '../../api/timeEntries'
 import { useTimeTracker } from '../../components/TimeTracker/TimeTracker'
 import './Task.css'
 
+const NO_PROJECT = 'no-project'
+
 function Task() {
   const {
     activeTimer,
@@ -105,14 +107,16 @@ function Task() {
           String(savedProjectId)
       )
 
-      if (savedProjectId && projectExists) {
+      if (savedProjectId === NO_PROJECT) {
+        setSelectedProjectId(NO_PROJECT)
+      } else if (savedProjectId && projectExists) {
         setSelectedProjectId(String(savedProjectId))
       } else if (projectsData.length > 0) {
         setSelectedProjectId(
           String(projectsData[0]._id)
         )
       } else {
-        setSelectedProjectId('')
+        setSelectedProjectId(NO_PROJECT)
       }
 
       setTasksViewLoaded(true)
@@ -437,7 +441,7 @@ function Task() {
   }
 
   const projectTasks = tasks.filter((task) => {
-    if (!selectedProjectId) {
+    if (selectedProjectId === NO_PROJECT) {
       return !task.projectId
     }
 
@@ -929,7 +933,7 @@ function Task() {
               setSelectedProjectId(event.target.value)
             }
           >
-            <option value="">
+            <option value={NO_PROJECT}>
               No project
             </option>
 
