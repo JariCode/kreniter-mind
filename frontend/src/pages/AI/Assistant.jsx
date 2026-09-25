@@ -7,7 +7,6 @@ import {
   sendMessage,
   transcribeAudio,
   generateSpeech,
-  generateImage,
   deleteConversation,
 } from '../../api/ai'
 import './Assistant.css'
@@ -24,7 +23,7 @@ function Assistant() {
   const [recording, setRecording] = useState(false)
   const [playingMessageId, setPlayingMessageId] = useState(null)
   const [speechLoadingMessageId, setSpeechLoadingMessageId] = useState(null)
-  const [imageGenerating, setImageGenerating] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
   const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
   const mediaRecorderRef = useRef(null)
@@ -130,18 +129,12 @@ function Assistant() {
     }
   }
 
-  function isImageRequest(content) {
-    return /(?:\b(?:generate|create|make|draw|show)\b.{0,40}\b(?:image|picture|photo)\b|\b(?:image|picture|photo)\b.{0,40}\b(?:generate|create|make|draw)\b|\b(?:generoi|luo|tee|piirrä)\b.{0,40}\b(?:kuva|kuvan)\b|\b(?:kuva|kuvan)\b.{0,40}\b(?:generoi|luo|tee|piirrä)\b)/i.test(
-      content
-    )
-  }
-
   async function handleSubmit(event) {
     event.preventDefault()
 
     const content = input.trim()
 
-    if (!content || sending) {
+    if (!content || sending || transcribing) {
       return
     }
 
@@ -182,26 +175,8 @@ function Assistant() {
         content
       )
 
-      let assistantMessage =
+      const assistantMessage =
         data.assistantMessage
-
-      if (isImageRequest(content)) {
-        try {
-          setImageGenerating(true)
-
-          const imageData =
-            await generateImage(content)
-
-          assistantMessage = {
-            ...assistantMessage,
-            image: imageData.image,
-          }
-        } catch (error) {
-          setError(error.message)
-        } finally {
-          setImageGenerating(false)
-        }
-      }
 
       setMessages((current) => [
         ...current.filter(
@@ -238,6 +213,7 @@ function Assistant() {
     if (
       recording ||
       sending ||
+      transcribing ||
       !navigator.mediaDevices?.getUserMedia
     ) {
       return
@@ -271,7 +247,7 @@ function Assistant() {
 
       mediaRecorder.onstop = async () => {
         try {
-          setSending(true)
+          setTranscribing(true)
 
           const audioBlob =
             new Blob(
@@ -303,14 +279,14 @@ function Assistant() {
             } catch (error) {
               setError(error.message)
             } finally {
-              setSending(false)
+              setTranscribing(false)
             }
           }
 
           reader.readAsDataURL(audioBlob)
         } catch (error) {
           setError(error.message)
-          setSending(false)
+          setTranscribing(false)
         } finally {
           stream
             .getTracks()
@@ -658,7 +634,7 @@ function Assistant() {
                 placeholder="Ask Kreniter anything..."
                 rows={1}
                 disabled={
-                  sending || recording
+                  sending || recording || transcribing
                 }
               />
 
@@ -674,7 +650,7 @@ function Assistant() {
                     ? handleStopRecording
                     : handleStartRecording
                 }
-                disabled={sending}
+                disabled={sending || transcribing}
                 aria-label={
                   recording
                     ? 'Stop recording'
@@ -690,6 +666,7 @@ function Assistant() {
                 disabled={
                   sending ||
                   recording ||
+                  transcribing ||
                   !input.trim()
                 }
                 aria-label="Send message"

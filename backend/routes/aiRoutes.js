@@ -212,7 +212,7 @@ router.post(
 
               formData.append(
                 'prompt',
-                'Puhe voi olla suomeksi tai englanniksi.'
+                'Transcribe exactly what is spoken. The audio may be in Finnish or English. Do not translate the spoken language.'
               )
 
               formData.append(
