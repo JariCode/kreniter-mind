@@ -12,6 +12,7 @@ import WidgetLibrary from '../DashboardWidgets/WidgetLibrary'
 import Project from '../../pages/Projects/Project'
 import Task from '../../pages/Tasks/Task'
 import Note from '../../pages/Notes/Note'
+import Timeline from '../../pages/Timeline/Timeline'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
@@ -249,6 +250,10 @@ function MainContent({
 
   if (activeView === 'notes') {
     return <Note />
+  }
+
+  if (activeView === 'timeline') {
+    return <Timeline />
   }
 
   const openTasks = tasks.filter(

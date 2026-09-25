@@ -16,6 +16,7 @@ const timeEntryRoutes = require('./routes/timeEntryRoutes')
 const userRoutes = require('./routes/userRoutes')
 const dashboardLayoutRoutes = require('./routes/dashboardLayoutRoutes')
 const activeTimerRoutes = require('./routes/activeTimerRoutes')
+const timelineRoutes = require('./routes/timelineRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -90,6 +91,7 @@ app.use('/api/time-entries', authMiddleware, timeEntryRoutes)
 app.use('/api/users', authMiddleware, userRoutes)
 app.use('/api/dashboard-layout', authMiddleware, dashboardLayoutRoutes)
 app.use('/api/active-timer', authMiddleware, activeTimerRoutes)
+app.use('/api/timeline', authMiddleware, timelineRoutes)
 
 // 404 handler
 app.use((req, res) => {
