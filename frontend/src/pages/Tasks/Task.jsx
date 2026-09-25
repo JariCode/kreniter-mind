@@ -71,7 +71,28 @@ function Task() {
         getTasksView(),
       ])
 
-      setTasks(tasksData)
+      const validProjectIds = new Set(
+        projectsData.map((project) =>
+          String(project._id)
+        )
+      )
+
+      const filteredTasks = tasksData.filter((task) => {
+        if (!task.projectId) {
+          return true
+        }
+
+        const taskProjectId =
+          typeof task.projectId === 'object'
+            ? task.projectId?._id
+            : task.projectId
+
+        return validProjectIds.has(
+          String(taskProjectId)
+        )
+      })
+
+      setTasks(filteredTasks)
       setProjects(projectsData)
       setTimeEntries(timeEntriesData)
 
@@ -415,11 +436,21 @@ function Task() {
     setDraggedTask(null)
   }
 
-  const projectTasks = tasks.filter(
-    (task) =>
-      String(task.projectId) ===
+  const projectTasks = tasks.filter((task) => {
+    if (!selectedProjectId) {
+      return !task.projectId
+    }
+
+    const taskProjectId =
+      typeof task.projectId === 'object'
+        ? task.projectId?._id
+        : task.projectId
+
+    return (
+      String(taskProjectId) ===
       String(selectedProjectId)
-  )
+    )
+  })
 
   function getProjectName(projectId) {
     const project = projects.find(
@@ -871,8 +902,6 @@ function Task() {
     )
   }
 
-
-
   return (
     <main className="tasks-page">
       <div className="tasks-intro">
@@ -899,8 +928,11 @@ function Task() {
             onChange={(event) =>
               setSelectedProjectId(event.target.value)
             }
-            disabled={projects.length === 0}
           >
+            <option value="">
+              No project
+            </option>
+
             {projects.map((project) => (
               <option
                 key={project._id}
