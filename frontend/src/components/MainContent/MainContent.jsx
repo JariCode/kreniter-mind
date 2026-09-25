@@ -14,6 +14,7 @@ import Project from '../../pages/Projects/Project'
 import Task from '../../pages/Tasks/Task'
 import Note from '../../pages/Notes/Note'
 import Timeline from '../../pages/Timeline/Timeline'
+import Time from '../../pages/Time/Time'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
@@ -283,6 +284,10 @@ function MainContent({
     return <Timeline />
   }
 
+  if (activeView === 'time') {
+    return <Time />
+  }
+
   const openTasks = tasks.filter(
     (task) => task.status !== 'completed'
   ).length
@@ -379,7 +384,7 @@ function MainContent({
   }
 
   function getProjectTotalMinutes(projectId) {
-    return tasks
+    const estimatedMinutes = tasks
       .filter(
         (task) =>
           String(task.projectId) ===
@@ -391,6 +396,24 @@ function MainContent({
           (Number(task.estimatedMinutes) || 0),
         0
       )
+
+    const trackedMinutes = timeEntries
+      .filter(
+        (entry) =>
+          String(
+            typeof entry.projectId === 'object'
+              ? entry.projectId?._id
+              : entry.projectId
+          ) === String(projectId)
+      )
+      .reduce(
+        (total, entry) =>
+          total +
+          (Number(entry.duration) || 0),
+        0
+      )
+
+    return estimatedMinutes + trackedMinutes
   }
 
   const totalProjectMinutes = projects.reduce(
