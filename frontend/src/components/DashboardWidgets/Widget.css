@@ -5,9 +5,19 @@
   height: 100%;
   box-sizing: border-box;
   padding: 22px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(
+      135deg,
+      rgba(22, 136, 255, 0.55),
+      rgba(22, 136, 255, 0.12) 45%,
+      rgba(22, 136, 255, 0.28)
+    ) border-box;
+
+  border: 1px solid transparent;
   border-radius: 10px;
+
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -36,7 +46,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .widget-title {
@@ -54,13 +64,6 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-.widget-header h3 {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 18px;
-  font-weight: 600;
 }
 
 .widget-actions {

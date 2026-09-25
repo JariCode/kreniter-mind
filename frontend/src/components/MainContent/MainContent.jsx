@@ -372,31 +372,37 @@ function MainContent({
     {
       type: 'projects',
       title: 'Projects',
+      kicker: 'Projects',
       width: 4,
     },
     {
       type: 'tasks',
       title: 'Tasks',
+      kicker: 'Tasks',
       width: 4,
     },
     {
       type: 'tracked-time',
       title: 'Tracked time',
+      kicker: 'Tracked time',
       width: 4,
     },
     {
       type: 'recent-projects',
       title: 'Recent projects',
+      kicker: 'Recent projects',
       width: 4,
     },
     {
       type: 'notes',
       title: 'Notes',
+      kicker: 'Notes',
       width: 4,
     },
     {
       type: 'ai-assistant',
       title: 'AI Assistant',
+      kicker: 'AI Assistant',
       width: 4,
     },
   ]
@@ -586,94 +592,93 @@ function MainContent({
         )
       }
 
-      if (widget.type === 'tasks') {
-        content = (
-          <section className="dashboard-stats">
-            <article className="dashboard-card tasks-card">
-              <div className="card-top">
-                {activeTimer && (
-                  <span className="time-tracker-status">
-                    Tracking
-                  </span>
-                )}
-              </div>
+if (widget.type === 'tasks') {
+  content = (
+    <section className="dashboard-stats">
+      <article className="dashboard-card tasks-card">
+        <div className="card-top">
+          {activeTimer && (
+            <span className="time-tracker-status">
+              Tracking
+            </span>
+          )}
+        </div>
 
-              <div className="dashboard-task-summary">
-                <div className="dashboard-task-count">
-                  <strong>
-                    {tasksLoading
-                      ? '...'
-                      : openTasks}
-                  </strong>
+        <div className="panel-header">
+          <button
+            type="button"
+            onClick={() =>
+              onViewChange('tasks')
+            }
+          >
+            View all
+          </button>
+        </div>
 
-                  <p>
-                    Open tasks
-                  </p>
+        <div className="dashboard-task-summary">
+          <div className="dashboard-task-count">
+            <strong>
+              {tasksLoading
+                ? '...'
+                : openTasks}
+            </strong>
+
+            <p>
+              Open tasks
+            </p>
+          </div>
+
+          {activeTimer && (
+            <div className="time-tracker-active-task">
+              <span>
+                ● Tracking
+              </span>
+
+              <strong>
+                {activeTask?.title ||
+                  activeTask?.name ||
+                  'Untitled task'}
+              </strong>
+            </div>
+          )}
+        </div>
+
+        <div className="project-list">
+          {!tasksLoading &&
+            !tasksError &&
+            activeTasks.map((task) => (
+              <div
+                className="project-item"
+                key={task._id}
+              >
+                <div className="project-marker">
+                  <span />
                 </div>
 
-                {activeTimer && (
-                  <div className="time-tracker-active-task">
-                    <span>
-                      ● Tracking
-                    </span>
+                <div className="project-info">
+                  <strong>
+                    {task.title ||
+                      task.name ||
+                      'Untitled task'}
+                  </strong>
 
-                    <strong>
-                      {activeTask?.title ||
-                        activeTask?.name ||
-                        'Untitled task'}
-                    </strong>
-                  </div>
-                )}
+                  {task.description && (
+                    <p>
+                      {task.description}
+                    </p>
+                  )}
+                </div>
+
+                <span className="project-status">
+                  {task.status}
+                </span>
               </div>
-
-              <div className="panel-header">
-                <button
-                  type="button"
-                  onClick={() =>
-                    onViewChange('tasks')
-                  }
-                >
-                  View all
-                </button>
-              </div>
-
-              <div className="project-list">
-                {!tasksLoading &&
-                  !tasksError &&
-                  activeTasks.map((task) => (
-                    <div
-                      className="project-item"
-                      key={task._id}
-                    >
-                      <div className="project-marker">
-                        <span />
-                      </div>
-
-                      <div className="project-info">
-                        <strong>
-                          {task.title ||
-                            task.name ||
-                            'Untitled task'}
-                        </strong>
-
-                        {task.description && (
-                          <p>
-                            {task.description}
-                          </p>
-                        )}
-                      </div>
-
-                      <span className="project-status">
-                        {task.status}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </article>
-          </section>
-        )
-      }
-
+            ))}
+        </div>
+      </article>
+    </section>
+  )
+}
       if (widget.type === 'tracked-time') {
         content = (
           <section className="dashboard-stats">

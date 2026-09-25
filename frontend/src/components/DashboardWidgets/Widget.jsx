@@ -35,10 +35,6 @@ function Widget({
             <span className="widget-kicker">
               {widget.kicker}
             </span>
-
-            <h3>
-              {widget.title}
-            </h3>
           </div>
         </div>
 
