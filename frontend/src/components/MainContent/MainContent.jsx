@@ -63,18 +63,32 @@ function MainContent({
   const [aiMessages, setAiMessages] = useState([])
   const [aiInput, setAiInput] = useState('')
   const [aiSending, setAiSending] = useState(false)
-  const aiMessagesEndRef = useRef(null)
+  const aiMessagesRef = useRef(null)
+  const aiInputRef = useRef(null)
 
   useEffect(() => {
     if (!aiChatOpen) {
       return
     }
 
-    aiMessagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end',
-    })
+    const element = aiMessagesRef.current
+
+    if (element) {
+      element.scrollTop = element.scrollHeight
+    }
   }, [aiMessages, aiSending, aiChatOpen])
+
+  useEffect(() => {
+    if (!aiChatOpen || aiSending) {
+      return
+    }
+
+    requestAnimationFrame(() => {
+      aiInputRef.current?.focus({
+        preventScroll: true,
+      })
+    })
+  }, [aiChatOpen, aiSending])
 
   const [widgets, setWidgets] = useState([
     {
@@ -643,6 +657,7 @@ function MainContent({
   }
 
   function closeAiChat() {
+    aiInputRef.current?.blur()
     setAiChatOpen(false)
   }
 
@@ -1648,7 +1663,10 @@ function MainContent({
                     </button>
                   </div>
 
-                  <div className="ai-chat-messages">
+                  <div
+                    ref={aiMessagesRef}
+                    className="ai-chat-messages"
+                  >
                     {aiMessages.length === 0 && (
                       <p className="ai-chat-empty">
                         What can I help you with?
@@ -1674,7 +1692,6 @@ function MainContent({
                       </div>
                     )}
 
-                    <div ref={aiMessagesEndRef} />
                   </div>
 
                   <form
@@ -1682,6 +1699,7 @@ function MainContent({
                     onSubmit={handleAiChatSubmit}
                   >
                     <input
+                      ref={aiInputRef}
                       type="text"
                       value={aiInput}
                       onChange={(event) =>
@@ -1689,7 +1707,6 @@ function MainContent({
                       }
                       placeholder="Ask something..."
                       disabled={aiSending}
-                      autoFocus
                     />
 
                     <button
