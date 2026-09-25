@@ -24,6 +24,8 @@ function Note() {
   const [priority, setPriority] = useState('medium')
 
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [noteToDelete, setNoteToDelete] = useState(null)
   const [draggedNote, setDraggedNote] = useState(null)
 
   useEffect(() => {
@@ -132,33 +134,38 @@ function Note() {
     }
   }
 
-  async function handleDelete(note) {
-    const confirmed = window.confirm(
-      `Delete "${note.title}"?`
-    )
+  function handleDelete(note) {
+    setNoteToDelete(note)
+  }
 
-    if (!confirmed) {
+  async function confirmDelete() {
+    if (!noteToDelete) {
       return
     }
 
     try {
+      setDeleting(true)
       setError('')
 
-      await deleteNote(note._id)
+      await deleteNote(noteToDelete._id)
 
       setNotes((currentNotes) =>
         currentNotes.filter(
           (currentNote) =>
-            currentNote._id !== note._id
+            currentNote._id !== noteToDelete._id
         )
       )
 
-      if (editingNote?._id === note._id) {
+      if (editingNote?._id === noteToDelete._id) {
         resetForm()
       }
+
+      setNoteToDelete(null)
     } catch (error) {
       console.error('Failed to delete note:', error)
       setError('Failed to delete note.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -574,6 +581,63 @@ function Note() {
             )
           })}
         </section>
+      )}
+
+      {noteToDelete && (
+        <div
+          className="delete-dialog-overlay"
+          onClick={() => {
+            if (!deleting) {
+              setNoteToDelete(null)
+            }
+          }}
+        >
+          <div
+            className="delete-dialog"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <span className="delete-dialog-kicker">
+              CONFIRM ACTION
+            </span>
+
+            <h3>
+              Delete note?
+            </h3>
+
+            <p>
+              Are you sure you want to delete{' '}
+              <strong>
+                {noteToDelete.title}
+              </strong>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="delete-dialog-actions">
+              <button
+                type="button"
+                onClick={() =>
+                  setNoteToDelete(null)
+                }
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="delete-dialog-confirm"
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting
+                  ? 'Deleting...'
+                  : 'Delete note'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )
