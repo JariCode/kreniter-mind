@@ -630,8 +630,9 @@ if (widget.type === 'tasks') {
 
           {activeTimer && (
             <div className="time-tracker-active-task">
-              <span>
-                ● Tracking
+              <span className="tracking-status">
+                <span className="tracking-status-dot" />
+                Tracking
               </span>
 
               <strong>
@@ -683,18 +684,13 @@ if (widget.type === 'tasks') {
         content = (
           <section className="dashboard-stats">
             <article className="dashboard-card tracked-time-card">
-              <div className="card-top">
-                {activeTimer && (
-                  <span className="time-tracker-status">
-                    {activeTimer.status ===
-                    'paused'
-                      ? 'Paused'
-                      : 'Running'}
-                  </span>
-                )}
-              </div>
-
-              <div className="tracked-time-layout">
+              <div
+                className="tracked-time-layout"
+                style={{
+                  paddingTop: '28px',
+                  paddingBottom: '8px',
+                }}
+              >
                 <div className="tracked-time-main">
                   <strong className="time-tracker-time">
                     {timeEntriesLoading
@@ -716,17 +712,37 @@ if (widget.type === 'tasks') {
                 {activeTimer && (
                   <div className="tracked-time-side">
                     <div className="time-tracker-details">
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          marginBottom: '7px',
+                          color: '#6eb7f5',
+                          fontSize: '0.61rem',
+                          fontWeight: 600,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            background: '#1688ff',
+                            boxShadow:
+                              '0 0 8px rgba(22, 136, 255, 0.7)',
+                          }}
+                        />
+                        Tracking
+                      </span>
+
                       <strong>
                         {activeTask?.title ||
                           activeTask?.name ||
                           'No task selected'}
                       </strong>
-
-                      {activeProject && (
-                        <span>
-                          {activeProject.name}
-                        </span>
-                      )}
                     </div>
 
                     <div className="time-tracker-controls">
@@ -771,6 +787,31 @@ if (widget.type === 'tasks') {
                   </div>
                 )}
               </div>
+
+              {activeProject && (
+                <div
+                  className="project-list tracked-time-project"
+                  style={{
+                    marginTop: '14px',
+                  }}
+                >
+                  <div className="project-item">
+                    <div className="project-marker">
+                      <span />
+                    </div>
+
+                    <div className="project-info">
+                      <strong>
+                        {activeProject.name}
+                      </strong>
+                    </div>
+
+                    <span className="project-status">
+                      {activeProject.status || 'active'}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {timeEntriesError && (
                 <p className="time-tracker-error">
