@@ -24,12 +24,15 @@ function Assistant() {
   const [playingMessageId, setPlayingMessageId] = useState(null)
   const [speechLoadingMessageId, setSpeechLoadingMessageId] = useState(null)
   const [transcribing, setTranscribing] = useState(false)
+  const [attachedFile, setAttachedFile] = useState(null)
+  const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
   const mediaRecorderRef = useRef(null)
   const audioRef = useRef(null)
   const audioUrlRef = useRef(null)
   const audioChunksRef = useRef([])
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     async function loadConversations() {
@@ -129,12 +132,133 @@ function Assistant() {
     }
   }
 
+  function processFile(file) {
+    if (!file) {
+      return
+    }
+
+    const maxSize = 10 * 1024 * 1024
+
+    if (file.size > maxSize) {
+      setError('File is too large. Maximum size is 10 MB.')
+      return
+    }
+
+    const allowedExtensions = [
+      'pdf',
+      'doc',
+      'docx',
+      'rtf',
+      'odt',
+      'ppt',
+      'pptx',
+      'xls',
+      'xlsx',
+      'csv',
+      'tsv',
+      'txt',
+      'md',
+      'json',
+      'xml',
+      'html',
+      'css',
+      'js',
+      'jsx',
+      'ts',
+      'tsx',
+      'py',
+      'java',
+      'c',
+      'cpp',
+      'h',
+      'hpp',
+      'php',
+      'sql',
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+    ]
+
+    const extension =
+      file.name.split('.').pop()?.toLowerCase() || ''
+
+    if (!allowedExtensions.includes(extension)) {
+      setError('This file type is not supported.')
+      return
+    }
+
+    setError('')
+
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      setAttachedFile({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        data: reader.result,
+      })
+    }
+
+    reader.onerror = () => {
+      setError('Could not read the selected file.')
+    }
+
+    reader.readAsDataURL(file)
+  }
+
+  function handleFileChange(event) {
+    processFile(event.target.files?.[0])
+    event.target.value = ''
+  }
+
+  function handleDragEnter(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragging(true)
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  function handleDragLeave(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (
+      !event.currentTarget.contains(
+        event.relatedTarget
+      )
+    ) {
+      setDragging(false)
+    }
+  }
+
+  function handleDrop(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragging(false)
+    processFile(event.dataTransfer.files?.[0])
+  }
+
+  function removeAttachedFile() {
+    setAttachedFile(null)
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
 
     const content = input.trim()
 
-    if (!content || sending || transcribing) {
+    if (
+      (!content && !attachedFile) ||
+      sending ||
+      transcribing
+    ) {
       return
     }
 
@@ -159,10 +283,15 @@ function Assistant() {
       setInput('')
       setSending(true)
 
+      const fileForMessage = attachedFile
+      setAttachedFile(null)
+
       const userMessage = {
         _id: `temp-user-${Date.now()}`,
         role: 'user',
-        content,
+        content:
+          content ||
+          `📎 ${fileForMessage.name}`,
       }
 
       setMessages((current) => [
@@ -172,7 +301,8 @@ function Assistant() {
 
       const data = await sendMessage(
         conversation._id,
-        content
+        content,
+        fileForMessage
       )
 
       const assistantMessage =
@@ -195,7 +325,11 @@ function Assistant() {
                 title:
                   conversation.title ===
                     'New conversation'
-                    ? content.slice(0, 60)
+                    ? (
+                        content ||
+                        fileForMessage?.name ||
+                        'File attachment'
+                      ).slice(0, 60)
                     : item.title,
                 updatedAt: new Date().toISOString(),
               }
@@ -490,7 +624,24 @@ function Assistant() {
           </div>
         </aside>
 
-        <section className="assistant-chat">
+        <section
+          className={`assistant-chat ${
+            dragging ? 'is-dragging' : ''
+          }`}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {dragging && (
+            <div className="assistant-drop-overlay">
+              <div className="assistant-drop-overlay-content">
+                <span>📎</span>
+                Drop file to attach
+              </div>
+            </div>
+          )}
+
           <div className="assistant-chat-center">
             <AI />
           </div>
@@ -616,11 +767,49 @@ function Assistant() {
             className="assistant-input-area"
             onSubmit={handleSubmit}
           >
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="assistant-file-input"
+              accept=".pdf,.doc,.docx,.rtf,.odt,.ppt,.pptx,.xls,.xlsx,.csv,.tsv,.txt,.md,.json,.xml,.html,.css,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.h,.hpp,.php,.sql,.jpg,.jpeg,.png,.gif,.webp"
+              onChange={handleFileChange}
+            />
+
+            {attachedFile && (
+              <div className="assistant-file-preview">
+                <span className="assistant-file-preview-icon">
+                  📎
+                </span>
+
+                <span className="assistant-file-preview-name">
+                  {attachedFile.name}
+                </span>
+
+                <button
+                  type="button"
+                  className="assistant-file-remove"
+                  onClick={removeAttachedFile}
+                  disabled={sending}
+                  aria-label="Remove attached file"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             <div className="assistant-input-wrapper">
               <button
                 type="button"
                 className="assistant-file-button"
                 aria-label="Attach file"
+                onClick={() =>
+                  fileInputRef.current?.click()
+                }
+                disabled={
+                  sending ||
+                  recording ||
+                  transcribing
+                }
               >
                 📎
               </button>
@@ -667,7 +856,7 @@ function Assistant() {
                   sending ||
                   recording ||
                   transcribing ||
-                  !input.trim()
+                  (!input.trim() && !attachedFile)
                 }
                 aria-label="Send message"
               >

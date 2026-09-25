@@ -18,12 +18,15 @@ export function createConversation(projectId = null) {
   })
 }
 
-export function sendMessage(conversationId, content) {
+export function sendMessage(conversationId, content, file = null) {
   return apiRequest(
     `/ai/conversations/${conversationId}/messages`,
     {
       method: 'POST',
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({
+        content,
+        file,
+      }),
     }
   )
 }

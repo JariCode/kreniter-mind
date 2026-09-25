@@ -404,7 +404,7 @@ router.post(
   async (req, res, next) => {
     try {
       const { conversationId } = req.params
-      const { content } = req.body
+      const { content, file } = req.body
 
       if (
         !mongoose.Types.ObjectId.isValid(
@@ -417,12 +417,41 @@ router.post(
       }
 
       if (
-        typeof content !== 'string' ||
-        !content.trim()
+        (typeof content !== 'string' || !content.trim()) &&
+        !file
       ) {
         return res.status(400).json({
-          error: 'Message content is required',
+          error: 'Message content or file is required',
         })
+      }
+
+      if (file) {
+        if (
+          typeof file !== 'object' ||
+          typeof file.name !== 'string' ||
+          typeof file.data !== 'string'
+        ) {
+          return res.status(400).json({
+            error: 'Invalid file data',
+          })
+        }
+
+        if (
+          file.size &&
+          Number(file.size) > 10 * 1024 * 1024
+        ) {
+          return res.status(400).json({
+            error: 'File is too large',
+          })
+        }
+
+        if (
+          !file.data.startsWith('data:')
+        ) {
+          return res.status(400).json({
+            error: 'Invalid file data',
+          })
+        }
       }
 
       const conversation =
@@ -441,7 +470,9 @@ router.post(
         await AIMessage.create({
           conversationId: conversation._id,
           role: 'user',
-          content: content.trim(),
+          content:
+            (content || '').trim() ||
+            `[File: ${file.name}]`,
         })
 
       const messages = await AIMessage.find({
@@ -454,6 +485,44 @@ router.post(
         role: message.role,
         content: message.content,
       }))
+
+      if (file) {
+        const lastInput = input[input.length - 1]
+
+        if (lastInput) {
+          const inputContent = []
+
+          if (content && content.trim()) {
+            inputContent.push({
+              type: 'input_text',
+              text: content.trim(),
+            })
+          } else {
+            inputContent.push({
+              type: 'input_text',
+              text: `Please inspect the attached file "${file.name}" and help the user with it.`,
+            })
+          }
+
+          if (
+            file.data.startsWith('data:image/')
+          ) {
+            inputContent.push({
+              type: 'input_image',
+              image_url: file.data,
+              detail: 'auto',
+            })
+          } else {
+            inputContent.push({
+              type: 'input_file',
+              filename: file.name,
+              file_data: file.data,
+            })
+          }
+
+          lastInput.content = inputContent
+        }
+      }
 
       const openAIResponse = await fetch(
         openAIUrl,
@@ -642,7 +711,7 @@ When the user asks you to create, generate, draw, or make an image, decide yours
         'New conversation'
       ) {
         conversation.title =
-          content.trim().slice(0, 60)
+          (content || file.name).trim().slice(0, 60)
       }
 
       await conversation.save()
