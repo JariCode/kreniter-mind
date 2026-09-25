@@ -74,44 +74,12 @@
 
 .dashboard-card {
   position: relative;
-  min-height: 92px;
-  padding: 14px 16px;
-  overflow: hidden;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.018),
-      rgba(255, 255, 255, 0)
-    ),
-    #0d1117;
-  border: 1px solid #242d38;
-  border-radius: 7px;
-}
-
-.dashboard-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 42%;
-  height: 1px;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(22, 136, 255, 0.65),
-      transparent
-    );
-}
-
-.dashboard-card::after {
-  content: "";
-  position: absolute;
-  width: 110px;
-  height: 110px;
-  right: -60px;
-  bottom: -60px;
-  border: 1px solid rgba(22, 136, 255, 0.035);
-  border-radius: 50%;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .card-top {
@@ -203,6 +171,24 @@
   border-left: 1px solid rgba(255, 255, 255, 0.055);
 }
 
+.time-tracker-active-task span {
+  color: #6eb7f5;
+  font-size: 0.61rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.time-tracker-active-task strong {
+  margin-top: 0;
+  color: #e7edf5;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .time-tracker-active-task .tracking-status {
   display: flex;
   align-items: center;
@@ -224,16 +210,6 @@
     0 0 8px rgba(22, 136, 255, 0.7);
 }
 
-.time-tracker-active-task strong {
-  margin-top: 0;
-  color: #e7edf5;
-  font-size: 0.82rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* -------------------------------- */
 /* Main panels                      */
 /* -------------------------------- */
@@ -246,11 +222,11 @@
 }
 
 .dashboard-panel {
-  min-height: 310px;
-  padding: 23px;
-  background: #0d1117;
-  border: 1px solid #242d38;
-  border-radius: 7px;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .panel-header {
@@ -351,6 +327,10 @@
   margin: 4px 0 0;
   color: #858f9c;
   font-size: 0.68rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .project-status {
