@@ -255,6 +255,77 @@ router.post(
   }
 )
 
+// Generate speech
+router.post(
+  '/speech',
+  async (req, res, next) => {
+    try {
+      const { text } = req.body
+
+      if (
+        typeof text !== 'string' ||
+        !text.trim()
+      ) {
+        return res.status(400).json({
+          error: 'Text is required',
+        })
+      }
+
+      const openAIResponse =
+        await fetch(
+          'https://api.openai.com/v1/audio/speech',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization:
+                `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini-tts',
+              voice: 'onyx',
+              input: text.trim(),
+              instructions:
+                'Speak naturally and clearly. Use Finnish pronunciation when the text is Finnish and English pronunciation when the text is English.',
+              response_format: 'mp3',
+            }),
+          }
+        )
+
+      if (!openAIResponse.ok) {
+        const errorData =
+          await openAIResponse.text()
+
+        console.error(
+          'OpenAI speech error:',
+          errorData
+        )
+
+        return res.status(502).json({
+          error: 'Speech service error',
+        })
+      }
+
+      const audioBuffer =
+        Buffer.from(
+          await openAIResponse.arrayBuffer()
+        )
+
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Content-Length':
+          audioBuffer.length,
+        'Cache-Control':
+          'no-store',
+      })
+
+      res.send(audioBuffer)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
 // Send a message
 router.post(
   '/conversations/:conversationId/messages',

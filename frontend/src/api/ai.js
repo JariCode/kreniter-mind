@@ -1,4 +1,7 @@
-import { apiRequest } from './api'
+import {
+  apiRequest,
+  apiRequestBlob,
+} from './api'
 
 export function getConversations() {
   return apiRequest('/ai/conversations')
@@ -29,6 +32,13 @@ export function transcribeAudio(audio) {
   return apiRequest('/ai/transcribe', {
     method: 'POST',
     body: JSON.stringify({ audio }),
+  })
+}
+
+export function generateSpeech(text) {
+  return apiRequestBlob('/ai/speech', {
+    method: 'POST',
+    body: JSON.stringify({ text }),
   })
 }
 

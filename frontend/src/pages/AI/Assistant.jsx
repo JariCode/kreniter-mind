@@ -6,6 +6,7 @@ import {
   createConversation,
   sendMessage,
   transcribeAudio,
+  generateSpeech,
   deleteConversation,
 } from '../../api/ai'
 import './Assistant.css'
@@ -20,9 +21,13 @@ function Assistant() {
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [recording, setRecording] = useState(false)
+  const [playingMessageId, setPlayingMessageId] = useState(null)
+  const [speechLoadingMessageId, setSpeechLoadingMessageId] = useState(null)
   const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
   const mediaRecorderRef = useRef(null)
+  const audioRef = useRef(null)
+  const audioUrlRef = useRef(null)
   const audioChunksRef = useRef([])
 
   useEffect(() => {
@@ -308,6 +313,71 @@ function Assistant() {
     setRecording(false)
   }
 
+  async function handlePlayMessage(message) {
+    if (speechLoadingMessageId === message._id) {
+      return
+    }
+
+    if (playingMessageId === message._id) {
+      audioRef.current?.pause()
+      audioRef.current = null
+      setPlayingMessageId(null)
+      return
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current)
+      audioUrlRef.current = null
+    }
+
+    try {
+      setError('')
+      setSpeechLoadingMessageId(message._id)
+
+      const audioBlob = await generateSpeech(message.content)
+      const audioUrl = URL.createObjectURL(audioBlob)
+      audioUrlRef.current = audioUrl
+
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
+
+      audio.onended = () => {
+        setPlayingMessageId(null)
+        audioRef.current = null
+
+        if (audioUrlRef.current) {
+          URL.revokeObjectURL(audioUrlRef.current)
+          audioUrlRef.current = null
+        }
+      }
+
+      audio.onerror = () => {
+        setPlayingMessageId(null)
+        audioRef.current = null
+
+        if (audioUrlRef.current) {
+          URL.revokeObjectURL(audioUrlRef.current)
+          audioUrlRef.current = null
+        }
+
+        setError('Speech playback failed.')
+      }
+
+      setPlayingMessageId(message._id)
+      await audio.play()
+    } catch (error) {
+      setError(error.message)
+      setPlayingMessageId(null)
+    } finally {
+      setSpeechLoadingMessageId(null)
+    }
+  }
+
   function handleKeyDown(event) {
     if (
       event.key === 'Enter' &&
@@ -454,9 +524,44 @@ function Assistant() {
                       </div>
                     )}
 
-                    <div className="assistant-message-content">
-                      {message.content}
-                    </div>
+                    {message.role ===
+                      'assistant' ? (
+                      <div className="assistant-message-body">
+                        <div className="assistant-message-content">
+                          {message.content}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="assistant-play-button"
+                          onClick={() =>
+                            handlePlayMessage(message)
+                          }
+                          disabled={
+                            speechLoadingMessageId ===
+                            message._id
+                          }
+                          aria-label={
+                            playingMessageId ===
+                            message._id
+                              ? 'Stop playback'
+                              : 'Play message'
+                          }
+                        >
+                          {speechLoadingMessageId ===
+                          message._id
+                            ? '···'
+                            : playingMessageId ===
+                                message._id
+                              ? '⏸'
+                              : '▶'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="assistant-message-content">
+                        {message.content}
+                      </div>
+                    )}
                   </div>
                 ))}
 
