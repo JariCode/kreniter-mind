@@ -6,6 +6,10 @@ import {
   updateTask,
 } from '../../api/tasks'
 import { getProjects } from '../../api/projects'
+import {
+  getTasksView,
+  saveTasksView,
+} from '../../api/tasksView'
 import { getTimeEntries } from '../../api/timeEntries'
 import { useTimeTracker } from '../../components/TimeTracker/TimeTracker'
 import './Task.css'
@@ -26,6 +30,10 @@ function Task() {
 
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
+  const [selectedProjectId, setSelectedProjectId] =
+    useState('')
+  const [tasksViewLoaded, setTasksViewLoaded] =
+    useState(false)
   const [timeEntries, setTimeEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -55,15 +63,38 @@ function Task() {
         tasksData,
         projectsData,
         timeEntriesData,
+        tasksViewData,
       ] = await Promise.all([
         getTasks(),
         getProjects(),
         getTimeEntries(),
+        getTasksView(),
       ])
 
       setTasks(tasksData)
       setProjects(projectsData)
       setTimeEntries(timeEntriesData)
+
+      const savedProjectId =
+        tasksViewData?.selectedProjectId
+
+      const projectExists = projectsData.some(
+        (project) =>
+          String(project._id) ===
+          String(savedProjectId)
+      )
+
+      if (savedProjectId && projectExists) {
+        setSelectedProjectId(String(savedProjectId))
+      } else if (projectsData.length > 0) {
+        setSelectedProjectId(
+          String(projectsData[0]._id)
+        )
+      } else {
+        setSelectedProjectId('')
+      }
+
+      setTasksViewLoaded(true)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -74,6 +105,16 @@ function Task() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (!tasksViewLoaded || !selectedProjectId) {
+      return
+    }
+
+    saveTasksView(selectedProjectId).catch((error) => {
+      setError(error.message)
+    })
+  }, [selectedProjectId, tasksViewLoaded])
 
   useEffect(() => {
     if (timeEntriesVersion === 0) {
@@ -373,6 +414,12 @@ function Task() {
     await handleStatusChange(draggedTask, newStatus)
     setDraggedTask(null)
   }
+
+  const projectTasks = tasks.filter(
+    (task) =>
+      String(task.projectId) ===
+      String(selectedProjectId)
+  )
 
   function getProjectName(projectId) {
     const project = projects.find(
@@ -841,6 +888,30 @@ function Task() {
           </p>
         </div>
 
+        <div className="tasks-project-select">
+          <label htmlFor="tasks-project">
+            Project
+          </label>
+
+          <select
+            id="tasks-project"
+            value={selectedProjectId}
+            onChange={(event) =>
+              setSelectedProjectId(event.target.value)
+            }
+            disabled={projects.length === 0}
+          >
+            {projects.map((project) => (
+              <option
+                key={project._id}
+                value={project._id}
+              >
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button
           className="tasks-create-button"
           type="button"
@@ -1107,14 +1178,14 @@ function Task() {
       <section className="tasks-list">
         <div className="tasks-list-header">
           <span>
-            {tasks.length}{' '}
-            {tasks.length === 1
+            {projectTasks.length}{' '}
+            {projectTasks.length === 1
               ? 'TASK'
               : 'TASKS'}
           </span>
         </div>
 
-        {tasks.length === 0 ? (
+        {projectTasks.length === 0 ? (
           <div className="tasks-empty">
             <h3>No tasks yet</h3>
 
@@ -1138,7 +1209,7 @@ function Task() {
                 title: 'Completed',
               },
             ].map((column) => {
-              const columnTasks = tasks.filter(
+              const columnTasks = projectTasks.filter(
                 (task) => task.status === column.status
               )
 

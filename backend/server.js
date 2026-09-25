@@ -17,6 +17,7 @@ const userRoutes = require('./routes/userRoutes')
 const dashboardLayoutRoutes = require('./routes/dashboardLayoutRoutes')
 const activeTimerRoutes = require('./routes/activeTimerRoutes')
 const timelineRoutes = require('./routes/timelineRoutes')
+const tasksViewRoutes = require('./routes/tasksViewRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -92,6 +93,7 @@ app.use('/api/users', authMiddleware, userRoutes)
 app.use('/api/dashboard-layout', authMiddleware, dashboardLayoutRoutes)
 app.use('/api/active-timer', authMiddleware, activeTimerRoutes)
 app.use('/api/timeline', authMiddleware, timelineRoutes)
+app.use('/api/tasks-view', authMiddleware, tasksViewRoutes)
 
 // 404 handler
 app.use((req, res) => {
