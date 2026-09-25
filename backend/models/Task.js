@@ -48,6 +48,16 @@ const taskSchema = new mongoose.Schema(
       default: 'medium',
     },
 
+    startDate: {
+      type: Date,
+      default: null,
+    },
+
+    completedDate: {
+      type: Date,
+      default: null,
+    },
+
     dueDate: {
       type: Date,
       default: null,

@@ -39,6 +39,8 @@ function Task() {
   const [estimatedHours, setEstimatedHours] = useState('')
   const [status, setStatus] = useState('todo')
   const [priority, setPriority] = useState('medium')
+  const [startDate, setStartDate] = useState('')
+  const [completedDate, setCompletedDate] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -99,6 +101,8 @@ function Task() {
     setEstimatedHours('')
     setStatus('todo')
     setPriority('medium')
+    setStartDate('')
+    setCompletedDate('')
     setDueDate('')
     setEditingTask(null)
     setShowForm(false)
@@ -107,6 +111,16 @@ function Task() {
   function startCreate() {
     resetForm()
     setShowForm(true)
+  }
+
+  function formatDateInput(date) {
+    return date
+      ? new Date(date).toISOString().split('T')[0]
+      : ''
+  }
+
+  function getTodayDate() {
+    return new Date().toISOString().split('T')[0]
   }
 
   function startEdit(task) {
@@ -130,6 +144,9 @@ function Task() {
 
     setStatus(task.status || 'todo')
     setPriority(task.priority || 'medium')
+
+    setStartDate(formatDateInput(task.startDate))
+    setCompletedDate(formatDateInput(task.completedDate))
 
     setDueDate(
       task.dueDate
@@ -171,6 +188,20 @@ function Task() {
       setSaving(true)
       setError('')
 
+      const today = getTodayDate()
+
+      const normalizedStartDate =
+        startDate ||
+        (status === 'in-progress' || status === 'completed'
+          ? today
+          : null)
+
+      const normalizedCompletedDate =
+        completedDate ||
+        (status === 'completed'
+          ? today
+          : null)
+
       const task = {
         title: title.trim(),
         description: description.trim(),
@@ -183,6 +214,8 @@ function Task() {
           : 0,
         status,
         priority,
+        startDate: normalizedStartDate,
+        completedDate: normalizedCompletedDate,
         dueDate: dueDate || null,
       }
 
@@ -264,6 +297,21 @@ function Task() {
     try {
       setError('')
 
+      const today = getTodayDate()
+
+      const updatedStartDate =
+        task.startDate ||
+        (newStatus === 'in-progress' ||
+        newStatus === 'completed'
+          ? today
+          : null)
+
+      const updatedCompletedDate =
+        task.completedDate ||
+        (newStatus === 'completed'
+          ? today
+          : null)
+
       const updatedTask = await updateTask(
         task._id,
         {
@@ -276,6 +324,8 @@ function Task() {
             task.estimatedMinutes || 0,
           status: newStatus,
           priority: task.priority || 'medium',
+          startDate: updatedStartDate,
+          completedDate: updatedCompletedDate,
           dueDate: task.dueDate || null,
         }
       )
@@ -302,6 +352,18 @@ function Task() {
     return project
       ? project.name
       : 'No project'
+  }
+
+  function getParentTaskName(parentTaskId) {
+    const parentTask = tasks.find(
+      (task) =>
+        String(task._id) ===
+        String(parentTaskId)
+    )
+
+    return parentTask
+      ? parentTask.title
+      : 'Unknown task'
   }
 
   function isDescendant(
@@ -536,227 +598,182 @@ function Task() {
     })
   }
 
-  function renderTask(task, level = 0) {
+  function renderTask(task) {
     const childTasks =
       getChildTasks(task._id)
 
     const totalEstimatedMinutes =
-      getTotalEstimatedMinutes(
-        task._id
-      )
+      getTotalEstimatedMinutes(task._id)
 
     const totalTrackedMinutes =
-      getTotalTrackedMinutes(
-        task._id
-      )
+      getTotalTrackedMinutes(task._id)
 
     const isActive =
       isTaskBeingTracked(task)
 
     return (
-      <div key={task._id}>
-        <article
-          className={`task-item status-${task.status}`}
-          style={{
-            paddingLeft: `${20 + level * 28}px`,
-          }}
-        >
-          <div className="task-status-indicator" />
+      <article
+        key={task._id}
+        className={`task-item status-${task.status}`}
+      >
+        <div className="task-info">
+          <div className="task-name-row">
+            <h3>{task.title}</h3>
 
-          <div className="task-info">
-            <div className="task-name-row">
-              <h3>{task.title}</h3>
-
-              <span
-                className={`task-status ${task.status}`}
-              >
-                {task.status === 'todo' &&
-                  'Added'}
-
-                {task.status ===
-                  'in-progress' &&
-                  'Started'}
-
-                {task.status ===
-                  'completed' &&
-                  'Completed'}
-              </span>
-
-              <span
-                className={`task-priority ${task.priority}`}
-              >
-                {task.priority}
-              </span>
-
-              {isActive && (
-                <span className="task-timer-active">
-                  {activeTimer.status ===
-                  'paused'
-                    ? 'Paused'
-                    : 'Tracking'}{' '}
-                  {formatTimerTime(
-                    elapsedSeconds
-                  )}
-                </span>
-              )}
-            </div>
-
-            {task.description && (
-              <p className="task-description">
-                {task.description}
-              </p>
-            )}
-
-            <div className="task-meta">
-              <span>
-                Project:{' '}
-                {getProjectName(
-                  task.projectId
-                )}
-              </span>
-
-              {totalEstimatedMinutes >
-                0 && (
-                <span>
-                  Estimated:{' '}
-                  {formatDuration(
-                    totalEstimatedMinutes
-                  )}
-                </span>
-              )}
-
-              {totalTrackedMinutes >
-                0 && (
-                <span>
-                  Tracked:{' '}
-                  {formatDuration(
-                    totalTrackedMinutes
-                  )}
-                </span>
-              )}
-
-              {childTasks.length >
-                0 && (
-                <span>
-                  {childTasks.length}{' '}
-                  {childTasks.length === 1
-                    ? 'subtask'
-                    : 'subtasks'}
-                </span>
-              )}
-
-              {task.dueDate && (
-                <span>
-                  Due:{' '}
-                  {new Date(
-                    task.dueDate
-                  ).toLocaleDateString(
-                    'fi-FI'
-                  )}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="task-actions">
-            <select
-              value={task.status}
-              onChange={(event) =>
-                handleStatusChange(
-                  task,
-                  event.target.value
-                )
-              }
-              aria-label={`Change status for ${task.title}`}
+            <span
+              className={`task-status ${task.status}`}
             >
-              <option value="todo">
-                Added
-              </option>
+              {task.status === 'todo' && 'Added'}
+              {task.status === 'in-progress' && 'Started'}
+              {task.status === 'completed' && 'Completed'}
+            </span>
 
-              <option value="in-progress">
-                Started
-              </option>
-
-              <option value="completed">
-                Completed
-              </option>
-            </select>
-
-            {!activeTimer && (
-              <button
-                type="button"
-                onClick={() =>
-                  handleStartTimer(task)
-                }
-              >
-                Start
-              </button>
-            )}
-
-            {isActive &&
-              activeTimer.status ===
-                'running' && (
-                <button
-                  type="button"
-                  onClick={pauseTimer}
-                  disabled={timerSaving}
-                >
-                  Pause
-                </button>
-              )}
-
-            {isActive &&
-              activeTimer.status ===
-                'paused' && (
-                <button
-                  type="button"
-                  onClick={resumeTimer}
-                  disabled={timerSaving}
-                >
-                  Resume
-                </button>
-              )}
+            <span
+              className={`task-priority ${task.priority}`}
+            >
+              {task.priority}
+            </span>
 
             {isActive && (
+              <span className="task-timer-active">
+                {activeTimer.status === 'paused'
+                  ? 'Paused'
+                  : 'Tracking'}{' '}
+                {formatTimerTime(elapsedSeconds)}
+              </span>
+            )}
+          </div>
+
+          {task.description && (
+            <p className="task-description">
+              {task.description}
+            </p>
+          )}
+
+          <div className="task-meta">
+            <span>
+              Project: {getProjectName(task.projectId)}
+            </span>
+
+            {task.parentTaskId && (
+              <span>
+                Parent: {getParentTaskName(task.parentTaskId)}
+              </span>
+            )}
+
+            {childTasks.length > 0 && (
+              <span>
+                {childTasks.length}{' '}
+                {childTasks.length === 1
+                  ? 'subtask'
+                  : 'subtasks'}
+              </span>
+            )}
+
+            {totalEstimatedMinutes > 0 && (
+              <span>
+                Estimated: {formatDuration(totalEstimatedMinutes)}
+              </span>
+            )}
+
+            {totalTrackedMinutes > 0 && (
+              <span>
+                Tracked: {formatDuration(totalTrackedMinutes)}
+              </span>
+            )}
+
+            {task.startDate && (
+              <span>
+                Started:{' '}
+                {new Date(task.startDate).toLocaleDateString('fi-FI')}
+              </span>
+            )}
+
+            {task.completedDate && (
+              <span>
+                Completed:{' '}
+                {new Date(task.completedDate).toLocaleDateString('fi-FI')}
+              </span>
+            )}
+
+            {task.dueDate && (
+              <span>
+                Due:{' '}
+                {new Date(task.dueDate).toLocaleDateString('fi-FI')}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="task-actions">
+          <select
+            value={task.status}
+            onChange={(event) =>
+              handleStatusChange(task, event.target.value)
+            }
+            aria-label={`Change status for ${task.title}`}
+          >
+            <option value="todo">Added</option>
+            <option value="in-progress">Started</option>
+            <option value="completed">Completed</option>
+          </select>
+
+          {!activeTimer && (
+            <button
+              type="button"
+              onClick={() => handleStartTimer(task)}
+            >
+              Start
+            </button>
+          )}
+
+          {isActive &&
+            activeTimer.status === 'running' && (
               <button
                 type="button"
-                onClick={stopTimer}
+                onClick={pauseTimer}
                 disabled={timerSaving}
               >
-                {timerSaving
-                  ? 'Saving...'
-                  : 'Stop'}
+                Pause
               </button>
             )}
 
+          {isActive &&
+            activeTimer.status === 'paused' && (
+              <button
+                type="button"
+                onClick={resumeTimer}
+                disabled={timerSaving}
+              >
+                Resume
+              </button>
+            )}
+
+          {isActive && (
             <button
               type="button"
-              onClick={() =>
-                startEdit(task)
-              }
+              onClick={stopTimer}
+              disabled={timerSaving}
             >
-              Edit
+              {timerSaving ? 'Saving...' : 'Stop'}
             </button>
+          )}
 
-            <button
-              type="button"
-              onClick={() =>
-                handleDelete(task)
-              }
-            >
-              Delete
-            </button>
-          </div>
-        </article>
+          <button
+            type="button"
+            onClick={() => startEdit(task)}
+          >
+            Edit
+          </button>
 
-        {childTasks.map(
-          (childTask) =>
-            renderTask(
-              childTask,
-              level + 1
-            )
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={() => handleDelete(task)}
+          >
+            Delete
+          </button>
+        </div>
+      </article>
     )
   }
 
@@ -770,17 +787,7 @@ function Task() {
     )
   }
 
-  const rootTasks = tasks.filter((task) => {
-    if (!task.parentTaskId) {
-      return true
-    }
 
-    return !tasks.some(
-      (parentTask) =>
-        String(parentTask._id) ===
-        String(task.parentTaskId)
-    )
-  })
 
   return (
     <main className="tasks-page">
@@ -975,6 +982,36 @@ function Task() {
               </label>
 
               <label>
+                <span>Start date</span>
+
+                <input
+                  className="task-date-input"
+                  type="date"
+                  value={startDate}
+                  onChange={(event) =>
+                    setStartDate(
+                      event.target.value
+                    )
+                  }
+                />
+              </label>
+
+              <label>
+                <span>Completed date</span>
+
+                <input
+                  className="task-date-input"
+                  type="date"
+                  value={completedDate}
+                  onChange={(event) =>
+                    setCompletedDate(
+                      event.target.value
+                    )
+                  }
+                />
+              </label>
+
+              <label>
                 <span>Due date</span>
 
                 <input
@@ -1040,21 +1077,65 @@ function Task() {
           </span>
         </div>
 
-        <div className="task-list">
-          {tasks.length === 0 ? (
-            <div className="tasks-empty">
-              <h3>No tasks yet</h3>
+        {tasks.length === 0 ? (
+          <div className="tasks-empty">
+            <h3>No tasks yet</h3>
 
-              <p>
-                Create your first task to start tracking your work.
-              </p>
-            </div>
-          ) : (
-            rootTasks.map((task) =>
-              renderTask(task)
-            )
-          )}
-        </div>
+            <p>
+              Create your first task to start tracking your work.
+            </p>
+          </div>
+        ) : (
+          <div className="task-board">
+            {[
+              {
+                status: 'todo',
+                title: 'Not started',
+              },
+              {
+                status: 'in-progress',
+                title: 'In progress',
+              },
+              {
+                status: 'completed',
+                title: 'Completed',
+              },
+            ].map((column) => {
+              const columnTasks = tasks.filter(
+                (task) => task.status === column.status
+              )
+
+              return (
+                <section
+                  key={column.status}
+                  className="task-column"
+                >
+                  <div className="task-column-header">
+                    <div>
+                      <h3>{column.title}</h3>
+                    </div>
+
+                    <span className="task-column-count">
+                      {columnTasks.length}
+                    </span>
+                  </div>
+
+                  <div className="task-column-list">
+                    {columnTasks.length === 0 ? (
+                      <div className="task-column-empty">
+                        No tasks
+                      </div>
+                    ) : (
+                      columnTasks.map((task) =>
+                        renderTask(task)
+                      )
+                    )}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       {taskToDelete && (
