@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getProjects } from '../../api/projects'
 import { getTasks } from '../../api/tasks'
 import { getTimeEntries } from '../../api/timeEntries'
+import { getNotes } from '../../api/notes'
 import {
   getDashboardLayout,
   saveDashboardLayout,
@@ -10,6 +11,7 @@ import DashboardGrid from '../DashboardWidgets/DashboardGrid'
 import WidgetLibrary from '../DashboardWidgets/WidgetLibrary'
 import Project from '../../pages/Projects/Project'
 import Task from '../../pages/Tasks/Task'
+import Note from '../../pages/Notes/Note'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
@@ -33,14 +35,17 @@ function MainContent({
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
   const [timeEntries, setTimeEntries] = useState([])
+  const [notes, setNotes] = useState([])
 
   const [loading, setLoading] = useState(true)
   const [tasksLoading, setTasksLoading] = useState(true)
   const [timeEntriesLoading, setTimeEntriesLoading] = useState(true)
+  const [notesLoading, setNotesLoading] = useState(true)
 
   const [error, setError] = useState('')
   const [tasksError, setTasksError] = useState('')
   const [timeEntriesError, setTimeEntriesError] = useState('')
+  const [notesError, setNotesError] = useState('')
 
   const [widgets, setWidgets] = useState([
     {
@@ -99,9 +104,21 @@ function MainContent({
       }
     }
 
+    async function loadNotes() {
+      try {
+        const data = await getNotes()
+        setNotes(data)
+      } catch (error) {
+        setNotesError(error.message)
+      } finally {
+        setNotesLoading(false)
+      }
+    }
+
     loadProjects()
     loadTasks()
     loadTimeEntries()
+    loadNotes()
   }, [])
 
   useEffect(() => {
@@ -115,18 +132,22 @@ function MainContent({
           projectsData,
           tasksData,
           timeEntriesData,
+          notesData,
         ] = await Promise.all([
           getProjects(),
           getTasks(),
           getTimeEntries(),
+          getNotes(),
         ])
 
         setProjects(projectsData)
         setTasks(tasksData)
         setTimeEntries(timeEntriesData)
+        setNotes(notesData)
         setError('')
         setTasksError('')
         setTimeEntriesError('')
+        setNotesError('')
       } catch (error) {
         console.error(
           'Failed to refresh dashboard data:',
@@ -224,6 +245,10 @@ function MainContent({
 
   if (activeView === 'tasks') {
     return <Task />
+  }
+
+  if (activeView === 'notes') {
+    return <Note />
   }
 
   const openTasks = tasks.filter(
@@ -355,6 +380,15 @@ function MainContent({
       return dateB - dateA
     })
     .slice(0, 2)
+
+  const recentNotes = [...notes]
+    .sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime()
+      const dateB = new Date(b.createdAt).getTime()
+
+      return dateB - dateA
+    })
+    .slice(0, 3)
 
   const activeTasks = tasks
     .filter((task) => task.status !== 'completed')
@@ -906,26 +940,82 @@ if (widget.type === 'tasks') {
               <div className="panel-header">
                 <button
                   type="button"
+                  onClick={() =>
+                    onViewChange('notes')
+                  }
                 >
                   View all
                 </button>
               </div>
 
-              <div className="notes-list">
-                <div className="note-item">
-                  <strong>Project ideas</strong>
-                  <p>Ideas and plans for upcoming projects.</p>
-                </div>
+              <div
+                className="dashboard-notes-list"
+                style={{
+                  marginTop: '23px',
+                }}
+              >
+                {notesLoading && (
+                  <p>Loading notes...</p>
+                )}
 
-                <div className="note-item">
-                  <strong>Meeting notes</strong>
-                  <p>Things to remember from the latest meeting.</p>
-                </div>
+                {notesError && (
+                  <p>{notesError}</p>
+                )}
 
-                <div className="note-item">
-                  <strong>Todo ideas</strong>
-                  <p>Small things to work on later.</p>
-                </div>
+                {!notesLoading &&
+                  !notesError &&
+                  recentNotes.map((note) => (
+                    <div
+                      className="dashboard-note-item"
+                      key={note._id}
+                      style={{
+                        minHeight: '82px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        borderTop:
+                          '1px solid var(--color-border)',
+                      }}
+                    >
+                      <strong
+                        style={{
+                          display: 'block',
+                          overflow: 'hidden',
+                          color: '#e7edf5',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {note.title}
+                      </strong>
+
+                      {note.content && (
+                        <p
+                          style={{
+                            display: '-webkit-box',
+                            margin: '5px 0 0',
+                            overflow: 'hidden',
+                            color: 'var(--color-muted)',
+                            fontSize: '12px',
+                            lineHeight: 1.5,
+                            textOverflow: 'ellipsis',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                          }}
+                        >
+                          {note.content}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+
+                {!notesLoading &&
+                  !notesError &&
+                  recentNotes.length === 0 && (
+                    <p>No notes yet.</p>
+                  )}
               </div>
             </article>
           </section>

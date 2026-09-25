@@ -27,6 +27,17 @@ const noteSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium',
+    },
+
+    order: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

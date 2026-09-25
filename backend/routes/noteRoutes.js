@@ -9,7 +9,11 @@ router.get('/', async (req, res, next) => {
   try {
     const notes = await Note.find({
       userId: req.user._id,
-    }).sort({ createdAt: -1 })
+    }).sort({
+      priority: 1,
+      order: 1,
+      createdAt: -1,
+    })
 
     res.json(notes)
   } catch (error) {
@@ -58,6 +62,8 @@ router.post('/', async (req, res, next) => {
       projectId: req.body.projectId,
       title: req.body.title,
       content: req.body.content,
+      priority: req.body.priority || 'medium',
+      order: req.body.order || 0,
     })
 
     res.status(201).json(note)
@@ -96,6 +102,11 @@ router.patch('/:id', async (req, res, next) => {
     note.projectId = req.body.projectId
     note.title = req.body.title
     note.content = req.body.content
+    note.priority = req.body.priority || note.priority
+    note.order =
+      req.body.order !== undefined
+        ? req.body.order
+        : note.order
 
     await note.save()
 
