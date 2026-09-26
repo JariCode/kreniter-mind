@@ -83,6 +83,8 @@ router.post('/', async (req, res, next) => {
       description: req.body.description,
       status: req.body.status,
       priority: req.body.priority,
+      startDate: req.body.startDate,
+      completedDate: req.body.completedDate,
       dueDate: req.body.dueDate,
       estimatedMinutes: req.body.estimatedMinutes,
     })
@@ -154,6 +156,8 @@ router.patch('/:id', async (req, res, next) => {
     task.description = req.body.description
     task.status = req.body.status
     task.priority = req.body.priority
+    task.startDate = req.body.startDate
+    task.completedDate = req.body.completedDate
     task.dueDate = req.body.dueDate
     task.estimatedMinutes = req.body.estimatedMinutes
 

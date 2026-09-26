@@ -178,6 +178,11 @@ function Task() {
 
   function startCreate() {
     resetForm()
+    setProjectId(
+      selectedProjectId === NO_PROJECT
+        ? ''
+        : selectedProjectId
+    )
     setShowForm(true)
   }
 
@@ -970,7 +975,14 @@ function Task() {
       )}
 
       {showForm && (
-        <section className="task-form-panel">
+        <div
+          className={
+            editingTask
+              ? 'task-edit-modal-overlay'
+              : 'task-form-wrapper'
+          }
+        >
+          <section className="task-form-panel">
           <div className="task-form-header">
             <h3>
               {editingTask
@@ -1208,7 +1220,8 @@ function Task() {
               </button>
             </div>
           </form>
-        </section>
+          </section>
+        </div>
       )}
 
       <section className="tasks-list">
