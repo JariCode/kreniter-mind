@@ -20,6 +20,8 @@ const timelineRoutes = require('./routes/timelineRoutes')
 const tasksViewRoutes = require('./routes/tasksViewRoutes')
 const timeViewRoutes = require('./routes/timeViewRoutes')
 const aiRoutes = require('./routes/aiRoutes')
+const folderRoutes = require('./routes/folderRoutes')
+const fileRoutes = require('./routes/fileRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -98,6 +100,8 @@ app.use('/api/timeline', authMiddleware, timelineRoutes)
 app.use('/api/tasks-view', authMiddleware, tasksViewRoutes)
 app.use('/api/time-view', authMiddleware, timeViewRoutes)
 app.use('/api/ai', authMiddleware, aiRoutes)
+app.use('/api/folders', authMiddleware, folderRoutes)
+app.use('/api/files', authMiddleware, fileRoutes)
 
 // 404 handler
 app.use((req, res) => {
