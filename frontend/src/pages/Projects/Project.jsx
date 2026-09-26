@@ -20,6 +20,7 @@ function Projects() {
   const [projectToDelete, setProjectToDelete] = useState(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [repositoryUrl, setRepositoryUrl] = useState('')
   const [status, setStatus] = useState('active')
   const [color, setColor] = useState('#1688ff')
   const [saving, setSaving] = useState(false)
@@ -53,6 +54,7 @@ function Projects() {
   function resetForm() {
     setName('')
     setDescription('')
+    setRepositoryUrl('')
     setStatus('active')
     setColor('#1688ff')
     setEditingProject(null)
@@ -67,6 +69,7 @@ function Projects() {
   function startEdit(project) {
     setName(project.name || '')
     setDescription(project.description || '')
+    setRepositoryUrl(project.repositoryUrl || '')
     setStatus(project.status || 'active')
     setColor(project.color || '#1688ff')
     setEditingProject(project)
@@ -87,6 +90,7 @@ function Projects() {
       const project = {
         name: name.trim(),
         description: description.trim(),
+        repositoryUrl: repositoryUrl.trim(),
         status,
         color,
       }
@@ -249,10 +253,6 @@ function Projects() {
         <section className="project-form-panel">
           <div className="project-form-header">
             <div>
-              <span className="projects-kicker">
-                {editingProject ? 'EDIT PROJECT' : 'NEW PROJECT'}
-              </span>
-
               <h3>
                 {editingProject ? 'Edit project' : 'Create project'}
               </h3>
@@ -284,6 +284,18 @@ function Projects() {
                   <option value="completed">Completed</option>
                   <option value="archived">Archived</option>
                 </select>
+              </label>
+
+              <label>
+                <span>Repository</span>
+
+                <input
+                  type="url"
+                  value={repositoryUrl}
+                  onChange={(event) => setRepositoryUrl(event.target.value)}
+                  maxLength={500}
+                  placeholder="https://github.com/..."
+                />
               </label>
 
               <label className="project-form-full">
@@ -391,6 +403,27 @@ function Projects() {
                   <p>
                     {project.description || 'No description'}
                   </p>
+
+                  {project.repositoryUrl && (
+                    <>
+                      <span className="project-meta-label">
+                        Repository
+                      </span>
+
+                      <a
+                        className="project-repository"
+                        href={project.repositoryUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {project.repositoryUrl}
+                      </a>
+                    </>
+                  )}
+
+                  <span className="project-meta-label">
+                    Total time
+                  </span>
 
                   <span className="project-tracked-time">
                     {formatDuration(

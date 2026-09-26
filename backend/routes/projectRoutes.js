@@ -43,6 +43,7 @@ router.post('/', async (req, res, next) => {
       userId: req.user._id,
       name: req.body.name,
       description: req.body.description,
+      repositoryUrl: req.body.repositoryUrl,
       status: req.body.status,
       color: req.body.color,
     })
@@ -64,6 +65,7 @@ router.patch('/:id', async (req, res, next) => {
       {
         name: req.body.name,
         description: req.body.description,
+        repositoryUrl: req.body.repositoryUrl,
         status: req.body.status,
         color: req.body.color,
       },

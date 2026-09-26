@@ -24,6 +24,13 @@ const projectSchema = new mongoose.Schema(
       default: '',
     },
 
+    repositoryUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: '',
+    },
+
     status: {
       type: String,
       enum: ['active', 'completed', 'archived'],
