@@ -6,6 +6,7 @@ import { getTimeline, saveTimeline } from '../../api/timeline'
 import './Timeline.css'
 
 const DAY_WIDTH = 64
+const NO_PROJECT = 'no-project'
 
 const STATUS_COLORS = {
   todo: '#7f8b98',
@@ -54,7 +55,12 @@ function Timeline() {
             String(savedProjectId)
         )
 
-      if (savedProjectId && savedProjectExists) {
+      if (
+        savedProjectId === NO_PROJECT ||
+        savedProjectId === null
+      ) {
+        setSelectedProjectId(NO_PROJECT)
+      } else if (savedProjectId && savedProjectExists) {
         setSelectedProjectId(
           String(savedProjectId)
         )
@@ -62,6 +68,8 @@ function Timeline() {
         setSelectedProjectId(
           String(projectsData[0]._id)
         )
+      } else {
+        setSelectedProjectId(NO_PROJECT)
       }
 
       setTimelineLoaded(true)
@@ -82,6 +90,10 @@ function Timeline() {
     }
 
     setSelectedProjectId((currentProjectId) => {
+      if (currentProjectId === NO_PROJECT) {
+        return NO_PROJECT
+      }
+
       const projectExists = projects.some(
         (project) =>
           String(project._id) ===
@@ -101,7 +113,11 @@ function Timeline() {
       return
     }
 
-    saveTimeline(selectedProjectId).catch(
+    saveTimeline(
+      selectedProjectId === NO_PROJECT
+        ? null
+        : selectedProjectId
+    ).catch(
       (error) => {
         setError(error.message)
       }
@@ -113,11 +129,21 @@ function Timeline() {
       return []
     }
 
-    return tasks.filter(
-      (task) =>
-        String(task.projectId) ===
+    return tasks.filter((task) => {
+      const taskProjectId =
+        typeof task.projectId === 'object'
+          ? task.projectId?._id
+          : task.projectId
+
+      if (selectedProjectId === NO_PROJECT) {
+        return !taskProjectId
+      }
+
+      return (
+        String(taskProjectId) ===
         String(selectedProjectId)
-    )
+      )
+    })
   }, [tasks, selectedProjectId])
 
   const timelineTasks = useMemo(() => {
@@ -405,11 +431,9 @@ function Timeline() {
               loading || projects.length === 0
             }
           >
-            {projects.length === 0 && (
-              <option value="">
-                No projects
-              </option>
-            )}
+            <option value={NO_PROJECT}>
+              No project
+            </option>
 
             {projects.map((project) => (
               <option
