@@ -1,6 +1,6 @@
 .notes-page {
   width: 100%;
-  padding: 32px;
+  padding: 36px 38px 46px;
   box-sizing: border-box;
   overflow-y: auto;
 }
@@ -25,7 +25,7 @@
 
 .notes-intro h2 {
   margin: 0;
-  color: #e7edf5;
+  color: var(--color-text);
   font-size: 1.55rem;
   font-weight: 400;
   line-height: 1.2;
@@ -40,23 +40,23 @@
 }
 
 .notes-create-button {
-  padding: 9px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: transparent;
-  color: #c7d2df;
-  font-size: 12px;
+  padding: 11px 16px;
+  border: 1px solid rgba(22, 136, 255, 0.45);
+  border-radius: 7px;
+  background: rgba(22, 136, 255, 0.10);
+  color: #1688ff;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition:
-    color 0.18s ease,
+    background 0.18s ease,
     border-color 0.18s ease,
-    background 0.18s ease;
+    box-shadow 0.18s ease;
 }
-
 .notes-create-button:hover {
-  border-color: rgba(22, 136, 255, 0.45);
-  background: rgba(22, 136, 255, 0.08);
-  color: #1688ff;
+  border-color: rgba(22, 136, 255, 0.75);
+  background: rgba(22, 136, 255, 0.16);
+  box-shadow: 0 0 20px rgba(22, 136, 255, 0.12);
 }
 
 .notes-error {
