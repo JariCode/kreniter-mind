@@ -16,6 +16,7 @@ import Task from '../../pages/Tasks/Task'
 import Note from '../../pages/Notes/Note'
 import Timeline from '../../pages/Timeline/Timeline'
 import Time from '../../pages/Time/Time'
+import Files from '../../pages/Files/Files'
 import Assistant from '../../pages/AI/Assistant'
 import {
   createConversation,
@@ -350,6 +351,10 @@ function MainContent({
 
   if (activeView === 'time') {
     return <Time />
+  }
+
+  if (activeView === 'files') {
+    return <Files />
   }
 
   if (activeView === 'ai-assistant') {

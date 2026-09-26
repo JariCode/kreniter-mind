@@ -911,7 +911,7 @@ function Task() {
       <div className="tasks-intro">
         <div>
           <span className="tasks-kicker">
-            Task management
+            Workspace
           </span>
 
           <h2>Tasks</h2>
