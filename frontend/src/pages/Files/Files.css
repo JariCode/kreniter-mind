@@ -806,3 +806,12 @@
   background: rgba(95, 158, 216, 0.16);
   color: #a8cdf0;
 }
+.files-row.files-folder-drag-active {
+  border-radius: 8px;
+  background: rgba(95, 158, 216, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(95, 158, 216, 0.55);
+}
+
+.files-row.files-folder-drag-active .files-item-info strong {
+  color: #a8cdf0;
+}

@@ -30,6 +30,8 @@ function Files() {
   const [actionError, setActionError] = useState('')
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [dragOverFolderId, setDragOverFolderId] = useState(null)
+  const [draggedFile, setDraggedFile] = useState(null)
   const [movingFile, setMovingFile] = useState(null)
   const [folderTree, setFolderTree] = useState([])
   const [loadingFolderTree, setLoadingFolderTree] = useState(false)
@@ -264,7 +266,11 @@ function Files() {
     await uploadFiles(selectedFiles)
   }
 
-  async function uploadFiles(selectedFiles) {
+  async function uploadFiles(
+    selectedFiles,
+    targetFolderId = currentFolder?._id || null,
+    targetFiles = files
+  ) {
     if (selectedFiles.length === 0) {
       return
     }
@@ -274,7 +280,7 @@ function Files() {
       setActionError('')
 
       for (const file of selectedFiles) {
-        const existingFile = files.find(
+        const existingFile = targetFiles.find(
           (currentFile) =>
             currentFile.name === file.name
         )
@@ -301,7 +307,7 @@ function Files() {
           projectValue === NO_PROJECT
             ? null
             : projectValue,
-          currentFolder?._id || null
+          targetFolderId
         )
       }
 
@@ -315,7 +321,23 @@ function Files() {
     }
   }
 
+  function handleFileDragStart(event, file) {
+    setDraggedFile(file)
+    setDragActive(false)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', file._id)
+  }
+
+  function handleFileDragEnd() {
+    setDraggedFile(null)
+    setDragOverFolderId(null)
+  }
+
   function handleDragOver(event) {
+    if (draggedFile) {
+      return
+    }
+
     event.preventDefault()
     event.stopPropagation()
     setDragActive(true)
@@ -344,6 +366,85 @@ function Files() {
     )
 
     await uploadFiles(droppedFiles)
+  }
+
+  function handleFolderDragOver(event, folderId) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragActive(false)
+    setDragOverFolderId(folderId)
+  }
+
+  function handleFolderDragLeave(event, folderId) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (
+      event.currentTarget.contains(event.relatedTarget)
+    ) {
+      return
+    }
+
+    if (dragOverFolderId === folderId) {
+      setDragOverFolderId(null)
+    }
+  }
+
+  async function handleFolderDrop(event, folder) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragOverFolderId(null)
+
+    if (draggedFile) {
+      if (
+        String(draggedFile.folderId || '') ===
+        String(folder._id || '')
+      ) {
+        setDraggedFile(null)
+        return
+      }
+
+      try {
+        setActionError('')
+        await updateFile(draggedFile._id, {
+          folderId: folder._id,
+        })
+        setDraggedFile(null)
+        await loadCurrentFolder()
+      } catch (error) {
+        setActionError(
+          error.message || 'Failed to move file.'
+        )
+        setDraggedFile(null)
+      }
+
+      return
+    }
+
+    const droppedFiles = Array.from(
+      event.dataTransfer.files || []
+    )
+
+    if (droppedFiles.length === 0) {
+      return
+    }
+
+    try {
+      const targetFiles = await getFiles(
+        projectValue,
+        folder._id
+      )
+
+      await uploadFiles(
+        droppedFiles,
+        folder._id,
+        targetFiles
+      )
+    } catch (error) {
+      setActionError(
+        error.message || 'Failed to load folder files.'
+      )
+    }
   }
 
   function handleRenameFile(file) {
@@ -960,8 +1061,21 @@ function Files() {
             <div className="files-list">
               {folders.map((folder) => (
                 <div
-                  className="files-row"
+                  className={`files-row ${
+                    dragOverFolderId === folder._id
+                      ? 'files-folder-drag-active'
+                      : ''
+                  }`}
                   key={folder._id}
+                  onDragOver={(event) =>
+                    handleFolderDragOver(event, folder._id)
+                  }
+                  onDragLeave={(event) =>
+                    handleFolderDragLeave(event, folder._id)
+                  }
+                  onDrop={(event) =>
+                    handleFolderDrop(event, folder)
+                  }
                 >
                   <button
                     type="button"
@@ -1007,6 +1121,11 @@ function Files() {
                 <div
                   className="files-row"
                   key={file._id}
+                  draggable
+                  onDragStart={(event) =>
+                    handleFileDragStart(event, file)
+                  }
+                  onDragEnd={handleFileDragEnd}
                 >
                   <button
                     type="button"
