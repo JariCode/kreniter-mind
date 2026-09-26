@@ -1,117 +1,162 @@
+import { useEffect, useState } from 'react'
 import './Sidebar.css'
 
 function Sidebar({ activeView, onViewChange }) {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setMobileOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
+  function handleViewChange(view) {
+    onViewChange(view)
+    setMobileOpen(false)
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        KRENITER MIND
-      </div>
+    <>
+      <button
+        className="sidebar-mobile-toggle"
+        type="button"
+        onClick={() => setMobileOpen((current) => !current)}
+        aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+        aria-expanded={mobileOpen}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
 
-      <nav className="sidebar-nav">
+      {mobileOpen && (
         <button
-          className={`sidebar-item ${
-            activeView === 'dashboard' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('dashboard')}
-        >
-          Dashboard
-        </button>
+          className="sidebar-mobile-overlay"
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'projects' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('projects')}
-        >
-          Projects
-        </button>
+      <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-logo">
+          KRENITER MIND
+        </div>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'tasks' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('tasks')}
-        >
-          Tasks
-        </button>
+        <nav className="sidebar-nav">
+          <button
+            className={`sidebar-item ${
+              activeView === 'dashboard' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('dashboard')}
+          >
+            Dashboard
+          </button>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'notes' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('notes')}
-        >
-          Notes
-        </button>
+          <button
+            className={`sidebar-item ${
+              activeView === 'projects' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('projects')}
+          >
+            Projects
+          </button>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'timeline' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('timeline')}
-        >
-          Timeline
-        </button>
+          <button
+            className={`sidebar-item ${
+              activeView === 'tasks' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('tasks')}
+          >
+            Tasks
+          </button>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'time' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('time')}
-        >
-          Time
-        </button>
+          <button
+            className={`sidebar-item ${
+              activeView === 'notes' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('notes')}
+          >
+            Notes
+          </button>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'files' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('files')}
-        >
-          Files
-        </button>
+          <button
+            className={`sidebar-item ${
+              activeView === 'timeline' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('timeline')}
+          >
+            Timeline
+          </button>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'reports' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('reports')}
-        >
-          Reports
-        </button>
-      </nav>
+          <button
+            className={`sidebar-item ${
+              activeView === 'time' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('time')}
+          >
+            Time
+          </button>
 
-      <div className="sidebar-section">
-        <button
-          className={`sidebar-item ${
-            activeView === 'ai-assistant' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('ai-assistant')}
-        >
-          AI Assistant
-        </button>
+          <button
+            className={`sidebar-item ${
+              activeView === 'files' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('files')}
+          >
+            Files
+          </button>
 
-        <button
-          className={`sidebar-item ${
-            activeView === 'coding-ai' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('coding-ai')}
-        >
-          Coding AI
-        </button>
-      </div>
+          <button
+            className={`sidebar-item ${
+              activeView === 'reports' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('reports')}
+          >
+            Reports
+          </button>
+        </nav>
 
-      <div className="sidebar-bottom">
-        <button
-          className={`sidebar-item ${
-            activeView === 'settings' ? 'active' : ''
-          }`}
-          onClick={() => onViewChange('settings')}
-        >
-          Settings
-        </button>
-      </div>
-    </aside>
+        <div className="sidebar-section">
+          <button
+            className={`sidebar-item ${
+              activeView === 'ai-assistant' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('ai-assistant')}
+          >
+            AI Assistant
+          </button>
+
+          <button
+            className={`sidebar-item ${
+              activeView === 'coding-ai' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('coding-ai')}
+          >
+            Coding AI
+          </button>
+        </div>
+
+        <div className="sidebar-bottom">
+          <button
+            className={`sidebar-item ${
+              activeView === 'settings' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('settings')}
+          >
+            Settings
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }
 

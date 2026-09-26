@@ -114,50 +114,77 @@
 /* Responsive                       */
 /* -------------------------------- */
 
-@media (max-width: 800px) {
-  .sidebar {
-    width: 170px;
-    min-width: 170px;
-  }
-
-  .sidebar-logo {
-    padding: 0 14px;
-    font-size: 0.66rem;
-  }
-
-  .sidebar-item {
-    font-size: 0.68rem;
-  }
+.sidebar-mobile-toggle,
+.sidebar-mobile-overlay {
+  display: none;
 }
 
-@media (max-width: 650px) {
+@media (max-width: 800px) {
   .sidebar {
-    width: 64px;
-    min-width: 64px;
+    position: fixed;
+    z-index: 1001;
+    top: 0;
+    left: 0;
+    width: 270px;
+    min-width: 270px;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-mobile-toggle {
+    position: fixed;
+    z-index: 1003;
+    top: 23px;
+    left: 16px;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    border: 1px solid rgba(22, 136, 255, 0.22);
+    border-radius: 7px;
+    background: rgba(8, 11, 16, 0.94);
+    color: #e7edf5;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .sidebar-mobile-toggle:hover {
+    border-color: rgba(22, 136, 255, 0.5);
+    background: rgba(13, 19, 29, 0.98);
+  }
+
+  .sidebar-mobile-toggle span {
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: #b8c8d8;
+  }
+
+  .sidebar-mobile-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: rgba(5, 7, 11, 0.68);
+    cursor: pointer;
   }
 
   .sidebar-logo {
     justify-content: center;
-    padding: 0;
-    font-size: 0;
-    letter-spacing: 0;
-  }
-
-  .sidebar-logo::after {
-    content: "K";
-    color: #dce8f4;
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
-
-  .sidebar-item {
-    justify-content: center;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .sidebar-item.active::before {
-    left: 0;
+    padding: 0 55px;
+    font-size: 0.72rem;
+    text-align: center;
   }
 }

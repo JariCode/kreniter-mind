@@ -36,3 +36,31 @@
   color: var(--color-muted);
   font-size: 0.8rem;
 }
+
+@media (max-width: 800px) {
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 16px 18px;
+  }
+
+  .header-title {
+    grid-column: 2;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .header-title h1 {
+    font-size: 1rem;
+  }
+
+  .header-title p {
+    font-size: 0.72rem;
+  }
+
+  .header-actions {
+    grid-column: 3;
+    justify-self: end;
+  }
+}

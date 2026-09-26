@@ -68,6 +68,7 @@
 }
 
 .assistant-workspace {
+  position: relative;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   min-height: 0;
@@ -262,18 +263,20 @@
 }
 
 .assistant-empty-entity {
-  width: 90px;
-  height: 90px;
+  position: relative;
+  top: 30px;
+  width: 280px;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 18px;
-  border: 1px solid rgba(22, 136, 255, 0.1);
-  transform: rotate(45deg);
 }
 
 .assistant-empty-entity .ai-entity {
-  transform: rotate(-45deg) scale(1.15);
+  width: 280px;
+  height: 280px;
+  transform: scale(1.8);
 }
 
 .assistant-empty h2 {
@@ -712,58 +715,142 @@
   font-size: 1rem;
 }
 
+.assistant-conversations-toggle,
+.assistant-conversations-overlay {
+  display: none;
+}
+
+.assistant-input-wrapper textarea {
+  scrollbar-width: thin;
+  scrollbar-color: #263545 #080b10;
+}
+.assistant-input-wrapper textarea::-webkit-scrollbar {
+  width: 10px;
+}
+.assistant-input-wrapper textarea::-webkit-scrollbar-track {
+  background: #080b10;
+}
+.assistant-input-wrapper textarea::-webkit-scrollbar-thumb {
+  border: 2px solid #080b10;
+  border-radius: 6px;
+  background: #263545;
+}
+.assistant-input-wrapper textarea::-webkit-scrollbar-thumb:hover {
+  background: #1688ff;
+}
+
 @media (max-width: 860px) {
   .assistant-page {
     padding: 20px;
   }
-
   .assistant-header {
     align-items: flex-start;
     flex-direction: column;
   }
-
   .assistant-workspace {
     grid-template-columns: 190px minmax(0, 1fr);
     height: calc(100vh - 255px);
   }
-
   .assistant-messages {
     padding: 20px;
   }
-
   .assistant-input-area {
     padding: 12px 16px 15px;
   }
 }
-
 @media (max-width: 620px) {
   .assistant-page {
     padding: 14px;
   }
-
   .assistant-workspace {
+    position: relative;
+    z-index: 0;
     grid-template-columns: 1fr;
     height: calc(100vh - 245px);
   }
-
   .assistant-conversations {
     display: none;
   }
-
+  .assistant-conversations-toggle {
+    position: absolute;
+    left: 16px;
+    top: 10px;
+    z-index: 1003;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid rgba(22, 136, 255, 0.45);
+    border-radius: 50%;
+    background: rgba(8, 11, 16, 0.94);
+    color: #8bb9e8;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+  .assistant-conversations-toggle:hover {
+    border-color: rgba(22, 136, 255, 0.75);
+    background: rgba(13, 19, 29, 0.98);
+  }
+  .assistant-conversations-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 100px;
+    left: 0;
+    z-index: 998;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: rgba(5, 7, 11, 0.68);
+    cursor: pointer;
+  }
+  .assistant-conversations.is-mobile-open {
+    position: absolute;
+    top: 0;
+    bottom: 100px;
+    left: 0;
+    z-index: 1000;
+    display: block;
+    width: min(280px, 82vw);
+    min-height: 0;
+    border-right: 1px solid var(--color-border);
+    background: #080b10;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.35);
+  }
+  .assistant-sidebar-header {
+    padding-left: 90px;
+  }
+  .assistant-empty {
+    min-height: 0;
+    box-sizing: border-box;
+  }
+  .assistant-empty h2 {
+    position: relative;
+    top: -30px;
+  }
+  .assistant-empty p {
+    position: relative;
+    top: -30px;
+  }
+  .assistant-empty-entity .ai-entity {
+    width: 190px;
+    height: 190px;
+    transform: scale(1.5);
+  }
   .assistant-chat-center .ai-entity {
     width: 190px;
     height: 190px;
     transform: scale(1.5);
   }
-
   .assistant-message-content {
     max-width: 86%;
   }
-
   .assistant-message-body {
     max-width: 86%;
   }
-
   .assistant-image {
     width: 100%;
   }

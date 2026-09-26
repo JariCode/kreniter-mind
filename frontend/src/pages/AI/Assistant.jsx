@@ -26,6 +26,7 @@ function Assistant() {
   const [transcribing, setTranscribing] = useState(false)
   const [attachedFile, setAttachedFile] = useState(null)
   const [dragging, setDragging] = useState(false)
+  const [conversationsOpen, setConversationsOpen] = useState(false)
   const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
   const mediaRecorderRef = useRef(null)
@@ -72,6 +73,7 @@ function Assistant() {
 
       setActiveConversation(data.conversation)
       setMessages(data.messages)
+      setConversationsOpen(false)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -93,6 +95,7 @@ function Assistant() {
 
       setActiveConversation(conversation)
       setMessages([])
+      setConversationsOpen(false)
     } catch (error) {
       setError(error.message)
     }
@@ -556,7 +559,32 @@ function Assistant() {
       </div>
 
       <section className="assistant-workspace">
-        <aside className="assistant-conversations">
+        {conversationsOpen && (
+          <button
+            type="button"
+            className="assistant-conversations-overlay"
+            aria-label="Close conversations"
+            onClick={() => setConversationsOpen(false)}
+          />
+        )}
+
+        <button
+          type="button"
+          className="assistant-conversations-toggle"
+          onClick={() =>
+            setConversationsOpen((current) => !current)
+          }
+          aria-label={
+            conversationsOpen
+              ? 'Close conversations'
+              : 'Open conversations'
+          }
+          aria-expanded={conversationsOpen}
+        >
+          ☰
+        </button>
+
+        <aside className={`assistant-conversations ${conversationsOpen ? 'is-mobile-open' : ''}`}>
           <div className="assistant-sidebar-header">
             <span>CONVERSATIONS</span>
           </div>
@@ -642,9 +670,11 @@ function Assistant() {
             </div>
           )}
 
-          <div className="assistant-chat-center">
-            <AI />
-          </div>
+          {messages.length > 0 && (
+            <div className="assistant-chat-center">
+              <AI />
+            </div>
+          )}
 
           <div className="assistant-messages">
             {messagesLoading ? (
