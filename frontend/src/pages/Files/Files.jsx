@@ -274,6 +274,28 @@ function Files() {
       setActionError('')
 
       for (const file of selectedFiles) {
+        const existingFile = files.find(
+          (currentFile) =>
+            currentFile.name === file.name
+        )
+
+        if (
+          existingFile &&
+          isOfficeFile(file)
+        ) {
+          setDialog({
+            type: 'confirm',
+            action: 'replace-file',
+            targetId: existingFile._id,
+            targetFile: file,
+            title: 'Replace file',
+            message: `The file "${file.name}" already exists in this folder. Do you want to replace it?`,
+            confirmLabel: 'Replace',
+          })
+
+          return
+        }
+
         await uploadFile(
           file,
           projectValue === NO_PROJECT
@@ -423,6 +445,26 @@ function Files() {
 
     if (dialog.action === 'delete-file') {
       await deleteFileAction(dialog.targetId)
+      return
+    }
+
+    if (dialog.action === 'replace-file') {
+      try {
+        setUploading(true)
+        setActionError('')
+        await updateFileContent(
+          dialog.targetId,
+          dialog.targetFile
+        )
+        setDialog(null)
+        await loadCurrentFolder()
+      } catch (error) {
+        setActionError(
+          error.message || 'Failed to replace file.'
+        )
+      } finally {
+        setUploading(false)
+      }
     }
   }
 
@@ -591,10 +633,26 @@ function Files() {
     return [
       'doc',
       'docx',
+      'docm',
+      'dot',
+      'dotx',
+      'dotm',
       'xls',
       'xlsx',
+      'xlsm',
+      'xlsb',
+      'xlt',
+      'xltx',
+      'xltm',
       'ppt',
       'pptx',
+      'pptm',
+      'pot',
+      'potx',
+      'potm',
+      'pps',
+      'ppsx',
+      'ppsm',
       'odt',
       'ods',
       'odp',
@@ -1025,7 +1083,11 @@ function Files() {
         >
           {dialog.type === 'confirm' ? (
             <div
-              className="files-delete-dialog"
+              className={`files-delete-dialog ${
+                dialog.action === 'replace-file'
+                  ? 'files-replace-dialog'
+                  : ''
+              }`}
               onClick={(event) => event.stopPropagation()}
             >
               <span className="files-delete-dialog-kicker">
@@ -1035,9 +1097,7 @@ function Files() {
               <h3>{dialog.title}</h3>
 
               <p>
-                Are you sure you want to delete{' '}
-                <strong>{dialog.targetName}</strong>?
-                This action cannot be undone.
+                {dialog.message}
               </p>
 
               <div className="files-delete-dialog-actions">
@@ -1053,9 +1113,10 @@ function Files() {
                   type="button"
                   onClick={handleDialogSubmit}
                 >
-                  {dialog.action === 'delete-folder'
-                    ? 'Delete folder'
-                    : 'Delete file'}
+                  {dialog.confirmLabel ||
+                    (dialog.action === 'delete-folder'
+                      ? 'Delete folder'
+                      : 'Delete file')}
                 </button>
               </div>
             </div>

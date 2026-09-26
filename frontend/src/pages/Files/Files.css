@@ -786,3 +786,23 @@
   background: rgba(255, 80, 80, 0.16);
   color: #ffaaaa;
 }
+
+.files-replace-dialog {
+  border-color: rgba(95, 158, 216, 0.35);
+}
+
+.files-replace-dialog .files-delete-dialog-kicker {
+  color: #5f9ed8;
+}
+
+.files-replace-dialog .files-delete-dialog-confirm {
+  border-color: rgba(95, 158, 216, 0.45);
+  background: rgba(95, 158, 216, 0.10);
+  color: #8bb9e8;
+}
+
+.files-replace-dialog .files-delete-dialog-confirm:hover {
+  border-color: rgba(95, 158, 216, 0.7);
+  background: rgba(95, 158, 216, 0.16);
+  color: #a8cdf0;
+}
