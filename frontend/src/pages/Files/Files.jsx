@@ -1015,7 +1015,7 @@ function Files() {
             >
               {uploading
                 ? 'Uploading...'
-                : 'Upload files'}
+                : '+ Upload files'}
             </button>
             <input
               ref={fileInputRef}

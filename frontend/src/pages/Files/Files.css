@@ -175,29 +175,37 @@
 
 .files-action-button,
 .files-upload-button {
-  height: 34px;
-  padding: 0 13px;
   border-radius: 7px;
   font: inherit;
-  font-size: 0.72rem;
   cursor: pointer;
 }
 
 .files-action-button {
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-muted);
+  padding: 11px 16px;
+  border: 1px solid rgba(22, 136, 255, 0.45);
+  background: rgba(22, 136, 255, 0.10);
+  color: #1688ff;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .files-action-button:hover:not(:disabled) {
-  border-color: rgba(95, 158, 216, 0.5);
-  color: var(--color-text);
+  border-color: rgba(22, 136, 255, 0.75);
+  background: rgba(22, 136, 255, 0.16);
+  box-shadow: 0 0 20px rgba(22, 136, 255, 0.12);
 }
 
 .files-upload-button {
+  padding: 11px 16px;
   border: 1px solid rgba(95, 158, 216, 0.55);
   background: rgba(95, 158, 216, 0.1);
   color: #8bb9e8;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .files-upload-button:hover:not(:disabled) {
@@ -806,6 +814,7 @@
   background: rgba(95, 158, 216, 0.16);
   color: #a8cdf0;
 }
+
 .files-row.files-folder-drag-active {
   border-radius: 8px;
   background: rgba(95, 158, 216, 0.12);
@@ -814,4 +823,17 @@
 
 .files-row.files-folder-drag-active .files-item-info strong {
   color: #a8cdf0;
+}
+
+@media (max-width: 760px) {
+  .files-actions {
+    align-self: flex-start;
+    width: auto;
+  }
+
+  .files-action-button,
+  .files-upload-button {
+    flex: 0 0 auto;
+    width: auto;
+  }
 }
