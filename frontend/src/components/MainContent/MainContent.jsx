@@ -18,6 +18,7 @@ import Timeline from '../../pages/Timeline/Timeline'
 import Time from '../../pages/Time/Time'
 import Files from '../../pages/Files/Files'
 import Assistant from '../../pages/AI/Assistant'
+import Reports from '../../pages/Reports/Reports'
 import {
   createConversation,
   sendMessage,
@@ -355,6 +356,10 @@ function MainContent({
 
   if (activeView === 'files') {
     return <Files />
+  }
+
+  if (activeView === 'reports') {
+    return <Reports />
   }
 
   if (activeView === 'ai-assistant') {

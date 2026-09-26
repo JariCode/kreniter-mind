@@ -22,6 +22,7 @@ const timeViewRoutes = require('./routes/timeViewRoutes')
 const aiRoutes = require('./routes/aiRoutes')
 const folderRoutes = require('./routes/folderRoutes')
 const fileRoutes = require('./routes/fileRoutes')
+const reportsViewRoutes = require('./routes/reportsViewRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -102,6 +103,7 @@ app.use('/api/time-view', authMiddleware, timeViewRoutes)
 app.use('/api/ai', authMiddleware, aiRoutes)
 app.use('/api/folders', authMiddleware, folderRoutes)
 app.use('/api/files', authMiddleware, fileRoutes)
+app.use('/api/reports-view', authMiddleware, reportsViewRoutes)
 
 // 404 handler
 app.use((req, res) => {
