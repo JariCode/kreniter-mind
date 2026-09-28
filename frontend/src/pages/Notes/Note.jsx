@@ -33,6 +33,25 @@ function Note() {
     loadProjects()
   }, [])
 
+  // Close the delete dialog on Escape, following the same condition as the overlay click.
+  useEffect(() => {
+    if (!noteToDelete) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !deleting) {
+        setNoteToDelete(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [noteToDelete, deleting])
+
   async function loadNotes() {
     try {
       setLoading(true)
@@ -594,6 +613,9 @@ function Note() {
         >
           <div
             className="delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="note-delete-dialog-title"
             onClick={(event) =>
               event.stopPropagation()
             }
@@ -602,7 +624,7 @@ function Note() {
               CONFIRM ACTION
             </span>
 
-            <h3>
+            <h3 id="note-delete-dialog-title">
               Delete note?
             </h3>
 

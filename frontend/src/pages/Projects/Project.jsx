@@ -51,6 +51,25 @@ function Projects() {
     loadProjects()
   }, [])
 
+  // Close the delete dialog on Escape, following the same condition as the overlay click.
+  useEffect(() => {
+    if (!projectToDelete) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !deleting) {
+        setProjectToDelete(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [projectToDelete, deleting])
+
   function resetForm() {
     setName('')
     setDescription('')
@@ -464,13 +483,16 @@ function Projects() {
         >
           <div
             className="delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-delete-dialog-title"
             onClick={(event) => event.stopPropagation()}
           >
             <span className="delete-dialog-kicker">
               CONFIRM ACTION
             </span>
 
-            <h3>
+            <h3 id="project-delete-dialog-title">
               Delete project?
             </h3>
 

@@ -76,6 +76,47 @@ function Files() {
     }
   }, [previewUrl])
 
+  // Close the open dialog/modal on Escape, following the same close condition
+  // each one already uses for its Cancel/close button (or overlay click, where present).
+  useEffect(() => {
+    if (!dialog && !movingFile && !editorFile && !previewFile) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      if (dialog) {
+        setDialog(null)
+        return
+      }
+
+      if (movingFile) {
+        setMovingFile(null)
+        return
+      }
+
+      if (editorFile) {
+        if (!editorSaving) {
+          setEditorFile(null)
+          setEditorContent('')
+        }
+        return
+      }
+
+      setPreviewFile(null)
+      setPreviewUrl('')
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [dialog, movingFile, editorFile, previewFile, editorSaving])
+
   async function loadProjects() {
     try {
       const data = await getProjects()
@@ -1207,13 +1248,16 @@ function Files() {
                   ? 'files-replace-dialog'
                   : ''
               }`}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="files-delete-dialog-title"
               onClick={(event) => event.stopPropagation()}
             >
               <span className="files-delete-dialog-kicker">
                 CONFIRM ACTION
               </span>
 
-              <h3>{dialog.title}</h3>
+              <h3 id="files-delete-dialog-title">{dialog.title}</h3>
 
               <p>
                 {dialog.message}
@@ -1240,13 +1284,18 @@ function Files() {
               </div>
             </div>
           ) : (
-            <div className="files-confirm-modal">
+            <div
+              className="files-confirm-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="files-input-dialog-title"
+            >
               <div className="files-modal-header">
                 <div>
                   <div className="files-modal-kicker">
                     EDIT
                   </div>
-                  <h2>{dialog.title}</h2>
+                  <h2 id="files-input-dialog-title">{dialog.title}</h2>
                 </div>
                 <button
                   type="button"
@@ -1301,13 +1350,18 @@ function Files() {
 
       {movingFile && (
         <div className="files-modal-backdrop">
-          <div className="files-modal">
+          <div
+            className="files-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="files-move-dialog-title"
+          >
             <div className="files-modal-header">
               <div>
                 <div className="files-modal-kicker">
                   MOVE FILE
                 </div>
-                <h2>{movingFile.name}</h2>
+                <h2 id="files-move-dialog-title">{movingFile.name}</h2>
               </div>
               <button
                 type="button"
@@ -1358,13 +1412,18 @@ function Files() {
 
       {editorFile && (
         <div className="files-modal-backdrop">
-          <div className="files-editor-modal">
+          <div
+            className="files-editor-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="files-editor-dialog-title"
+          >
             <div className="files-modal-header">
               <div>
                 <div className="files-modal-kicker">
                   EDIT FILE
                 </div>
-                <h2>{editorFile.name}</h2>
+                <h2 id="files-editor-dialog-title">{editorFile.name}</h2>
               </div>
               <button
                 type="button"
@@ -1418,13 +1477,18 @@ function Files() {
 
       {previewFile && (
         <div className="files-modal-backdrop">
-          <div className="files-preview-modal">
+          <div
+            className="files-preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="files-preview-dialog-title"
+          >
             <div className="files-modal-header">
               <div>
                 <div className="files-modal-kicker">
                   PREVIEW
                 </div>
-                <h2>{previewFile.name}</h2>
+                <h2 id="files-preview-dialog-title">{previewFile.name}</h2>
               </div>
               <button
                 type="button"

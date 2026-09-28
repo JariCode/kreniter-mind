@@ -162,6 +162,44 @@ function Task() {
     refreshTimeEntries()
   }, [timeEntriesVersion])
 
+  // Close the delete dialog on Escape, following the same condition as the overlay click.
+  useEffect(() => {
+    if (!taskToDelete) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !deleting) {
+        setTaskToDelete(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [taskToDelete, deleting])
+
+  // Close the edit modal on Escape, following the same condition as the Cancel button.
+  useEffect(() => {
+    if (!editingTask) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !saving) {
+        resetForm()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [editingTask, saving])
+
   function resetForm() {
     setTitle('')
     setDescription('')
@@ -959,9 +997,16 @@ function Task() {
               : 'task-form-wrapper'
           }
         >
-          <section className="task-form-panel">
+          <section
+            className="task-form-panel"
+            role={editingTask ? 'dialog' : undefined}
+            aria-modal={editingTask ? 'true' : undefined}
+            aria-labelledby={
+              editingTask ? 'task-edit-dialog-title' : undefined
+            }
+          >
           <div className="task-form-header">
-            <h3>
+            <h3 id="task-edit-dialog-title">
               {editingTask
                 ? 'Edit task'
                 : 'New task'}
@@ -1307,6 +1352,9 @@ function Task() {
         >
           <div
             className="delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="task-delete-dialog-title"
             onClick={(event) =>
               event.stopPropagation()
             }
@@ -1315,7 +1363,7 @@ function Task() {
               CONFIRM ACTION
             </span>
 
-            <h3>
+            <h3 id="task-delete-dialog-title">
               Delete task?
             </h3>
 
