@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const AIConversation = require('../models/AIConversation')
 const AIMessage = require('../models/AIMessage')
+const { aiImageLimiter } = require('../middleware/rateLimiter')
 
 const router = express.Router()
 
@@ -329,6 +330,7 @@ router.post(
 // Generate image
 router.post(
   '/image',
+  aiImageLimiter,
   async (req, res, next) => {
     try {
       const { prompt } = req.body
