@@ -6,7 +6,7 @@ export function setAuthTokenGetter(getToken) {
   getAuthToken = getToken
 }
 
-export async function apiRequest(endpoint, options = {}) {
+async function fetchApiResponse(endpoint, options = {}) {
   const token = getAuthToken ? await getAuthToken() : null
 
   const headers = new Headers(options.headers)
@@ -33,37 +33,18 @@ export async function apiRequest(endpoint, options = {}) {
       error.error || `Request failed: ${response.status}`
     )
   }
+
+  return response
+}
+
+export async function apiRequest(endpoint, options = {}) {
+  const response = await fetchApiResponse(endpoint, options)
 
   return response.json()
 }
 
 export async function apiRequestBlob(endpoint, options = {}) {
-  const token = getAuthToken ? await getAuthToken() : null
-
-  const headers = new Headers(options.headers)
-
-  if (options.body && !(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json')
-  }
-
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      error: 'Request failed',
-    }))
-
-    throw new Error(
-      error.error || `Request failed: ${response.status}`
-    )
-  }
+  const response = await fetchApiResponse(endpoint, options)
 
   return response.blob()
 }
