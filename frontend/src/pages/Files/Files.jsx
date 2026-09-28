@@ -250,6 +250,16 @@ function Files() {
       setDialog(null)
       await loadCurrentFolder()
     } catch (error) {
+      // A 409 duplicate keeps the dialog open with the error shown inline,
+      // so the user can fix the name without retyping it.
+      if (error.status === 409) {
+        setDialog((current) => ({
+          ...current,
+          error: error.message,
+        }))
+        return
+      }
+
       setActionError(
         error.message || 'Failed to create folder.'
       )
@@ -263,6 +273,14 @@ function Files() {
       setDialog(null)
       await loadCurrentFolder()
     } catch (error) {
+      if (error.status === 409) {
+        setDialog((current) => ({
+          ...current,
+          error: error.message,
+        }))
+        return
+      }
+
       setActionError(
         error.message || 'Failed to rename folder.'
       )
@@ -1399,11 +1417,18 @@ function Files() {
                     setDialog((current) => ({
                       ...current,
                       value: event.target.value,
+                      error: '',
                     }))
                   }
                   autoFocus
                 />
               </form>
+
+              {dialog.error && (
+                <div className="files-error">
+                  {dialog.error}
+                </div>
+              )}
 
               <div className="files-dialog-actions">
                 <button

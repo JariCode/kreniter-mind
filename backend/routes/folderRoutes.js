@@ -5,6 +5,34 @@ const Project = require('../models/Project')
 
 const router = express.Router()
 
+// Case-insensitive match, since Windows and macOS treat folder names that way.
+const FOLDERNAME_COLLATION = {
+  locale: 'en',
+  strength: 2,
+}
+
+// Finds an existing folder with the same name in the same user/project/parent folder.
+async function findDuplicateFolder({
+  userId,
+  projectId,
+  parentFolderId,
+  name,
+  excludeId,
+}) {
+  const filter = {
+    userId,
+    projectId: projectId || null,
+    parentFolderId: parentFolderId || null,
+    name,
+  }
+
+  if (excludeId) {
+    filter._id = { $ne: excludeId }
+  }
+
+  return Folder.findOne(filter).collation(FOLDERNAME_COLLATION)
+}
+
 // Get folders
 router.get('/', async (req, res, next) => {
   try {
@@ -121,11 +149,26 @@ router.post('/', async (req, res, next) => {
       }
     }
 
+    const trimmedName = name.trim()
+
+    const duplicate = await findDuplicateFolder({
+      userId: req.user._id,
+      projectId,
+      parentFolderId,
+      name: trimmedName,
+    })
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: 'A folder with this name already exists here',
+      })
+    }
+
     const folder = await Folder.create({
       userId: req.user._id,
       projectId,
       parentFolderId,
-      name: name.trim(),
+      name: trimmedName,
     })
 
     res.status(201).json(folder)
@@ -155,25 +198,36 @@ router.put('/:id', async (req, res, next) => {
       })
     }
 
-    const folder = await Folder.findOneAndUpdate(
-      {
-        _id: id,
-        userId: req.user._id,
-      },
-      {
-        name: name.trim(),
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
+    const folder = await Folder.findOne({
+      _id: id,
+      userId: req.user._id,
+    })
 
     if (!folder) {
       return res.status(404).json({
         error: 'Folder not found',
       })
     }
+
+    const trimmedName = name.trim()
+
+    const duplicate = await findDuplicateFolder({
+      userId: req.user._id,
+      projectId: folder.projectId,
+      parentFolderId: folder.parentFolderId,
+      name: trimmedName,
+      excludeId: folder._id,
+    })
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: 'A folder with this name already exists here',
+      })
+    }
+
+    folder.name = trimmedName
+
+    await folder.save()
 
     res.json(folder)
   } catch (error) {
