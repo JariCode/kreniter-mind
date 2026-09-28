@@ -424,3 +424,36 @@ button {
 .timeline-page::-webkit-scrollbar-thumb:hover {
   background: #1688ff;
 }
+
+/* =========================================================
+   Shared accent button
+   ========================================================= */
+
+.assistant-new-button,
+.notes-create-button,
+.projects-create-button,
+.tasks-create-button {
+  padding: 11px 16px;
+  border: 1px solid rgba(22, 136, 255, 0.45);
+  border-radius: 7px;
+  background: rgba(22, 136, 255, 0.10);
+  color: #1688ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.assistant-new-button:hover,
+.notes-create-button:hover,
+.projects-create-button:hover,
+.tasks-create-button:hover,
+.files-action-button:hover:not(:disabled),
+.reports-print-button:hover:not(:disabled) {
+  border-color: rgba(22, 136, 255, 0.75);
+  background: rgba(22, 136, 255, 0.16);
+  box-shadow: 0 0 20px rgba(22, 136, 255, 0.12);
+}
