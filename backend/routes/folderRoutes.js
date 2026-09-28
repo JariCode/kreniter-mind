@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const Folder = require('../models/Folder')
+const Project = require('../models/Project')
 
 const router = express.Router()
 
@@ -83,6 +84,19 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid parent folder ID',
       })
+    }
+
+    if (projectId) {
+      const project = await Project.findOne({
+        _id: projectId,
+        userId: req.user._id,
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          error: 'Project not found',
+        })
+      }
     }
 
     if (parentFolderId) {

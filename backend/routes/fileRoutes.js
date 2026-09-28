@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const multer = require('multer')
 const File = require('../models/File')
 const Folder = require('../models/Folder')
+const Project = require('../models/Project')
 
 const router = express.Router()
 
@@ -121,6 +122,19 @@ router.post(
         return res.status(400).json({
           error: 'Invalid folder ID',
         })
+      }
+
+      if (projectId) {
+        const project = await Project.findOne({
+          _id: projectId,
+          userId: req.user._id,
+        })
+
+        if (!project) {
+          return res.status(404).json({
+            error: 'Project not found',
+          })
+        }
       }
 
       if (folderId) {
