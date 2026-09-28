@@ -762,21 +762,6 @@
   margin-top: 24px;
 }
 
-.files-delete-dialog-actions button {
-  padding: 10px 15px;
-  border: 1px solid var(--color-border);
-  border-radius: 7px;
-  background: var(--color-surface-light);
-  color: var(--color-text-soft);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.files-delete-dialog-actions button:hover {
-  border-color: rgba(22, 136, 255, 0.4);
-  color: var(--color-text);
-}
-
 .files-delete-dialog-actions .files-delete-dialog-confirm {
   border-color: rgba(255, 80, 80, 0.45);
   background: rgba(255, 80, 80, 0.10);
