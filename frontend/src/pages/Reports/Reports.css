@@ -15,7 +15,6 @@
   gap: 7px;
 }
 .reports-project-select label {
-  color: var(--color-text-muted);
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.12em;

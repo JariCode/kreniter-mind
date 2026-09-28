@@ -1,17 +1,13 @@
 :root {
   --color-background: #08090b;
-  --color-background-deep: #050608;
   --color-surface: #101216;
   --color-surface-light: #16191e;
-  --color-surface-hover: #1b1f24;
   --color-border: #242930;
   --color-border-soft: rgba(255, 255, 255, 0.055);
   --color-text: #e7e7e5;
   --color-text-soft: #b7b9bd;
   --color-muted: #85888d;
   --color-accent: #1688ff;
-  --color-accent-dark: #0753a6;
-  --color-accent-soft: rgba(22, 136, 255, 0.1);
   --color-accent-rgb: 22, 136, 255;
 }
 

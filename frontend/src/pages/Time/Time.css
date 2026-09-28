@@ -68,7 +68,6 @@
 
 .time-task-duration {
   flex: 0 0 auto;
-  color: var(--color-text-secondary);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -107,7 +106,6 @@
 }
 
 .time-project-total-label {
-  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 500;
 }
@@ -127,7 +125,6 @@
   justify-content: center;
   min-height: 100px;
   padding: 20px;
-  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
