@@ -286,17 +286,17 @@ function Timeline() {
     )
   }
 
-  function getTrackedMinutes(taskId) {
+  function getTotalMinutes(task) {
     return timeEntries
       .filter(
         (entry) =>
           String(entry.taskId) ===
-          String(taskId)
+          String(task._id)
       )
       .reduce(
         (total, entry) =>
           total + (Number(entry.duration) || 0),
-        0
+        Number(task.estimatedMinutes) || 0
       )
   }
 
@@ -381,10 +381,10 @@ function Timeline() {
         </div>
 
         <div className="timeline-tooltip-row">
-          <span>Tracked</span>
+          <span>Total time</span>
           <span>
             {formatDuration(
-              getTrackedMinutes(task._id)
+              getTotalMinutes(task)
             )}
           </span>
         </div>
