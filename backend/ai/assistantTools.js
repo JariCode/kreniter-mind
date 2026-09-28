@@ -210,7 +210,8 @@ function truncateNoteContent(note) {
 }
 
 // Sums TimeEntry durations for the given task ids, scoped to the user.
-// Returns a Map of taskId (string) -> total duration in seconds.
+// TimeEntry.duration is stored in minutes (same unit as Task.estimatedMinutes).
+// Returns a Map of taskId (string) -> total tracked minutes.
 async function sumTrackedTimeByTaskId(userId, taskIds) {
   if (taskIds.length === 0) {
     return new Map()
@@ -238,12 +239,101 @@ async function sumTrackedTimeByTaskId(userId, taskIds) {
   return totals
 }
 
-function buildTaskTree(tasks, trackedTimeByTaskId) {
-  const withTime = tasks.map((task) => ({
-    ...task,
-    trackedSeconds: trackedTimeByTaskId.get(String(task._id)) || 0,
-    subtasks: [],
-  }))
+// Sums Task.estimatedMinutes by projectId, scoped to the user. Mirrors the
+// Time page's per-project estimated total: every task with a matching
+// projectId counts, subtasks included, regardless of parentTaskId.
+async function sumEstimatedMinutesByProjectId(userId, projectIds) {
+  if (projectIds.length === 0) {
+    return new Map()
+  }
+
+  const tasks = await scopedFind(
+    Task,
+    userId,
+    {
+      projectId: { $in: projectIds },
+    },
+    {
+      select: 'projectId estimatedMinutes',
+    }
+  )
+
+  const totals = new Map()
+
+  for (const task of tasks) {
+    const key = String(task.projectId)
+
+    totals.set(
+      key,
+      (totals.get(key) || 0) + (task.estimatedMinutes || 0)
+    )
+  }
+
+  return totals
+}
+
+// Sums TimeEntry durations by projectId, scoped to the user. Mirrors the
+// Time page's per-project tracked total: an entry counts if its projectId
+// matches, whether or not it also has a taskId.
+async function sumTrackedMinutesByProjectId(userId, projectIds) {
+  if (projectIds.length === 0) {
+    return new Map()
+  }
+
+  const entries = await scopedFind(
+    TimeEntry,
+    userId,
+    {
+      projectId: { $in: projectIds },
+    },
+    {
+      select: 'projectId duration',
+    }
+  )
+
+  const totals = new Map()
+
+  for (const entry of entries) {
+    const key = String(entry.projectId)
+
+    totals.set(key, (totals.get(key) || 0) + entry.duration)
+  }
+
+  return totals
+}
+
+// Builds the estimatedMinutes/trackedMinutes/totalMinutes trio for one
+// project from the lookup maps above. totalMinutes matches the Time page's
+// "Project total time": estimated + tracked, not a sum of task totals.
+function buildProjectTotals(
+  projectId,
+  estimatedByProject,
+  trackedByProject
+) {
+  const key = String(projectId)
+  const estimatedMinutes = estimatedByProject.get(key) || 0
+  const trackedMinutes = trackedByProject.get(key) || 0
+
+  return {
+    estimatedMinutes,
+    trackedMinutes,
+    totalMinutes: estimatedMinutes + trackedMinutes,
+  }
+}
+
+function buildTaskTree(tasks, trackedMinutesByTaskId) {
+  const withTime = tasks.map((task) => {
+    const estimatedMinutes = task.estimatedMinutes || 0
+    const trackedMinutes =
+      trackedMinutesByTaskId.get(String(task._id)) || 0
+
+    return {
+      ...task,
+      trackedMinutes,
+      totalMinutes: estimatedMinutes + trackedMinutes,
+      subtasks: [],
+    }
+  })
 
   const byId = new Map(
     withTime.map((task) => [String(task._id), task])
@@ -283,9 +373,29 @@ async function listProjects(userId) {
   )
 
   const truncated = projects.length > MAX_ROWS
+  const boundedProjects = projects.slice(0, MAX_ROWS)
+  const projectIds = boundedProjects.map(
+    (project) => project._id
+  )
+
+  const [estimatedByProject, trackedByProject] = await Promise.all(
+    [
+      sumEstimatedMinutesByProjectId(userId, projectIds),
+      sumTrackedMinutesByProjectId(userId, projectIds),
+    ]
+  )
+
+  const projectsWithTotals = boundedProjects.map((project) => ({
+    ...project,
+    ...buildProjectTotals(
+      project._id,
+      estimatedByProject,
+      trackedByProject
+    ),
+  }))
 
   return {
-    projects: projects.slice(0, MAX_ROWS),
+    projects: projectsWithTotals,
     truncated,
   }
 }
@@ -300,7 +410,13 @@ async function getProjectContext(userId, args) {
     return { error }
   }
 
-  const [tasks, notes, files] = await Promise.all([
+  const [
+    tasks,
+    notes,
+    files,
+    estimatedByProject,
+    trackedByProject,
+  ] = await Promise.all([
     scopedFind(
       Task,
       userId,
@@ -322,6 +438,10 @@ async function getProjectContext(userId, args) {
         limit: MAX_ROWS + 1,
       }
     ),
+    // Unbounded (not capped at MAX_ROWS), so the project-level totals below
+    // stay accurate even when the task list itself gets truncated.
+    sumEstimatedMinutesByProjectId(userId, [project._id]),
+    sumTrackedMinutesByProjectId(userId, [project._id]),
   ])
 
   const tasksTruncated = tasks.length > MAX_ROWS
@@ -333,21 +453,21 @@ async function getProjectContext(userId, args) {
   const boundedFiles = files.slice(0, MAX_ROWS)
 
   const taskIds = boundedTasks.map((task) => task._id)
-  const trackedTimeByTaskId = await sumTrackedTimeByTaskId(
+  const trackedMinutesByTaskId = await sumTrackedTimeByTaskId(
     userId,
     taskIds
   )
 
-  const taskTree = buildTaskTree(boundedTasks, trackedTimeByTaskId)
-
-  const totalEstimatedMinutes = boundedTasks.reduce(
-    (sum, task) => sum + (task.estimatedMinutes || 0),
-    0
+  const taskTree = buildTaskTree(
+    boundedTasks,
+    trackedMinutesByTaskId
   )
 
-  const totalTrackedSeconds = [
-    ...trackedTimeByTaskId.values(),
-  ].reduce((sum, seconds) => sum + seconds, 0)
+  const projectTotals = buildProjectTotals(
+    project._id,
+    estimatedByProject,
+    trackedByProject
+  )
 
   let notesTruncatedByLength = false
 
@@ -369,10 +489,7 @@ async function getProjectContext(userId, args) {
     tasks: taskTree,
     notes: boundedNotesWithTruncatedContent,
     files: boundedFiles,
-    totals: {
-      estimatedMinutes: totalEstimatedMinutes,
-      trackedSeconds: totalTrackedSeconds,
-    },
+    totals: projectTotals,
     truncated:
       tasksTruncated ||
       notesTruncated ||
@@ -433,19 +550,25 @@ async function listTasks(userId, args) {
   const truncated = tasks.length > MAX_ROWS
   const boundedTasks = tasks.slice(0, MAX_ROWS)
 
-  const trackedTimeByTaskId = await sumTrackedTimeByTaskId(
+  const trackedMinutesByTaskId = await sumTrackedTimeByTaskId(
     userId,
     boundedTasks.map((task) => task._id)
   )
 
-  const tasksWithTrackedTime = boundedTasks.map((task) => ({
-    ...task,
-    trackedSeconds:
-      trackedTimeByTaskId.get(String(task._id)) || 0,
-  }))
+  const tasksWithTotals = boundedTasks.map((task) => {
+    const estimatedMinutes = task.estimatedMinutes || 0
+    const trackedMinutes =
+      trackedMinutesByTaskId.get(String(task._id)) || 0
+
+    return {
+      ...task,
+      trackedMinutes,
+      totalMinutes: estimatedMinutes + trackedMinutes,
+    }
+  })
 
   return {
-    tasks: tasksWithTrackedTime,
+    tasks: tasksWithTotals,
     truncated,
   }
 }
@@ -614,7 +737,7 @@ const toolDefinitions = [
     type: 'function',
     name: 'list_projects',
     description:
-      "List the user's projects with their name, description, status, color and repository URL.",
+      "List the user's projects with their name, description, status, color, repository URL, and estimated/tracked/total time in minutes (totalMinutes matches the Time page's project total).",
     parameters: {
       type: 'object',
       properties: {},
@@ -627,7 +750,7 @@ const toolDefinitions = [
     type: 'function',
     name: 'get_project_context',
     description:
-      "Get full context for one project: its details, tasks with their subtask structure, notes, estimated and tracked time, file metadata and task dates. Use this for summaries or analysis of a whole project.",
+      "Get full context for one project: its details, tasks with their subtask structure, notes, file metadata, task dates, and estimated/tracked/total time in minutes at both the project and task level (totalMinutes matches the Time page's totals). Use this for summaries or analysis of a whole project.",
     parameters: {
       type: 'object',
       properties: {
@@ -645,7 +768,7 @@ const toolDefinitions = [
     type: 'function',
     name: 'list_tasks',
     description:
-      "List the user's tasks, including parent task, priority, dates, estimated time and tracked time. Can be filtered by project and status.",
+      "List the user's tasks, including parent task, priority, dates, and estimated/tracked/total time in minutes (totalMinutes matches the Time page's per-task total). Can be filtered by project and status.",
     parameters: {
       type: 'object',
       properties: {
