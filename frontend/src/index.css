@@ -635,3 +635,171 @@ button {
   color: #ff9b9b;
   font-size: 13px;
 }
+
+/* =========================================================
+   Shared form (Project <-> Task)
+   ========================================================= */
+
+.project-form-panel,
+.task-form-panel {
+  margin-bottom: 28px;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.project-form-header,
+.task-form-header {
+  margin-bottom: 24px;
+}
+
+.project-form-header h3,
+.task-form-header h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.project-form-grid label,
+.task-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-form-grid label span,
+.task-form-grid label span {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.project-form-grid input,
+.project-form-grid select,
+.project-form-grid textarea,
+.task-form-grid input,
+.task-form-grid select,
+.task-form-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  outline: none;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.project-form-grid select,
+.task-form-grid select {
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.project-form-grid select option,
+.task-form-grid select option {
+  background: #0d131d;
+  color: #e7edf5;
+}
+
+.project-form-grid select option:checked,
+.task-form-grid select option:checked {
+  background: #1688ff;
+  color: #ffffff;
+}
+
+.project-form-grid textarea,
+.task-form-grid textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.project-form-grid input:focus,
+.project-form-grid textarea:focus,
+.task-form-grid input:focus,
+.task-form-grid textarea:focus {
+  border-color: rgba(22, 136, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(22, 136, 255, 0.08);
+}
+
+.project-form-grid select:focus,
+.project-form-grid select:focus-visible,
+.task-form-grid select:focus,
+.task-form-grid select:focus-visible {
+  border-color: #1688ff;
+  outline: 1px solid #1688ff;
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 1px #1688ff,
+    0 0 0 4px rgba(22, 136, 255, 0.08);
+}
+
+.project-form-actions,
+.task-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.project-form-actions .project-save-button,
+.task-form-actions .task-save-button {
+  border-color: rgba(22, 136, 255, 0.55);
+  background: #1688ff;
+  color: #ffffff;
+}
+
+.project-form-actions .project-save-button:hover,
+.task-form-actions .task-save-button:hover {
+  border-color: #1688ff;
+  background: #0f7be8;
+}
+
+.projects-list-header,
+.tasks-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.projects-list,
+.tasks-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.projects-empty,
+.tasks-empty {
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.projects-empty h3,
+.tasks-empty h3 {
+  margin: 0 0 8px;
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.projects-empty p,
+.tasks-empty p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
