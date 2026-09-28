@@ -3,15 +3,6 @@
   padding: 36px 38px 46px;
   overflow-y: auto;
 }
-.projects-error {
-  margin-bottom: 20px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 80, 80, 0.3);
-  border-radius: 7px;
-  background: rgba(255, 80, 80, 0.08);
-  color: #ff9b9b;
-  font-size: 13px;
-}
 .project-form-panel {
   margin-bottom: 28px;
   padding: 24px;
