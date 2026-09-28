@@ -238,22 +238,22 @@
 
 /* Tooltip */
 .timeline-tooltip-container {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  z-index: 20;
+  position: fixed;
+  z-index: 1000;
   pointer-events: none;
-  padding-bottom: 10px;
   opacity: 0;
-  transform: translateX(-50%) translateY(4px);
+  transform: translate(-50%, calc(-100% + 4px));
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
 }
-.timeline-task-bar:hover
-  .timeline-tooltip-container {
+.timeline-tooltip-container.is-above {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translate(-50%, -100%);
+}
+.timeline-tooltip-container.is-below {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 .timeline-tooltip {
   min-width: 210px;

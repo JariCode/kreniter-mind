@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { getTasks } from '../../api/tasks'
 import { getProjects } from '../../api/projects'
@@ -18,6 +19,8 @@ function Timeline() {
     useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [hoveredTooltip, setHoveredTooltip] =
+    useState(null)
 
   async function loadData() {
     try {
@@ -392,8 +395,31 @@ function Timeline() {
     )
   }
 
+  function showTooltip(task, event) {
+    const bar = event.currentTarget
+    const rect = bar.getBoundingClientRect()
+    const tooltipWidth = 210
+    const horizontalPadding = 12
+    const center = rect.left + rect.width / 2
+    const left = Math.min(
+      Math.max(center, tooltipWidth / 2 + horizontalPadding),
+      window.innerWidth - tooltipWidth / 2 - horizontalPadding
+    )
+    const top = rect.top < 120
+      ? rect.bottom + 10
+      : rect.top - 10
+
+    setHoveredTooltip({
+      task,
+      left,
+      top,
+      placement: rect.top < 120 ? 'below' : 'above',
+    })
+  }
+
   return (
-    <main className="timeline-page">
+    <>
+      <main className="timeline-page">
       <section className="timeline-intro">
         <div>
           <span className="timeline-kicker">
@@ -583,6 +609,12 @@ function Timeline() {
 
                             <div
                               className={`timeline-task-bar status-${task.status}`}
+                              onMouseEnter={(event) =>
+                                showTooltip(task, event)
+                              }
+                              onMouseLeave={() =>
+                                setHoveredTooltip(null)
+                              }
                             >
                               {task.dueDate && (
                                 <span
@@ -593,11 +625,6 @@ function Timeline() {
                                 />
                               )}
 
-                              <div className="timeline-tooltip-container">
-                                {renderTooltip(
-                                  task
-                                )}
-                              </div>
                             </div>
                           </div>
                         )}
@@ -609,7 +636,22 @@ function Timeline() {
             </div>
           </section>
         )}
-    </main>
+      </main>
+
+      {hoveredTooltip &&
+        createPortal(
+          <div
+            className={`timeline-tooltip-container is-${hoveredTooltip.placement}`}
+            style={{
+              left: `${hoveredTooltip.left}px`,
+              top: `${hoveredTooltip.top}px`,
+            }}
+          >
+            {renderTooltip(hoveredTooltip.task)}
+          </div>,
+          document.body
+        )}
+    </>
   )
 }
 
