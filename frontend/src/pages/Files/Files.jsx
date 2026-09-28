@@ -954,7 +954,7 @@ function Files() {
       <div className="files-intro">
         <div>
           <div className="files-kicker">WORKSPACE</div>
-          <h1 className="files-title">Files</h1>
+          <h2 className="files-title">Files</h2>
           <p className="files-description">
             Manage your project files and folders.
           </p>
@@ -1445,6 +1445,7 @@ function Files() {
                 onChange={(event) =>
                   setEditorContent(event.target.value)
                 }
+                aria-label="File content"
                 spellCheck="false"
               />
             )}

@@ -558,9 +558,9 @@ function Assistant() {
             WORKSPACE
           </div>
 
-          <h1 className="assistant-title">
+          <h2 className="assistant-title">
             AI Assistant
-          </h1>
+          </h2>
 
           <p className="assistant-description">
             Work with Kreniter across your
@@ -872,6 +872,7 @@ function Assistant() {
                 }
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Kreniter anything..."
+                aria-label="Message Kreniter"
                 rows={1}
                 disabled={
                   sending || recording || transcribing

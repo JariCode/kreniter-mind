@@ -1696,6 +1696,7 @@ function MainContent({
                         setAiInput(event.target.value)
                       }
                       placeholder="Ask something..."
+                      aria-label="Message Kreniter"
                       disabled={aiSending}
                     />
 
