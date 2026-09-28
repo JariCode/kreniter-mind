@@ -14,34 +14,6 @@
 .reports-print-complete {
   display: none;
 }
-.reports-intro {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 30px;
-  margin-bottom: 28px;
-}
-.reports-kicker {
-  display: block;
-  margin-bottom: 4px;
-  color: #5f9ed8;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-.reports-title {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 1.55rem;
-  font-weight: 400;
-  letter-spacing: -0.025em;
-}
-.reports-description {
-  margin: 4px 0 0;
-  color: #858f9c;
-  font-size: 0.82rem;
-}
 .reports-intro-actions {
   display: flex;
   align-items: flex-end;

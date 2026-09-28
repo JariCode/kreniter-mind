@@ -12,14 +12,6 @@
 
 /* Intro */
 
-.time-intro {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 30px;
-  margin-bottom: 28px;
-}
-
 .time-kicker {
   display: block;
   margin-bottom: 4px;
@@ -29,23 +21,6 @@
   letter-spacing: 0.2em;
   line-height: 1.2;
   text-transform: uppercase;
-}
-
-.time-intro h2 {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 1.55rem;
-  font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
-}
-
-.time-intro p {
-  max-width: 620px;
-  margin: 4px 0 0;
-  color: #858f9c;
-  font-size: 0.82rem;
-  line-height: 1.6;
 }
 
 /* Project selector */

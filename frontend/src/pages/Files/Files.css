@@ -6,37 +6,6 @@
   scrollbar-color: #263545 #080b10;
 }
 
-.files-intro {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 30px;
-  margin-bottom: 28px;
-}
-
-.files-kicker {
-  display: block;
-  margin-bottom: 4px;
-  color: #5f9ed8;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.files-title {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 1.55rem;
-  font-weight: 400;
-  letter-spacing: -0.025em;
-}
-
-.files-description {
-  margin: 4px 0 0;
-  color: #858f9c;
-  font-size: 0.82rem;
-}
 
 .files-project-selector {
   display: flex;

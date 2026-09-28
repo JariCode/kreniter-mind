@@ -525,3 +525,79 @@ button {
   cursor: default;
   opacity: 0.6;
 }
+
+/* =========================================================
+   Shared page header
+   ========================================================= */
+
+.timeline-intro,
+.time-intro,
+.reports-intro,
+.tasks-intro,
+.projects-intro,
+.files-intro,
+.assistant-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 28px;
+}
+
+.reports-kicker,
+.tasks-kicker,
+.projects-kicker,
+.files-kicker,
+.assistant-kicker,
+.dashboard-kicker,
+.notes-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: #5f9ed8;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.reports-title,
+.tasks-intro h2,
+.projects-intro h2,
+.files-title,
+.assistant-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.timeline-intro h2,
+.time-intro h2,
+.notes-intro h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.reports-description,
+.tasks-intro p,
+.projects-intro p,
+.files-description,
+.dashboard-intro p {
+  margin: 4px 0 0;
+  color: #858f9c;
+  font-size: 0.82rem;
+}
+
+.timeline-intro p,
+.time-intro p {
+  max-width: 620px;
+  margin: 4px 0 0;
+  color: #858f9c;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}

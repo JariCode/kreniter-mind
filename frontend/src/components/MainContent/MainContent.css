@@ -13,28 +13,12 @@
   gap: 30px;
 }
 
-.dashboard-kicker {
-  display: block;
-  margin-bottom: 4px;
-  color: #5f9ed8;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
 .dashboard-intro h2 {
   margin: 0;
   color: #e7edf5;
   font-size: 1.55rem;
   font-weight: 400;
   letter-spacing: -0.025em;
-}
-
-.dashboard-intro p {
-  margin: 4px 0 0;
-  color: #858f9c;
-  font-size: 0.82rem;
 }
 
 .dashboard-status {
