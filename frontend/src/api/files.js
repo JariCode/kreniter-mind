@@ -27,7 +27,8 @@ export function getFiles(
 export function uploadFile(
   file,
   projectId = null,
-  folderId = null
+  folderId = null,
+  onDuplicate = null
 ) {
   const formData = new FormData()
 
@@ -39,6 +40,10 @@ export function uploadFile(
 
   if (folderId) {
     formData.append('folderId', folderId)
+  }
+
+  if (onDuplicate) {
+    formData.append('onDuplicate', onDuplicate)
   }
 
   return apiRequest('/files', {

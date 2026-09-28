@@ -59,6 +59,79 @@ async function deleteGridFsFile(fileId) {
   }
 }
 
+// Case-insensitive match, since Windows and macOS treat file names that way.
+const FILENAME_COLLATION = {
+  locale: 'en',
+  strength: 2,
+}
+
+// Finds an existing file with the same name in the same user/project/folder.
+async function findDuplicateFile({
+  userId,
+  projectId,
+  folderId,
+  name,
+  excludeId,
+}) {
+  const filter = {
+    userId,
+    projectId: projectId || null,
+    folderId: folderId || null,
+    name,
+  }
+
+  if (excludeId) {
+    filter._id = { $ne: excludeId }
+  }
+
+  return File.findOne(filter).collation(FILENAME_COLLATION)
+}
+
+// Splits a file name into its base and extension, keeping the last dot as
+// the extension separator (so "archive.tar.gz" keeps ".gz").
+function splitFileName(name) {
+  const lastDot = name.lastIndexOf('.')
+
+  if (lastDot <= 0) {
+    return {
+      base: name,
+      extension: '',
+    }
+  }
+
+  return {
+    base: name.slice(0, lastDot),
+    extension: name.slice(lastDot),
+  }
+}
+
+// Finds a free name the Windows way: "report.docx" -> "report (1).docx" -> "report (2).docx".
+async function generateUniqueFileName({
+  userId,
+  projectId,
+  folderId,
+  name,
+}) {
+  const { base, extension } = splitFileName(name)
+
+  let counter = 1
+  let candidate = `${base} (${counter})${extension}`
+
+  while (
+    await findDuplicateFile({
+      userId,
+      projectId,
+      folderId,
+      name: candidate,
+    })
+  ) {
+    counter += 1
+    candidate = `${base} (${counter})${extension}`
+  }
+
+  return candidate
+}
+
 // Get files
 router.get('/', async (req, res, next) => {
   try {
@@ -120,6 +193,7 @@ router.post(
       const {
         projectId = null,
         folderId = null,
+        onDuplicate,
       } = req.body
 
       if (
@@ -175,10 +249,35 @@ router.post(
         }
       }
 
+      let name = req.file.originalname
+
+      const duplicate = await findDuplicateFile({
+        userId: req.user._id,
+        projectId,
+        folderId,
+        name,
+      })
+
+      if (duplicate) {
+        if (onDuplicate !== 'rename') {
+          return res.status(409).json({
+            error: 'File already exists',
+            existingFileId: duplicate._id,
+          })
+        }
+
+        name = await generateUniqueFileName({
+          userId: req.user._id,
+          projectId,
+          folderId,
+          name,
+        })
+      }
+
       const bucket = getBucket()
 
       const uploadStream = bucket.openUploadStream(
-        req.file.originalname,
+        name,
         {
           contentType: req.file.mimetype,
           metadata: {
@@ -201,7 +300,7 @@ router.post(
         userId: req.user._id,
         projectId,
         folderId,
-        name: req.file.originalname,
+        name,
         originalName: req.file.originalname,
         mimeType: req.file.mimetype,
         size: req.file.size,
@@ -367,6 +466,9 @@ router.put('/:id', async (req, res, next) => {
       })
     }
 
+    let nextName = file.name
+    let nextFolderId = file.folderId
+
     if (name !== undefined) {
       if (
         typeof name !== 'string' ||
@@ -377,7 +479,7 @@ router.put('/:id', async (req, res, next) => {
         })
       }
 
-      file.name = name.trim()
+      nextName = name.trim()
     }
 
     if (folderId !== undefined) {
@@ -412,8 +514,27 @@ router.put('/:id', async (req, res, next) => {
         }
       }
 
-      file.folderId = folderId || null
+      nextFolderId = folderId || null
     }
+
+    if (name !== undefined || folderId !== undefined) {
+      const duplicate = await findDuplicateFile({
+        userId: req.user._id,
+        projectId: file.projectId,
+        folderId: nextFolderId,
+        name: nextName,
+        excludeId: file._id,
+      })
+
+      if (duplicate) {
+        return res.status(409).json({
+          error: 'A file with this name already exists here',
+        })
+      }
+    }
+
+    file.name = nextName
+    file.folderId = nextFolderId
 
     await file.save()
 

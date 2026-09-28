@@ -44,6 +44,9 @@ function Files() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [dialog, setDialog] = useState(null)
   const fileInputRef = useRef(null)
+  // Latest-ref so the Escape-key effect below can call the current
+  // handleDuplicateCancel without re-subscribing its listener every render.
+  const handleDuplicateCancelRef = useRef(() => {})
 
   const currentFolder = folderStack[folderStack.length - 1] || null
   const projectValue = selectedProjectId || NO_PROJECT
@@ -89,7 +92,11 @@ function Files() {
       }
 
       if (dialog) {
-        setDialog(null)
+        if (dialog.type === 'duplicate') {
+          handleDuplicateCancelRef.current()
+        } else {
+          setDialog(null)
+        }
         return
       }
 
@@ -309,58 +316,120 @@ function Files() {
 
   async function uploadFiles(
     selectedFiles,
-    targetFolderId = currentFolder?._id || null,
-    targetFiles = files
+    targetFolderId = currentFolder?._id || null
   ) {
     if (selectedFiles.length === 0) {
       return
     }
 
+    setActionError('')
+    await processUploadQueue(selectedFiles, targetFolderId)
+  }
+
+  // Uploads the queue one file at a time. A 409 duplicate pauses the queue
+  // for a user decision (Replace / Keep both / Cancel); every other outcome
+  // moves on to the next file so one duplicate never blocks the rest.
+  async function processUploadQueue(
+    queue,
+    targetFolderId,
+    onDuplicate = null
+  ) {
+    if (queue.length === 0) {
+      setUploading(false)
+      await loadCurrentFolder()
+      return
+    }
+
+    const [nextFile, ...remainingFiles] = queue
+
     try {
       setUploading(true)
-      setActionError('')
 
-      for (const file of selectedFiles) {
-        const existingFile = targetFiles.find(
-          (currentFile) =>
-            currentFile.name === file.name
-        )
+      await uploadFile(
+        nextFile,
+        projectValue === NO_PROJECT
+          ? null
+          : projectValue,
+        targetFolderId,
+        onDuplicate
+      )
 
-        if (
-          existingFile &&
-          isOfficeFile(file)
-        ) {
-          setDialog({
-            type: 'confirm',
-            action: 'replace-file',
-            targetId: existingFile._id,
-            targetFile: file,
-            title: 'Replace file',
-            message: `The file "${file.name}" already exists in this folder. Do you want to replace it?`,
-            confirmLabel: 'Replace',
-          })
-
-          return
-        }
-
-        await uploadFile(
-          file,
-          projectValue === NO_PROJECT
-            ? null
-            : projectValue,
-          targetFolderId
-        )
+      await processUploadQueue(remainingFiles, targetFolderId)
+    } catch (error) {
+      if (error.status === 409 && error.data?.existingFileId) {
+        setUploading(false)
+        setDialog({
+          type: 'duplicate',
+          file: nextFile,
+          existingFileId: error.data.existingFileId,
+          targetFolderId,
+          remainingFiles,
+        })
+        return
       }
 
-      await loadCurrentFolder()
-    } catch (error) {
+      setUploading(false)
       setActionError(
         error.message || 'Failed to upload file.'
       )
-    } finally {
-      setUploading(false)
     }
   }
+
+  async function handleDuplicateReplace() {
+    if (!dialog || dialog.type !== 'duplicate') {
+      return
+    }
+
+    const {
+      file,
+      existingFileId,
+      targetFolderId,
+      remainingFiles,
+    } = dialog
+
+    setDialog(null)
+
+    try {
+      setUploading(true)
+      setActionError('')
+      await updateFileContent(existingFileId, file)
+    } catch (error) {
+      setActionError(
+        error.message || 'Failed to replace file.'
+      )
+    }
+
+    await processUploadQueue(remainingFiles, targetFolderId)
+  }
+
+  async function handleDuplicateKeepBoth() {
+    if (!dialog || dialog.type !== 'duplicate') {
+      return
+    }
+
+    const { file, targetFolderId, remainingFiles } = dialog
+
+    setDialog(null)
+
+    await processUploadQueue(
+      [file, ...remainingFiles],
+      targetFolderId,
+      'rename'
+    )
+  }
+
+  function handleDuplicateCancel() {
+    if (!dialog || dialog.type !== 'duplicate') {
+      return
+    }
+
+    const { targetFolderId, remainingFiles } = dialog
+
+    setDialog(null)
+    processUploadQueue(remainingFiles, targetFolderId)
+  }
+
+  handleDuplicateCancelRef.current = handleDuplicateCancel
 
   function handleFileDragStart(event, file) {
     setDraggedFile(file)
@@ -470,22 +539,7 @@ function Files() {
       return
     }
 
-    try {
-      const targetFiles = await getFiles(
-        projectValue,
-        folder._id
-      )
-
-      await uploadFiles(
-        droppedFiles,
-        folder._id,
-        targetFiles
-      )
-    } catch (error) {
-      setActionError(
-        error.message || 'Failed to load folder files.'
-      )
-    }
+    await uploadFiles(droppedFiles, folder._id)
   }
 
   function handleRenameFile(file) {
@@ -587,26 +641,6 @@ function Files() {
 
     if (dialog.action === 'delete-file') {
       await deleteFileAction(dialog.targetId)
-      return
-    }
-
-    if (dialog.action === 'replace-file') {
-      try {
-        setUploading(true)
-        setActionError('')
-        await updateFileContent(
-          dialog.targetId,
-          dialog.targetFile
-        )
-        setDialog(null)
-        await loadCurrentFolder()
-      } catch (error) {
-        setActionError(
-          error.message || 'Failed to replace file.'
-        )
-      } finally {
-        setUploading(false)
-      }
     }
   }
 
@@ -1231,23 +1265,21 @@ function Files() {
       {dialog && (
         <div
           className={`files-modal-backdrop ${
-            dialog.type === 'confirm'
+            dialog.type === 'confirm' || dialog.type === 'duplicate'
               ? 'files-delete-dialog-overlay'
               : ''
           }`}
           onClick={() => {
             if (dialog.type === 'confirm') {
               setDialog(null)
+            } else if (dialog.type === 'duplicate') {
+              handleDuplicateCancel()
             }
           }}
         >
           {dialog.type === 'confirm' ? (
             <div
-              className={`files-delete-dialog ${
-                dialog.action === 'replace-file'
-                  ? 'files-replace-dialog'
-                  : ''
-              }`}
+              className="files-delete-dialog"
               role="dialog"
               aria-modal="true"
               aria-labelledby="files-delete-dialog-title"
@@ -1280,6 +1312,52 @@ function Files() {
                     (dialog.action === 'delete-folder'
                       ? 'Delete folder'
                       : 'Delete file')}
+                </button>
+              </div>
+            </div>
+          ) : dialog.type === 'duplicate' ? (
+            <div
+              className="files-delete-dialog files-replace-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="files-duplicate-dialog-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <span className="files-delete-dialog-kicker">
+                CONFIRM ACTION
+              </span>
+
+              <h3 id="files-duplicate-dialog-title">
+                File already exists
+              </h3>
+
+              <p>
+                A file named{' '}
+                <strong>{dialog.file.name}</strong> already
+                exists in this folder.
+              </p>
+
+              <div className="files-delete-dialog-actions">
+                <button
+                  type="button"
+                  onClick={handleDuplicateCancel}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDuplicateKeepBoth}
+                >
+                  Keep both
+                </button>
+
+                <button
+                  className="files-delete-dialog-confirm"
+                  type="button"
+                  onClick={handleDuplicateReplace}
+                >
+                  Replace
                 </button>
               </div>
             </div>

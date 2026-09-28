@@ -25,13 +25,20 @@ async function fetchApiResponse(endpoint, options = {}) {
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({
+    const data = await response.json().catch(() => ({
       error: 'Request failed',
     }))
 
-    throw new Error(
-      error.error || `Request failed: ${response.status}`
+    const error = new Error(
+      data.error || `Request failed: ${response.status}`
     )
+
+    // Extra fields for callers that need more than the message, e.g. a 409
+    // conflict body. Existing callers only read .message, so this is additive.
+    error.status = response.status
+    error.data = data
+
+    throw error
   }
 
   return response
