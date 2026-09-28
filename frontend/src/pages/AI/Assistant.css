@@ -698,20 +698,6 @@
   scrollbar-width: thin;
   scrollbar-color: #263545 #080b10;
 }
-.assistant-input-wrapper textarea::-webkit-scrollbar {
-  width: 10px;
-}
-.assistant-input-wrapper textarea::-webkit-scrollbar-track {
-  background: #080b10;
-}
-.assistant-input-wrapper textarea::-webkit-scrollbar-thumb {
-  border: 2px solid #080b10;
-  border-radius: 6px;
-  background: #263545;
-}
-.assistant-input-wrapper textarea::-webkit-scrollbar-thumb:hover {
-  background: #1688ff;
-}
 
 @media (max-width: 860px) {
   .assistant-page {
