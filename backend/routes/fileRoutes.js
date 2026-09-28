@@ -1,18 +1,34 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const multer = require('multer')
+const fs = require('fs')
+const os = require('os')
 const File = require('../models/File')
 const Folder = require('../models/Folder')
 const Project = require('../models/Project')
 
 const router = express.Router()
 
+// Disk storage keeps the upload out of server memory. No filename callback is
+// given, so multer defaults to a random hex name instead of the client's name.
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+  }),
   limits: {
     fileSize: 100 * 1024 * 1024,
   },
 })
+
+// Deletes a temp upload file. Logs failures instead of throwing, since a
+// cleanup error should never fail the response that is already being sent.
+function removeTempFile(path) {
+  fs.unlink(path, (error) => {
+    if (error) {
+      console.error('Failed to delete temp upload file:', error)
+    }
+  })
+}
 
 function getBucket() {
   const db = mongoose.connection.db
@@ -174,9 +190,11 @@ router.post(
       )
 
       await new Promise((resolve, reject) => {
-        uploadStream.on('finish', resolve)
-        uploadStream.on('error', reject)
-        uploadStream.end(req.file.buffer)
+        fs.createReadStream(req.file.path)
+          .on('error', reject)
+          .pipe(uploadStream)
+          .on('finish', resolve)
+          .on('error', reject)
       })
 
       const file = await File.create({
@@ -193,6 +211,10 @@ router.post(
       res.status(201).json(file)
     } catch (error) {
       next(error)
+    } finally {
+      if (req.file) {
+        removeTempFile(req.file.path)
+      }
     }
   }
 )
@@ -291,9 +313,11 @@ router.put(
       )
 
       await new Promise((resolve, reject) => {
-        uploadStream.on('finish', resolve)
-        uploadStream.on('error', reject)
-        uploadStream.end(req.file.buffer)
+        fs.createReadStream(req.file.path)
+          .on('error', reject)
+          .pipe(uploadStream)
+          .on('finish', resolve)
+          .on('error', reject)
       })
 
       const oldGridFsId = file.gridFsId
@@ -309,6 +333,10 @@ router.put(
       res.json(file)
     } catch (error) {
       next(error)
+    } finally {
+      if (req.file) {
+        removeTempFile(req.file.path)
+      }
     }
   }
 )
