@@ -272,6 +272,12 @@ router.post(
         })
       }
 
+      if (text.length > 4096) {
+        return res.status(400).json({
+          error: 'Text must be at most 4096 characters',
+        })
+      }
+
       const openAIResponse =
         await fetch(
           'https://api.openai.com/v1/audio/speech',
@@ -341,6 +347,12 @@ router.post(
       ) {
         return res.status(400).json({
           error: 'Image prompt is required',
+        })
+      }
+
+      if (prompt.length > 4000) {
+        return res.status(400).json({
+          error: 'Image prompt must be at most 4000 characters',
         })
       }
 
@@ -424,6 +436,15 @@ router.post(
       ) {
         return res.status(400).json({
           error: 'Message content or file is required',
+        })
+      }
+
+      if (
+        typeof content === 'string' &&
+        content.length > 20000
+      ) {
+        return res.status(400).json({
+          error: 'Message content must be at most 20000 characters',
         })
       }
 
