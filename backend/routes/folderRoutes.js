@@ -165,6 +165,7 @@ router.put('/:id', async (req, res, next) => {
       },
       {
         new: true,
+        runValidators: true,
       }
     )
 

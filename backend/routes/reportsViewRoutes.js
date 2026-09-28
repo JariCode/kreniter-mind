@@ -53,6 +53,7 @@ router.put('/', async (req, res, next) => {
         {
           new: true,
           upsert: true,
+          runValidators: true,
           setDefaultsOnInsert: true,
         }
       )
