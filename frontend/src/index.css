@@ -9,9 +9,10 @@
   --color-text: #e7e7e5;
   --color-text-soft: #b7b9bd;
   --color-muted: #85888d;
-  --color-accent: #c6a875;
-  --color-accent-dark: #9a7848;
-  --color-accent-soft: rgba(198, 168, 117, 0.1);
+  --color-accent: #1688ff;
+  --color-accent-dark: #0753a6;
+  --color-accent-soft: rgba(22, 136, 255, 0.1);
+  --color-accent-rgb: 22, 136, 255;
 }
 
 * {
