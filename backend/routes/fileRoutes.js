@@ -18,6 +18,9 @@ const upload = multer({
   limits: {
     fileSize: 100 * 1024 * 1024,
   },
+  // Without this, multer decodes filenames and field values that carry no
+  // explicit charset as latin1, mangling UTF-8 names like "Kävijät.txt".
+  defParamCharset: 'utf8',
 })
 
 // Deletes a temp upload file. Logs failures instead of throwing, since a
@@ -195,6 +198,20 @@ router.post(
         folderId = null,
         onDuplicate,
       } = req.body
+
+      // Multer turns bracketed field names (e.g. "projectId[$ne]") into
+      // nested objects, and the global sanitize middleware runs before
+      // multer parses the multipart body, so it never sees these fields.
+      // Reject anything but a plain string here instead.
+      if (
+        (projectId !== null && typeof projectId !== 'string') ||
+        (folderId !== null && typeof folderId !== 'string') ||
+        (onDuplicate !== undefined && typeof onDuplicate !== 'string')
+      ) {
+        return res.status(400).json({
+          error: 'Invalid request',
+        })
+      }
 
       if (
         projectId &&
