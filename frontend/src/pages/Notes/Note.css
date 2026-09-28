@@ -96,9 +96,9 @@
 .note-form-header button:hover,
 .note-form-actions button:hover,
 .note-actions button:hover {
-  border-color: rgba(22, 136, 255, 0.4);
-  background: rgba(22, 136, 255, 0.08);
-  color: #1688ff;
+  border-color: rgba(var(--color-accent-rgb), 0.4);
+  background: rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-accent);
 }
 
 .note-form-grid {
@@ -144,7 +144,7 @@
 .note-form-grid input:focus,
 .note-form-grid select:focus,
 .note-form-grid textarea:focus {
-  border-color: rgba(22, 136, 255, 0.55);
+  border-color: rgba(var(--color-accent-rgb), 0.55);
 }
 
 .note-form-grid select {
@@ -168,9 +168,9 @@
 }
 
 .note-form-actions button[type='submit'] {
-  border-color: rgba(22, 136, 255, 0.45);
-  background: rgba(22, 136, 255, 0.08);
-  color: #1688ff;
+  border-color: rgba(var(--color-accent-rgb), 0.45);
+  background: rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-accent);
 }
 
 .note-form-actions button:disabled {
@@ -204,7 +204,7 @@
 }
 
 .notes-column-low {
-  --note-accent: #1688ff;
+  --note-accent: var(--color-accent);
 }
 
 .notes-column-medium {
@@ -318,7 +318,7 @@
 }
 
 .note-item-low {
-  --note-accent: #1688ff;
+  --note-accent: var(--color-accent);
 }
 
 .note-item-medium {

@@ -82,13 +82,13 @@
 }
 
 .time-tracker-button-resume {
-  border-color: rgba(22, 136, 255, 0.35);
-  background: rgba(22, 136, 255, 0.08);
+  border-color: rgba(var(--color-accent-rgb), 0.35);
+  background: rgba(var(--color-accent-rgb), 0.08);
   color: #b9e1ff;
 }
 
 .time-tracker-button-resume:hover {
-  background: rgba(22, 136, 255, 0.14);
+  background: rgba(var(--color-accent-rgb), 0.14);
 }
 
 .time-tracker-button-pause {

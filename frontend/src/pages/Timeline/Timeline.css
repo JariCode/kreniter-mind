@@ -52,7 +52,7 @@
   background: #263545;
 }
 .timeline-scroll::-webkit-scrollbar-thumb:hover {
-  background: #1688ff;
+  background: var(--color-accent);
 }
 
 /* Timeline grid */
@@ -215,7 +215,7 @@
   background: #7f8b98;
 }
 .timeline-task-bar.status-in-progress {
-  background: #1688ff;
+  background: var(--color-accent);
 }
 .timeline-task-bar.status-completed {
   background: #8fbfa5;

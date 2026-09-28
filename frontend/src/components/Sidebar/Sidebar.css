@@ -71,7 +71,7 @@
 }
 
 .sidebar-item:hover {
-  background: rgba(22, 136, 255, 0.035);
+  background: rgba(var(--color-accent-rgb), 0.035);
   color: #b8c8d8;
 }
 
@@ -80,9 +80,9 @@
 /* -------------------------------- */
 
 .sidebar-item.active {
-  background: rgba(22, 136, 255, 0.055);
+  background: rgba(var(--color-accent-rgb), 0.055);
   color: #e3edf7;
-  border: 1px solid rgba(22, 136, 255, 0.16);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.16);
 }
 
 .sidebar-item.active::before {
@@ -92,10 +92,10 @@
   top: 10px;
   width: 2px;
   height: 18px;
-  background: #1688ff;
+  background: var(--color-accent);
   border-radius: 0 2px 2px 0;
   box-shadow:
-    0 0 9px rgba(22, 136, 255, 0.6);
+    0 0 9px rgba(var(--color-accent-rgb), 0.6);
 }
 
 /* -------------------------------- */
@@ -150,7 +150,7 @@
     justify-content: center;
     gap: 5px;
     padding: 0;
-    border: 1px solid rgba(22, 136, 255, 0.22);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.22);
     border-radius: 7px;
     background: rgba(8, 11, 16, 0.94);
     color: #e7edf5;
@@ -159,7 +159,7 @@
   }
 
   .sidebar-mobile-toggle:hover {
-    border-color: rgba(22, 136, 255, 0.5);
+    border-color: rgba(var(--color-accent-rgb), 0.5);
     background: rgba(13, 19, 29, 0.98);
   }
 

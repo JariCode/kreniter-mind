@@ -21,7 +21,7 @@
 .project-meta-label {
   display: block;
   margin-top: 8px;
-  color: #1688ff;
+  color: var(--color-accent);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -97,9 +97,9 @@
   text-transform: uppercase;
 }
 .project-status.active {
-  border-color: rgba(22, 136, 255, 0.3);
-  background: rgba(22, 136, 255, 0.08);
-  color: #1688ff;
+  border-color: rgba(var(--color-accent-rgb), 0.3);
+  background: rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-accent);
 }
 .project-status.completed {
   color: #8fbfa5;
@@ -126,9 +126,9 @@
     background 0.18s ease;
 }
 .project-actions button:hover {
-  border-color: rgba(22, 136, 255, 0.4);
-  background: rgba(22, 136, 255, 0.08);
-  color: #1688ff;
+  border-color: rgba(var(--color-accent-rgb), 0.4);
+  background: rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-accent);
 }
 .projects-page {
   scrollbar-width: thin;

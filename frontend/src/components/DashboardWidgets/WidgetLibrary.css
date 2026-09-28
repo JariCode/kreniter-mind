@@ -57,20 +57,20 @@
 }
 
 .widget-library-item:hover {
-  border-color: rgba(22, 136, 255, 0.45);
-  background: rgba(22, 136, 255, 0.10);
+  border-color: rgba(var(--color-accent-rgb), 0.45);
+  background: rgba(var(--color-accent-rgb), 0.10);
   color: #e7edf5;
-  box-shadow: 0 0 18px rgba(22, 136, 255, 0.08);
+  box-shadow: 0 0 18px rgba(var(--color-accent-rgb), 0.08);
 }
 
 .widget-library-icon {
-  color: #1688ff;
+  color: var(--color-accent);
   font-size: 15px;
   line-height: 1;
 }
 
 .widget-library-item:hover .widget-library-icon {
-  color: #1688ff;
+  color: var(--color-accent);
 }
 
 @media (max-width: 760px) {

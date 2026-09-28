@@ -24,10 +24,10 @@
 .reports-print-button {
   height: 40px;
   padding: 0 15px;
-  border: 1px solid rgba(22, 136, 255, 0.45);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.45);
   border-radius: 7px;
-  background: rgba(22, 136, 255, 0.10);
-  color: #1688ff;
+  background: rgba(var(--color-accent-rgb), 0.10);
+  color: var(--color-accent);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -79,9 +79,9 @@
     linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
     linear-gradient(
       135deg,
-      rgba(22, 136, 255, 0.45),
-      rgba(22, 136, 255, 0.08),
-      rgba(22, 136, 255, 0.24)
+      rgba(var(--color-accent-rgb), 0.45),
+      rgba(var(--color-accent-rgb), 0.08),
+      rgba(var(--color-accent-rgb), 0.24)
     ) border-box;
 }
 .reports-header-main {
@@ -91,7 +91,7 @@
 .reports-section-kicker {
   display: block;
   margin-bottom: 7px;
-  color: #1688ff;
+  color: var(--color-accent);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -131,7 +131,7 @@
   font-weight: 600;
 }
 .reports-project-meta .reports-total-time {
-  color: #1688ff;
+  color: var(--color-accent);
   font-size: 20px;
   font-weight: 600;
   white-space: nowrap;
@@ -206,7 +206,7 @@
   font-weight: 600;
 }
 .reports-section-total {
-  color: #1688ff;
+  color: var(--color-accent);
 }
 .reports-status-grid {
   display: grid;
@@ -269,7 +269,7 @@
 .reports-time-list::-webkit-scrollbar-thumb:hover,
 .reports-date-list::-webkit-scrollbar-thumb:hover,
 .reports-note-list::-webkit-scrollbar-thumb:hover {
-  background: #1688ff;
+  background: var(--color-accent);
 }
 .reports-task-row,
 .reports-time-row,
@@ -323,8 +323,8 @@
   text-transform: capitalize;
 }
 .reports-task-status-in-progress {
-  background: rgba(22, 136, 255, 0.10);
-  color: #1688ff;
+  background: rgba(var(--color-accent-rgb), 0.10);
+  color: var(--color-accent);
 }
 .reports-task-status-completed {
   background: rgba(143, 191, 165, 0.10);
@@ -525,8 +525,8 @@
     background:
       radial-gradient(
         circle,
-        rgba(22, 136, 255, 0.34) 0%,
-        rgba(22, 136, 255, 0.14) 35%,
+        rgba(var(--color-accent-rgb), 0.34) 0%,
+        rgba(var(--color-accent-rgb), 0.14) 35%,
         transparent 72%
       );
     filter: blur(4px);
@@ -537,7 +537,7 @@
     position: absolute;
     width: 70px;
     height: 70px;
-    border: 1.5px solid rgba(22, 136, 255, 0.95);
+    border: 1.5px solid rgba(var(--color-accent-rgb), 0.95);
     transform: rotate(45deg);
     animation: reports-print-k-frame 6s ease-in-out infinite;
   }
@@ -550,7 +550,7 @@
       linear-gradient(
         90deg,
         transparent,
-        rgba(22, 136, 255, 0.95),
+        rgba(var(--color-accent-rgb), 0.95),
         transparent
       );
     transform-origin: center;
@@ -577,12 +577,12 @@
       radial-gradient(
         circle,
         rgba(66, 165, 255, 0.40) 0%,
-        rgba(22, 136, 255, 0.18) 42%,
+        rgba(var(--color-accent-rgb), 0.18) 42%,
         transparent 72%
       );
     border: 1.5px solid rgba(0, 103, 216, 0.95);
     box-shadow:
-      0 0 22px rgba(22, 136, 255, 0.34);
+      0 0 22px rgba(var(--color-accent-rgb), 0.34);
     animation: reports-print-k-core 4s ease-in-out infinite;
   }
   .reports-print-entity-core::after {
@@ -593,7 +593,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-shadow:
-      0 0 10px rgba(22, 136, 255, 0.55);
+      0 0 10px rgba(var(--color-accent-rgb), 0.55);
   }
   .reports-print-entity-core::before {
     content: "";
@@ -601,10 +601,10 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: #1688ff;
+    background: var(--color-accent);
     box-shadow:
-      0 0 4px #1688ff,
-      0 0 10px rgba(22, 136, 255, 0.95);
+      0 0 4px var(--color-accent),
+      0 0 10px rgba(var(--color-accent-rgb), 0.95);
     animation: reports-print-k-particle 3.5s ease-in-out infinite;
   }
   .reports-intro,
@@ -775,7 +775,7 @@
     gap: 20px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 2px solid #1688ff;
+    border-top: 2px solid var(--color-accent);
     color: #20252b;
     font-size: 10px;
     letter-spacing: 0.14em;
@@ -828,13 +828,13 @@
     opacity: 0.7;
     transform: scale(0.9);
     box-shadow:
-      0 0 12px rgba(22, 136, 255, 0.12);
+      0 0 12px rgba(var(--color-accent-rgb), 0.12);
   }
   50% {
     opacity: 1;
     transform: scale(1.1);
     box-shadow:
-      0 0 25px rgba(22, 136, 255, 0.30);
+      0 0 25px rgba(var(--color-accent-rgb), 0.30);
   }
 }
 @keyframes reports-print-k-particle {
