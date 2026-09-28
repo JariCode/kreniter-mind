@@ -534,20 +534,6 @@
   scrollbar-width: thin;
   scrollbar-color: #263545 #080b10;
 }
-.tasks-page::-webkit-scrollbar {
-  width: 10px;
-}
-.tasks-page::-webkit-scrollbar-track {
-  background: #080b10;
-}
-.tasks-page::-webkit-scrollbar-thumb {
-  border: 2px solid #080b10;
-  border-radius: 6px;
-  background: #263545;
-}
-.tasks-page::-webkit-scrollbar-thumb:hover {
-  background: #1688ff;
-}
 .task-form-grid textarea {
   scrollbar-width: thin;
   scrollbar-color: #263545 #080b10;

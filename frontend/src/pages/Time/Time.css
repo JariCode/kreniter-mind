@@ -10,24 +10,6 @@
   scrollbar-color: #263545 #080b10;
 }
 
-.time-page::-webkit-scrollbar {
-  width: 10px;
-}
-
-.time-page::-webkit-scrollbar-track {
-  background: #080b10;
-}
-
-.time-page::-webkit-scrollbar-thumb {
-  border: 2px solid #080b10;
-  border-radius: 6px;
-  background: #263545;
-}
-
-.time-page::-webkit-scrollbar-thumb:hover {
-  background: #1688ff;
-}
-
 /* Intro */
 
 .time-intro {

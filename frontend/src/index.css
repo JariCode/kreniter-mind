@@ -362,3 +362,53 @@ button {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* =========================================================
+   Shared scrollbar
+   ========================================================= */
+
+.assistant-conversations::-webkit-scrollbar,
+.assistant-messages::-webkit-scrollbar,
+.assistant-page::-webkit-scrollbar,
+.projects-page::-webkit-scrollbar,
+.reports-page::-webkit-scrollbar,
+.tasks-page::-webkit-scrollbar,
+.time-page::-webkit-scrollbar,
+.timeline-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.assistant-conversations::-webkit-scrollbar-track,
+.assistant-messages::-webkit-scrollbar-track,
+.assistant-page::-webkit-scrollbar-track,
+.projects-page::-webkit-scrollbar-track,
+.reports-page::-webkit-scrollbar-track,
+.tasks-page::-webkit-scrollbar-track,
+.time-page::-webkit-scrollbar-track,
+.timeline-page::-webkit-scrollbar-track {
+  background: #080b10;
+}
+
+.assistant-conversations::-webkit-scrollbar-thumb,
+.assistant-messages::-webkit-scrollbar-thumb,
+.assistant-page::-webkit-scrollbar-thumb,
+.projects-page::-webkit-scrollbar-thumb,
+.reports-page::-webkit-scrollbar-thumb,
+.tasks-page::-webkit-scrollbar-thumb,
+.time-page::-webkit-scrollbar-thumb,
+.timeline-page::-webkit-scrollbar-thumb {
+  border: 2px solid #080b10;
+  border-radius: 6px;
+  background: #263545;
+}
+
+.assistant-conversations::-webkit-scrollbar-thumb:hover,
+.assistant-messages::-webkit-scrollbar-thumb:hover,
+.assistant-page::-webkit-scrollbar-thumb:hover,
+.projects-page::-webkit-scrollbar-thumb:hover,
+.reports-page::-webkit-scrollbar-thumb:hover,
+.tasks-page::-webkit-scrollbar-thumb:hover,
+.time-page::-webkit-scrollbar-thumb:hover,
+.timeline-page::-webkit-scrollbar-thumb:hover {
+  background: #1688ff;
+}
