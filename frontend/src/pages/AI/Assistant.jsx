@@ -34,6 +34,7 @@ function Assistant() {
   const audioUrlRef = useRef(null)
   const audioChunksRef = useRef([])
   const fileInputRef = useRef(null)
+  const textareaRef = useRef(null)
 
   useEffect(() => {
     async function loadConversations() {
@@ -61,6 +62,25 @@ function Assistant() {
       block: 'end',
     })
   }, [messages, sending])
+
+  // Keep the message input focused on page load, when a send or transcription
+  // finishes, and when the active conversation changes. Only on pointer
+  // devices, so the on-screen keyboard does not pop up on mobile.
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: fine)').matches) {
+      return
+    }
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current
+
+      if (textarea && !textarea.disabled) {
+        textarea.focus({
+          preventScroll: true,
+        })
+      }
+    })
+  }, [sending, transcribing, activeConversation])
 
   async function loadConversation(conversationId) {
     try {
@@ -845,6 +865,7 @@ function Assistant() {
               </button>
 
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(event) =>
                   setInput(event.target.value)
