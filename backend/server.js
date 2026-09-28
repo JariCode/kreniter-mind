@@ -8,6 +8,7 @@ const { clerkMiddleware } = require('@clerk/express')
 const connectDatabase = require('./utils/database')
 const { apiLimiter, aiLimiter } = require('./middleware/rateLimiter')
 const authMiddleware = require('./middleware/authMiddleware')
+const sanitize = require('./middleware/sanitize')
 
 const projectRoutes = require('./routes/projectRoutes')
 const taskRoutes = require('./routes/taskRoutes')
@@ -75,6 +76,9 @@ app.use(
     limit: '10mb',
   })
 )
+
+// NoSQL injection protection
+app.use(sanitize)
 
 // Health check
 app.get('/', (req, res) => {
