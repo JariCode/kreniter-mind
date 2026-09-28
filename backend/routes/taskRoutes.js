@@ -148,6 +148,38 @@ router.patch('/:id', async (req, res, next) => {
           error: 'Parent task must belong to the same project',
         })
       }
+
+      // Kuljetaan parentTaskId-ketjua ylöspäin ja tarkistetaan, ettei ketjussa ole
+      // muokattavaa tehtävää (silmukka). visited-setti estää ikuisen silmukan.
+      const visited = new Set()
+      let currentParentId = parentTask.parentTaskId
+
+      while (currentParentId) {
+        const currentParentIdString = String(currentParentId)
+
+        if (currentParentIdString === String(task._id)) {
+          return res.status(400).json({
+            error: 'Invalid parent task',
+          })
+        }
+
+        if (visited.has(currentParentIdString)) {
+          break
+        }
+
+        visited.add(currentParentIdString)
+
+        const currentParent = await Task.findOne({
+          _id: currentParentId,
+          userId: req.user._id,
+        })
+
+        if (!currentParent) {
+          break
+        }
+
+        currentParentId = currentParent.parentTaskId
+      }
     }
 
     task.projectId = req.body.projectId
