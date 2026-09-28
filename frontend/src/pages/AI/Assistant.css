@@ -272,6 +272,104 @@
   white-space: pre-wrap;
 }
 
+/* Markdown rendering inside assistant replies (AssistantMarkdown) */
+
+.assistant-message-content > *:first-child {
+  margin-top: 0;
+}
+
+.assistant-message-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-message-content p {
+  margin: 0 0 10px;
+}
+
+.assistant-message-content strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.assistant-message-content ul,
+.assistant-message-content ol {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.assistant-message-content li {
+  margin-bottom: 4px;
+}
+
+.assistant-message-content h1,
+.assistant-message-content h2,
+.assistant-message-content h3,
+.assistant-message-content h4,
+.assistant-message-content h5,
+.assistant-message-content h6 {
+  margin: 12px 0 6px;
+  color: var(--color-text);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.assistant-message-content h1 {
+  font-size: 1.15em;
+}
+
+.assistant-message-content h2 {
+  font-size: 1.1em;
+}
+
+.assistant-message-content h3 {
+  font-size: 1.05em;
+}
+
+.assistant-message-content h4,
+.assistant-message-content h5,
+.assistant-message-content h6 {
+  font-size: 1em;
+}
+
+.assistant-message-content code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-accent);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.92em;
+}
+
+.assistant-message-content pre {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+}
+
+.assistant-message-content pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+
+.assistant-message-content a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.assistant-message-content a:hover {
+  color: #4da3ff;
+}
+
+.assistant-message-content blockquote {
+  margin: 0 0 10px;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-border);
+  color: var(--color-text-soft);
+}
+
 .assistant-message-body {
   display: flex;
   flex-direction: column;

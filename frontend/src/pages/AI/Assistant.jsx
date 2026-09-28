@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import AI from '../../components/AI/AI'
+import AssistantMarkdown from '../../components/AI/AssistantMarkdown'
 import {
   getConversations,
   getConversation,
@@ -734,7 +735,9 @@ function Assistant() {
                       'assistant' ? (
                       <div className="assistant-message-body">
                         <div className="assistant-message-content">
-                          {message.content}
+                          <AssistantMarkdown>
+                            {message.content}
+                          </AssistantMarkdown>
                         </div>
 
                         {message.image && (

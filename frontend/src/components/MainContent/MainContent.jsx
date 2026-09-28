@@ -25,6 +25,7 @@ import {
 } from '../../api/ai'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import { formatTimerTime } from '../../utils/formatTimerTime'
+import AssistantMarkdown from '../AI/AssistantMarkdown'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
 
@@ -1668,7 +1669,13 @@ function MainContent({
                         key={message._id}
                         className={`ai-chat-message ai-chat-message-${message.role}`}
                       >
-                        {message.content}
+                        {message.role === 'assistant' ? (
+                          <AssistantMarkdown>
+                            {message.content}
+                          </AssistantMarkdown>
+                        ) : (
+                          message.content
+                        )}
                       </div>
                     ))}
 
