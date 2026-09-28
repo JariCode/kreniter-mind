@@ -1,7 +1,7 @@
 import { useClerk } from '@clerk/react'
 import './LandingPage.css'
 
-function LandingPage({ onEnter }) {
+function LandingPage() {
   const { openSignIn } = useClerk()
 
   function handleEnter() {

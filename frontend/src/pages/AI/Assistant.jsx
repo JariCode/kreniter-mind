@@ -435,7 +435,7 @@ function Assistant() {
 
       mediaRecorder.start()
       setRecording(true)
-    } catch (error) {
+    } catch {
       setError(
         'Microphone access was denied or unavailable.'
       )

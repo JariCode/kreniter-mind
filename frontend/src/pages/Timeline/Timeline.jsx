@@ -8,12 +8,6 @@ import './Timeline.css'
 const DAY_WIDTH = 64
 const NO_PROJECT = 'no-project'
 
-const STATUS_COLORS = {
-  todo: '#7f8b98',
-  'in-progress': '#1688ff',
-  completed: '#8fbfa5',
-}
-
 function Timeline() {
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
