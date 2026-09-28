@@ -28,20 +28,11 @@
   grid-column: span 3;
 }
 
-.dashboard-widget.widget-half {
-  grid-column: span 4;
-}
-
-.dashboard-widget.widget-full {
-  grid-column: span 12;
-}
-
 @media (max-width: 1100px) {
   .dashboard-widget.widget-stat,
   .dashboard-widget.widget-wide,
   .dashboard-widget.widget-six,
-  .dashboard-widget.widget-third,
-  .dashboard-widget.widget-half {
+  .dashboard-widget.widget-third {
     grid-column: span 6;
   }
 }
@@ -54,9 +45,7 @@
   .dashboard-widget.widget-stat,
   .dashboard-widget.widget-wide,
   .dashboard-widget.widget-six,
-  .dashboard-widget.widget-third,
-  .dashboard-widget.widget-half,
-  .dashboard-widget.widget-full {
+  .dashboard-widget.widget-third {
     grid-column: span 12;
   }
 }

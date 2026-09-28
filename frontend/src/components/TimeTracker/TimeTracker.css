@@ -1,17 +1,5 @@
 /* TimeTracker */
 
-.time-tracker {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.time-tracker-display {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .time-tracker-time {
   display: block;
   margin: 0;
@@ -21,20 +9,6 @@
   line-height: 1;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
-}
-
-.time-tracker-task {
-  display: block;
-  color: #e7edf5;
-  font-size: 0.82rem;
-  font-weight: 500;
-}
-
-.time-tracker-project {
-  display: block;
-  margin-top: 4px;
-  color: #687583;
-  font-size: 0.68rem;
 }
 
 .time-tracker-status {
@@ -107,14 +81,12 @@
   cursor: not-allowed;
 }
 
-.time-tracker-button-start,
 .time-tracker-button-resume {
   border-color: rgba(22, 136, 255, 0.35);
   background: rgba(22, 136, 255, 0.08);
   color: #b9e1ff;
 }
 
-.time-tracker-button-start:hover,
 .time-tracker-button-resume:hover {
   background: rgba(22, 136, 255, 0.14);
 }

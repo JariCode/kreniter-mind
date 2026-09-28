@@ -429,19 +429,6 @@
 .task-item:last-child {
   border-bottom: 0;
 }
-.task-status-indicator {
-  flex: 0 0 4px;
-  width: 4px;
-  min-height: 52px;
-  border-radius: 4px;
-  background: var(--color-muted);
-}
-.task-item.status-in-progress .task-status-indicator {
-  background: #1688ff;
-}
-.task-item.status-completed .task-status-indicator {
-  background: #8fbfa5;
-}
 .task-info {
   flex: 1;
   min-width: 0;

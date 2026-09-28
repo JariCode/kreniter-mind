@@ -93,12 +93,6 @@
   font-size: 0.74rem;
 }
 
-.card-index {
-  color: #536477;
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-}
-
 .dashboard-card strong {
   display: block;
   margin-top: 8px;
@@ -233,16 +227,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-}
-
-.panel-kicker {
-  display: block;
-  margin-bottom: 5px;
-  color: #68798a;
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
 }
 
 .panel-header h3 {
