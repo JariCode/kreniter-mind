@@ -149,8 +149,8 @@ router.patch('/:id', async (req, res, next) => {
         })
       }
 
-      // Kuljetaan parentTaskId-ketjua ylöspäin ja tarkistetaan, ettei ketjussa ole
-      // muokattavaa tehtävää (silmukka). visited-setti estää ikuisen silmukan.
+      // Walk up the parentTaskId chain and check that it does not contain the
+      // task being edited (a cycle). The visited set guards against an infinite loop.
       const visited = new Set()
       let currentParentId = parentTask.parentTaskId
 

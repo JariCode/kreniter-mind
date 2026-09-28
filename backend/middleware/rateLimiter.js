@@ -1,8 +1,8 @@
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit')
 const { getAuth } = require('@clerk/express')
 
-// Muodostaa rajoitusavaimen: käyttäjäkohtainen Clerkin userId, tai IP jos käyttäjä ei ole tunnistettu.
-// clerkMiddleware ajetaan server.js:ssä ennen limitereitä, joten getAuth toimii tässä.
+// Builds the rate limit key: the Clerk userId when available, otherwise the IP.
+// clerkMiddleware runs before the limiters in server.js, so getAuth works here.
 function userOrIpKeyGenerator(req) {
   const { userId } = getAuth(req)
 
@@ -26,7 +26,7 @@ const apiLimiter = rateLimit({
   },
 })
 
-// AI-reittien rate limiting
+// AI routes rate limiting
 
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -39,7 +39,7 @@ const aiLimiter = rateLimit({
   },
 })
 
-// AI-kuvageneroinnin rate limiting
+// AI image generation rate limiting
 
 const aiImageLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
