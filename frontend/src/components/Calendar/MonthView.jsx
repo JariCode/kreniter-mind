@@ -2,6 +2,8 @@ import {
   getDayAriaLabel,
   getEventsForDay,
   getTaskMarkersForDay,
+  taskMarkerLabel,
+  taskMarkerVariantClassName,
 } from './calendarItems'
 import {
   getISOWeek,
@@ -83,7 +85,9 @@ function DayCell({
           <button
             key={`${kind}-${task._id}`}
             type="button"
-            className="calendar-task-marker"
+            className={`calendar-task-marker ${taskMarkerVariantClassName(
+              kind
+            )}`}
             onClick={(event) => event.stopPropagation()}
             onMouseEnter={(event) =>
               onShowTaskTooltip(task, kind, event)
@@ -94,7 +98,7 @@ function DayCell({
             }
             onBlur={onHideTooltip}
           >
-            {kind === 'due' ? 'Due: ' : 'Start: '}
+            {taskMarkerLabel(kind)}
             {task.title}
           </button>
         ))}

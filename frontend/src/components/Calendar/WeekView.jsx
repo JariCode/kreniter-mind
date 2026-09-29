@@ -2,6 +2,8 @@ import {
   getDayAriaLabel,
   getEventsForDay,
   getTaskMarkersForDay,
+  taskMarkerLabel,
+  taskMarkerVariantClassName,
 } from './calendarItems'
 import { addDays, isSameDay, startOfWeek } from './calendarDates'
 
@@ -68,7 +70,9 @@ function WeekDayColumn({
           <button
             key={`${kind}-${task._id}`}
             type="button"
-            className="calendar-task-marker"
+            className={`calendar-task-marker ${taskMarkerVariantClassName(
+              kind
+            )}`}
             onClick={(event) => event.stopPropagation()}
             onMouseEnter={(event) =>
               onShowTaskTooltip(task, kind, event)
@@ -79,7 +83,7 @@ function WeekDayColumn({
             }
             onBlur={onHideTooltip}
           >
-            {kind === 'due' ? 'Due: ' : 'Start: '}
+            {taskMarkerLabel(kind)}
             {task.title}
           </button>
         ))}

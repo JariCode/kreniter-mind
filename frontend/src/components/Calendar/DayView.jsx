@@ -1,6 +1,8 @@
 import {
   getEventsForDay,
   getTaskMarkersForDay,
+  taskMarkerLabel,
+  taskMarkerVariantClassName,
 } from './calendarItems'
 
 function DayView({
@@ -66,7 +68,9 @@ function DayView({
         <button
           key={`${kind}-${task._id}`}
           type="button"
-          className="calendar-task-marker calendar-day-list-item"
+          className={`calendar-task-marker calendar-day-list-item ${taskMarkerVariantClassName(
+            kind
+          )}`}
           onClick={(event) => event.stopPropagation()}
           onMouseEnter={(event) =>
             onShowTaskTooltip(task, kind, event)
@@ -77,7 +81,7 @@ function DayView({
           }
           onBlur={onHideTooltip}
         >
-          {kind === 'due' ? 'Due: ' : 'Start: '}
+          {taskMarkerLabel(kind)}
           {task.title}
         </button>
       ))}

@@ -274,6 +274,13 @@
   cursor: default;
 }
 
+/* The app's existing completed-green, reused here for a task's
+   completed-date marker so it reads as distinct from start/due. */
+.calendar-task-marker-completed {
+  background: rgba(143, 191, 165, 0.16);
+  color: #8fbfa5;
+}
+
 .calendar-more {
   padding: 0 5px;
   color: var(--color-muted);

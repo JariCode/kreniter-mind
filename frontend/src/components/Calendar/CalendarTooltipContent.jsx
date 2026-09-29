@@ -76,6 +76,17 @@ export function TaskTooltipContent({ task, projectName, kind }) {
           <span>{formatShortDate(new Date(task.dueDate))}</span>
         </div>
       )}
+
+      {task.completedDate && (
+        <div
+          className={`calendar-tooltip-row${
+            kind === 'completed' ? ' calendar-tooltip-row-active' : ''
+          }`}
+        >
+          <span>Completed</span>
+          <span>{formatShortDate(new Date(task.completedDate))}</span>
+        </div>
+      )}
     </div>
   )
 }

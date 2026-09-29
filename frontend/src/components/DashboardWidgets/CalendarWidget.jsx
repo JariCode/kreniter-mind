@@ -16,6 +16,8 @@ import {
   getEventsForDay,
   getTaskMarkersForDay,
   findProjectName,
+  taskMarkerLabel,
+  taskMarkerVariantClassName,
 } from '../Calendar/calendarItems'
 import {
   EventTooltipContent,
@@ -349,7 +351,9 @@ function CalendarWidget({ onViewAll }) {
               <button
                 key={item.key}
                 type="button"
-                className="calendar-task-marker"
+                className={`calendar-task-marker ${taskMarkerVariantClassName(
+                  item.kind
+                )}`}
                 onClick={(domEvent) =>
                   domEvent.preventDefault()
                 }
@@ -370,7 +374,7 @@ function CalendarWidget({ onViewAll }) {
                 }
                 onBlur={hideTooltip}
               >
-                {item.kind === 'due' ? 'Due: ' : 'Start: '}
+                {taskMarkerLabel(item.kind)}
                 {item.task.title}
               </button>
             )

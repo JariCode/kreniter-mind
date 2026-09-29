@@ -16,9 +16,10 @@ export function getEventsForDay(events, day) {
     })
 }
 
-// Tasks whose startDate or dueDate falls on this day. A task with both
-// dates on the same day appears twice (once per reason), each carrying
-// which one it is so the caller can label it accordingly.
+// Tasks whose startDate, dueDate or completedDate falls on this day. A
+// task with more than one of those dates on the same day appears once per
+// reason, each carrying which one it is so the caller can label it
+// accordingly.
 export function getTaskMarkersForDay(tasks, day) {
   const markers = []
 
@@ -36,9 +37,33 @@ export function getTaskMarkersForDay(tasks, day) {
     ) {
       markers.push({ task, kind: 'due' })
     }
+
+    if (
+      task.completedDate &&
+      isSameDay(new Date(task.completedDate), day)
+    ) {
+      markers.push({ task, kind: 'completed' })
+    }
   }
 
   return markers
+}
+
+const TASK_MARKER_LABELS = {
+  start: 'Start: ',
+  due: 'Due: ',
+  completed: 'Completed: ',
+}
+
+// The label prefix shown before a task's title on a task marker.
+export function taskMarkerLabel(kind) {
+  return TASK_MARKER_LABELS[kind] || ''
+}
+
+// The extra class that visually distinguishes a completed-date marker
+// (the app's existing completed-green) from the start/due markers.
+export function taskMarkerVariantClassName(kind) {
+  return kind === 'completed' ? 'calendar-task-marker-completed' : ''
 }
 
 export function findProjectName(projects, projectId) {
@@ -115,6 +140,20 @@ export function getDayAriaLabel(day, events, taskMarkers) {
         'task',
         'tasks'
       )} starting`
+    )
+  }
+
+  const completedCount = taskMarkers.filter(
+    (marker) => marker.kind === 'completed'
+  ).length
+
+  if (completedCount > 0) {
+    parts.push(
+      `${completedCount} ${pluralize(
+        completedCount,
+        'task',
+        'tasks'
+      )} completed`
     )
   }
 
