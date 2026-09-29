@@ -244,9 +244,9 @@ function Projects() {
             WORKSPACE
           </span>
 
-          <h2>
+          <h1>
             Projects
-          </h2>
+          </h1>
 
           <p>
             Manage your projects and keep your work organized.

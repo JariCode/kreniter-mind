@@ -564,8 +564,8 @@ button {
 }
 
 .reports-title,
-.tasks-intro h2,
-.projects-intro h2,
+.tasks-intro h1,
+.projects-intro h1,
 .files-title,
 .assistant-title {
   margin: 0;
@@ -575,9 +575,9 @@ button {
   letter-spacing: -0.025em;
 }
 
-.timeline-intro h2,
-.time-intro h2,
-.notes-intro h2 {
+.timeline-intro h1,
+.time-intro h1,
+.notes-intro h1 {
   margin: 0;
   color: var(--color-text);
   font-size: 1.55rem;

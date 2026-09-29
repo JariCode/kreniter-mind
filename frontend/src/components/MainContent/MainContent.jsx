@@ -1793,9 +1793,9 @@ function MainContent({
             WORKSPACE
           </span>
 
-          <h2>
+          <h1>
             Good evening.
-          </h2>
+          </h1>
 
           <p>
             Your workspace at a glance.

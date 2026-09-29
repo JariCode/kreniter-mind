@@ -1006,7 +1006,7 @@ function Files() {
       <div className="files-intro">
         <div>
           <div className="files-kicker">WORKSPACE</div>
-          <h2 className="files-title">Files</h2>
+          <h1 className="files-title">Files</h1>
           <p className="files-description">
             Manage your project files and folders.
           </p>

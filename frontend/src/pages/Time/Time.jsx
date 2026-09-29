@@ -190,7 +190,7 @@ function Time() {
             WORKSPACE
           </span>
 
-          <h2>Time</h2>
+          <h1>Time</h1>
 
           <p>
             See your project tasks and accumulated time.

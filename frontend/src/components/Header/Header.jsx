@@ -1,29 +1,17 @@
-import { UserButton } from '@clerk/react'
+import { UserButton, useUser } from '@clerk/react'
 import clerkAppearance from '../../clerkAppearance'
 import './Header.css'
 
-function Header({ activeView }) {
-  const viewTitles = {
-    dashboard: 'Dashboard',
-    projects: 'Projects',
-    tasks: 'Tasks',
-    notes: 'Notes',
-    timeline: 'Timeline',
-    time: 'Time',
-    files: 'Files',
-    reports: 'Reports',
-    'ai-assistant': 'AI Assistant',
-    'coding-ai': 'Coding AI',
-    settings: 'Settings',
-  }
-
-  const viewTitle = viewTitles[activeView] || 'Dashboard'
+function Header() {
+  const { user } = useUser()
+  const greeting = user?.firstName
+    ? `Welcome back, ${user.firstName}`
+    : 'Welcome back'
 
   return (
     <header className="header">
       <div className="header-title">
-        <h1>{viewTitle}</h1>
-        <p>Welcome back</p>
+        <p>{greeting}</p>
       </div>
 
       <div className="header-actions">

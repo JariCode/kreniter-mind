@@ -347,7 +347,7 @@ function Note() {
             Workspace
           </span>
 
-          <h2>Notes</h2>
+          <h1>Notes</h1>
 
           <p>
             Capture ideas, information and things you want

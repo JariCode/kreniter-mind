@@ -426,7 +426,7 @@ function Timeline() {
             WORKSPACE
           </span>
 
-          <h2>Timeline</h2>
+          <h1>Timeline</h1>
 
           <p>
             See your project tasks and progress

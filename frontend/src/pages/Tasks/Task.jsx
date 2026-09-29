@@ -934,7 +934,7 @@ function Task() {
             Workspace
           </span>
 
-          <h2>Tasks</h2>
+          <h1>Tasks</h1>
 
           <p>
             Manage your work and track task progress.

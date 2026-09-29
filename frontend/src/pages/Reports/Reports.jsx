@@ -261,9 +261,9 @@ function Reports() {
             WORKSPACE
           </span>
 
-          <h2 className="reports-title">
+          <h1 className="reports-title">
             Reports
-          </h2>
+          </h1>
 
           <p className="reports-description">
             Welcome back

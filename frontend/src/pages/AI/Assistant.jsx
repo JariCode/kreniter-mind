@@ -599,9 +599,9 @@ function Assistant() {
             WORKSPACE
           </div>
 
-          <h2 className="assistant-title">
+          <h1 className="assistant-title">
             AI Assistant
-          </h2>
+          </h1>
 
           <p className="assistant-description">
             Work with Kreniter across your

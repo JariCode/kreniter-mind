@@ -39,7 +39,7 @@ function Dashboard() {
       />
 
       <div className="dashboard-main">
-        <Header activeView={activeView} />
+        <Header />
         <MainContent
           activeView={activeView}
           onViewChange={handleViewChange}
