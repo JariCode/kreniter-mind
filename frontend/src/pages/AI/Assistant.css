@@ -513,7 +513,7 @@
   padding: 0 14px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--color-surface);
 }
 
 .assistant-typing span {
