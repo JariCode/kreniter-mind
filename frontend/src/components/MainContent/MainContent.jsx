@@ -11,6 +11,7 @@ import {
 } from '../../api/dashboardLayoutApi'
 import DashboardGrid from '../DashboardWidgets/DashboardGrid'
 import WidgetLibrary from '../DashboardWidgets/WidgetLibrary'
+import CalendarWidget from '../DashboardWidgets/CalendarWidget'
 import Project from '../../pages/Projects/Project'
 import Task from '../../pages/Tasks/Task'
 import Note from '../../pages/Notes/Note'
@@ -572,6 +573,12 @@ function MainContent({
       type: 'ai-assistant',
       title: 'AI Assistant',
       kicker: 'AI Assistant',
+      width: 4,
+    },
+    {
+      type: 'calendar',
+      title: 'Calendar',
+      kicker: 'Calendar',
       width: 4,
     },
   ]
@@ -1777,6 +1784,14 @@ function MainContent({
               )}
             </article>
           </section>
+        )
+      }
+
+      if (widget.type === 'calendar') {
+        content = (
+          <CalendarWidget
+            onViewAll={() => onViewChange('calendar')}
+          />
         )
       }
 
