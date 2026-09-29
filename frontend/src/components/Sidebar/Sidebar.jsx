@@ -108,6 +108,15 @@ function Sidebar({ activeView, onViewChange }) {
 
           <button
             className={`sidebar-item ${
+              activeView === 'calendar' ? 'active' : ''
+            }`}
+            onClick={() => handleViewChange('calendar')}
+          >
+            Calendar
+          </button>
+
+          <button
+            className={`sidebar-item ${
               activeView === 'files' ? 'active' : ''
             }`}
             onClick={() => handleViewChange('files')}

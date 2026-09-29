@@ -544,7 +544,8 @@ button {
 .tasks-intro,
 .projects-intro,
 .files-intro,
-.assistant-header {
+.assistant-header,
+.calendar-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -557,6 +558,7 @@ button {
 .projects-kicker,
 .files-kicker,
 .assistant-kicker,
+.calendar-kicker,
 .dashboard-kicker,
 .notes-kicker {
   display: block;
@@ -572,7 +574,8 @@ button {
 .tasks-intro h1,
 .projects-intro h1,
 .files-title,
-.assistant-title {
+.assistant-title,
+.calendar-title {
   margin: 0;
   color: var(--color-text);
   font-size: 1.55rem;

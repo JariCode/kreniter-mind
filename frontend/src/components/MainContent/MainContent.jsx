@@ -16,6 +16,7 @@ import Task from '../../pages/Tasks/Task'
 import Note from '../../pages/Notes/Note'
 import Timeline from '../../pages/Timeline/Timeline'
 import Time from '../../pages/Time/Time'
+import Calendar from '../../pages/Calendar/Calendar'
 import Files from '../../pages/Files/Files'
 import Assistant from '../../pages/AI/Assistant'
 import Reports from '../../pages/Reports/Reports'
@@ -358,6 +359,10 @@ function MainContent({
 
   if (activeView === 'time') {
     return <Time />
+  }
+
+  if (activeView === 'calendar') {
+    return <Calendar />
   }
 
   if (activeView === 'files') {
