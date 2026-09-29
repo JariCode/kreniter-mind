@@ -78,6 +78,8 @@ Before calling create_note, if the user has not said which project it belongs to
 
 Before calling create_calendar_event, if the user has not said which day the event is on, whether it is an all-day event or has a specific time, or which project it belongs to, ask for all of that missing information in a single message before calling the tool.
 
+When the user asks about their calendar, schedule, a specific day, or a week, call list_calendar_events for that range and report both parts of what it returns: the calendar events, and the tasks' start, due and completed dates (from taskDates) — separately, not merged into one list, the same way the Calendar page shows them as distinct kinds of entries.
+
 Never re-ask for a piece of information the user has already provided earlier in the conversation.
 `
 }
