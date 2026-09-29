@@ -1,4 +1,10 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import AI from '../../components/AI/AI'
 import AssistantMarkdown from '../../components/AI/AssistantMarkdown'
 import ActionConfirmCard from '../../components/AI/ActionConfirmCard'
@@ -34,7 +40,14 @@ function Assistant() {
   const [dragging, setDragging] = useState(false)
   const [conversationsOpen, setConversationsOpen] = useState(false)
   const [error, setError] = useState('')
-  const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
+  // Set right before a conversation is loaded/switched/cleared, so the
+  // scroll effects below know to jump to the bottom instantly instead of
+  // treating it as a new message that should scroll smoothly.
+  const isConversationSwitchRef = useRef(false)
+  // Tracks whether the user is currently scrolled near the bottom of the
+  // message list, updated on every scroll (including programmatic ones).
+  const isNearBottomRef = useRef(true)
   const mediaRecorderRef = useRef(null)
   const audioRef = useRef(null)
   const audioUrlRef = useRef(null)
@@ -62,12 +75,63 @@ function Assistant() {
     loadConversations()
   }, [])
 
+  // Jumps to the bottom of the message list instantly, before the browser
+  // paints, so a freshly loaded or switched conversation never flashes its
+  // beginning first. Only acts when isConversationSwitchRef was armed by
+  // loadConversation/handleNewConversation/handleDeleteConversation.
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current
+
+    if (!container || !isConversationSwitchRef.current) {
+      return
+    }
+
+    container.scrollTop = container.scrollHeight
+  }, [messages])
+
+  // Scrolls to the bottom smoothly when a new message-like event happens
+  // (the user's own message, an assistant reply, an action-confirmation
+  // result message, or the typing indicator appearing). The user's own
+  // message always scrolls down; anything else only does if the user
+  // was already near the bottom, so scrolling up to read history is not
+  // interrupted.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end',
-    })
+    const container = messagesContainerRef.current
+
+    if (!container) {
+      return
+    }
+
+    if (isConversationSwitchRef.current) {
+      isConversationSwitchRef.current = false
+      return
+    }
+
+    const lastMessage = messages[messages.length - 1]
+    const isOwnMessage = lastMessage?.role === 'user'
+
+    if (isOwnMessage || isNearBottomRef.current) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      })
+    }
   }, [messages, sending])
+
+  function handleMessagesScroll() {
+    const container = messagesContainerRef.current
+
+    if (!container) {
+      return
+    }
+
+    const distanceFromBottom =
+      container.scrollHeight -
+      container.scrollTop -
+      container.clientHeight
+
+    isNearBottomRef.current = distanceFromBottom <= 120
+  }
 
   // Keep the message input focused on page load, when a send or transcription
   // finishes, and when the active conversation changes. Only on pointer
@@ -97,6 +161,7 @@ function Assistant() {
         conversationId
       )
 
+      isConversationSwitchRef.current = true
       setActiveConversation(data.conversation)
       setMessages(data.messages)
       setPendingActions(data.pendingActions || [])
@@ -120,6 +185,7 @@ function Assistant() {
         ...current,
       ])
 
+      isConversationSwitchRef.current = true
       setActiveConversation(conversation)
       setMessages([])
       setPendingActions([])
@@ -154,6 +220,7 @@ function Assistant() {
             remaining[0]._id
           )
         } else {
+          isConversationSwitchRef.current = true
           setActiveConversation(null)
           setMessages([])
           setPendingActions([])
@@ -737,7 +804,11 @@ function Assistant() {
             </div>
           )}
 
-          <div className="assistant-messages">
+          <div
+            className="assistant-messages"
+            ref={messagesContainerRef}
+            onScroll={handleMessagesScroll}
+          >
             {messagesLoading ? (
               <div className="assistant-loading">
                 Loading conversation...
@@ -860,7 +931,6 @@ function Assistant() {
                   </div>
                 )}
 
-                <div ref={messagesEndRef} />
               </div>
             )}
           </div>

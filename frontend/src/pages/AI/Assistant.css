@@ -24,9 +24,15 @@
   position: relative;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
-  min-height: 0;
-  height: calc(100vh - 278px);
-  max-height: 680px;
+  /* 267px = the app header (86px) + this page's own title area
+     (padding-top 36px + assistant-header 71px + its 28px margin) +
+     the page's bottom padding (46px), measured directly so the
+     workspace fills to the bottom of the viewport without the page
+     itself scrolling. dvh is used where supported, with vh as a
+     fallback for browsers that don't support it. */
+  min-height: 420px;
+  height: calc(100vh - 267px);
+  height: calc(100dvh - 267px);
   overflow: hidden;
   border: 1px solid rgba(var(--color-accent-rgb), 0.25);
   border-radius: 10px;
@@ -418,13 +424,18 @@
 .assistant-message-user
   .assistant-message-content {
   border-color: rgba(var(--color-accent-rgb), 0.25);
-  background: rgba(var(--color-accent-rgb), 0.08);
+  background:
+    linear-gradient(
+      rgba(var(--color-accent-rgb), 0.08),
+      rgba(var(--color-accent-rgb), 0.08)
+    ),
+    var(--color-surface);
   color: var(--color-text);
 }
 
 .assistant-message-assistant
   .assistant-message-content {
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--color-surface);
 }
 
 .assistant-message-icon {
@@ -450,7 +461,7 @@
   padding: 11px 14px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--color-surface);
 }
 
 .assistant-message-list .action-card-summary {
@@ -805,7 +816,11 @@
   }
   .assistant-workspace {
     grid-template-columns: 190px minmax(0, 1fr);
-    height: calc(100vh - 255px);
+    /* 296px = the app header (which is still 86px just under 860px)
+       + this page's own (now stacked, taller) title area + its
+       smaller padding at this width, measured directly. */
+    height: calc(100vh - 296px);
+    height: calc(100dvh - 296px);
   }
   .assistant-messages {
     padding: 20px;
@@ -822,7 +837,11 @@
     position: relative;
     z-index: 0;
     grid-template-columns: 1fr;
-    height: calc(100vh - 245px);
+    /* 289px = the app header (74px at this width) + this page's own
+       title area (which wraps onto more lines at narrow widths) +
+       its smaller padding here, measured directly. */
+    height: calc(100vh - 289px);
+    height: calc(100dvh - 289px);
   }
   .assistant-conversations {
     display: none;
