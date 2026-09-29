@@ -407,6 +407,13 @@
   color: var(--color-text);
 }
 
+/* Marks which date (start or due) this tooltip's calendar entry
+   actually refers to, when both dates are shown. */
+.calendar-tooltip-row-active span {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
 .calendar-tooltip-description {
   margin: 6px 0 0;
   color: var(--color-text-soft);

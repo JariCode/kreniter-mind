@@ -132,6 +132,23 @@ export function formatDayLabel(date) {
   }).format(date)
 }
 
+// "29.9.2026" -- the compact numeric date format used in the widget
+// clock and in event/task tooltips.
+export function formatShortDate(date) {
+  return `${date.getDate()}.${
+    date.getMonth() + 1
+  }.${date.getFullYear()}`
+}
+
+// "Thursday 29.9.2026" -- weekday name plus the compact numeric date.
+export function formatWeekdayDate(date) {
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+  }).format(date)
+
+  return `${weekday} ${formatShortDate(date)}`
+}
+
 export const WEEKDAY_LABELS = [
   'Mon',
   'Tue',

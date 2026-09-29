@@ -1,14 +1,21 @@
 .calendar-widget {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   min-width: 0;
+}
+
+/* Matches the 12px gap the other widgets get from their
+   ".dashboard-grid" wrapper, so "View all" lines up at the same
+   height across widgets. */
+.calendar-widget > .panel-header {
+  margin-top: 12px;
 }
 
 .calendar-widget-clock {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 22px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--color-border-soft);
 }
@@ -29,7 +36,7 @@
 }
 
 .calendar-widget-empty {
-  margin: 0;
+  margin: 10px 0 0;
   color: var(--color-muted);
   font-size: 0.8rem;
 }
@@ -38,6 +45,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  margin-top: 10px;
 }
 
 .calendar-widget-agenda .calendar-event-pill,

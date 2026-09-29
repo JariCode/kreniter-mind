@@ -1,4 +1,5 @@
 import { statusLabel } from './calendarItems'
+import { formatShortDate, formatWeekdayDate } from './calendarDates'
 
 const DESCRIPTION_TRUNCATE_LENGTH = 140
 
@@ -11,6 +12,8 @@ function truncate(text) {
 }
 
 export function EventTooltipContent({ event, projectName }) {
+  const weekdayDate = formatWeekdayDate(new Date(event.date))
+
   return (
     <div className="calendar-tooltip">
       <strong>{event.title}</strong>
@@ -18,8 +21,8 @@ export function EventTooltipContent({ event, projectName }) {
       <div className="calendar-tooltip-row">
         <span>
           {event.allDay
-            ? 'All day'
-            : `${event.startTime}–${event.endTime}`}
+            ? `${weekdayDate}, All day`
+            : `${weekdayDate}, ${event.startTime}–${event.endTime}`}
         </span>
       </div>
 
@@ -52,9 +55,27 @@ export function TaskTooltipContent({ task, projectName, kind }) {
         <span>{statusLabel(task.status)}</span>
       </div>
 
-      <div className="calendar-tooltip-row">
-        <span>{kind === 'due' ? 'Due date' : 'Start date'}</span>
-      </div>
+      {task.startDate && (
+        <div
+          className={`calendar-tooltip-row${
+            kind === 'start' ? ' calendar-tooltip-row-active' : ''
+          }`}
+        >
+          <span>Start date</span>
+          <span>{formatShortDate(new Date(task.startDate))}</span>
+        </div>
+      )}
+
+      {task.dueDate && (
+        <div
+          className={`calendar-tooltip-row${
+            kind === 'due' ? ' calendar-tooltip-row-active' : ''
+          }`}
+        >
+          <span>Due date</span>
+          <span>{formatShortDate(new Date(task.dueDate))}</span>
+        </div>
+      )}
     </div>
   )
 }

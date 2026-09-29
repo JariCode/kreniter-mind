@@ -7,6 +7,7 @@ import {
 import { getTasks } from '../../api/tasks'
 import { getProjects } from '../../api/projects'
 import {
+  formatWeekdayDate,
   getISOWeek,
   toDateKey,
   toDateOnly,
@@ -246,11 +247,7 @@ function CalendarWidget({ onViewAll }) {
   const hours = String(now.getHours()).padStart(2, '0')
   const minutes = String(now.getMinutes()).padStart(2, '0')
 
-  const dateLabel = `${new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-  }).format(now)} ${now.getDate()}.${
-    now.getMonth() + 1
-  }.${now.getFullYear()}`
+  const dateLabel = formatWeekdayDate(now)
 
   const { week } = getISOWeek(now)
 
@@ -287,6 +284,12 @@ function CalendarWidget({ onViewAll }) {
 
   return (
     <div className="calendar-widget">
+      <div className="panel-header">
+        <button type="button" onClick={onViewAll}>
+          View all
+        </button>
+      </div>
+
       <div className="calendar-widget-clock">
         <time
           className="calendar-widget-time"
@@ -301,12 +304,6 @@ function CalendarWidget({ onViewAll }) {
           </time>
           <span>Week {week}</span>
         </div>
-      </div>
-
-      <div className="panel-header">
-        <button type="button" onClick={onViewAll}>
-          View all
-        </button>
       </div>
 
       {error && (
