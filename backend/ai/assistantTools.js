@@ -8,6 +8,11 @@ const File = require('../models/File')
 const Folder = require('../models/Folder')
 const AIPendingAction = require('../models/AIPendingAction')
 const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
+const {
+  getElapsedMs,
+  elapsedMsToDurationMinutes,
+  stopActiveTimerAndSaveEntry,
+} = require('../utils/timerActions')
 
 // Read-only tools the AI Assistant can call to look at the current user's
 // own workspace data. Every database read in this file goes through
@@ -1616,6 +1621,171 @@ async function updateProjectTool(context, args) {
   )
 }
 
+// Describes what an active timer is tracking, for summaries: the task
+// title, the project name if there's no task, or its own description.
+async function describeTimerSubject(userId, timer) {
+  if (timer.taskId) {
+    const task = await scopedFindOne(
+      Task,
+      userId,
+      { _id: timer.taskId },
+      { select: 'title' }
+    )
+
+    if (task) {
+      return `'${task.title}'`
+    }
+  }
+
+  if (timer.projectId) {
+    const project = await scopedFindOne(
+      Project,
+      userId,
+      { _id: timer.projectId },
+      { select: 'name' }
+    )
+
+    if (project) {
+      return `project '${project.name}'`
+    }
+  }
+
+  return timer.description
+    ? `'${timer.description}'`
+    : 'the current timer'
+}
+
+async function startTimerTool(context, args) {
+  const { userId } = context
+
+  const { task, error: taskError } = await resolveOwnedTask(
+    userId,
+    args.taskId
+  )
+
+  if (taskError) {
+    return { error: taskError }
+  }
+
+  const existingTimer = await scopedFindOne(ActiveTimer, userId, {})
+
+  if (
+    existingTimer &&
+    String(existingTimer.taskId || '') === String(task._id)
+  ) {
+    return { error: 'A timer for this task is already active.' }
+  }
+
+  const payload = {
+    taskId: task._id,
+    projectId: task.projectId || null,
+    description: task.title || '',
+  }
+
+  let summary
+
+  if (existingTimer) {
+    const oldElapsedMs = getElapsedMs(existingTimer, Date.now())
+    const oldMinutes = elapsedMsToDurationMinutes(oldElapsedMs)
+    const oldSubject = await describeTimerSubject(
+      userId,
+      existingTimer
+    )
+
+    summary = `Switch timer from ${oldSubject} (${oldMinutes} min) to '${task.title}'.`
+  } else {
+    summary = `Start timer for '${task.title}'.`
+  }
+
+  return createPendingAction(
+    context,
+    'start_timer',
+    null,
+    payload,
+    summary
+  )
+}
+
+async function pauseTimerTool(context) {
+  const { userId } = context
+
+  const timer = await scopedFindOne(ActiveTimer, userId, {})
+
+  if (!timer) {
+    return { error: 'No active timer to pause.' }
+  }
+
+  if (timer.status !== 'running') {
+    return { error: 'The active timer is not running.' }
+  }
+
+  const subject = await describeTimerSubject(userId, timer)
+  const minutes = elapsedMsToDurationMinutes(
+    getElapsedMs(timer, Date.now())
+  )
+
+  const summary = `Pause timer for ${subject} (${minutes} min so far).`
+
+  return createPendingAction(
+    context,
+    'pause_timer',
+    timer._id,
+    {},
+    summary
+  )
+}
+
+async function resumeTimerTool(context) {
+  const { userId } = context
+
+  const timer = await scopedFindOne(ActiveTimer, userId, {})
+
+  if (!timer) {
+    return { error: 'No active timer to resume.' }
+  }
+
+  if (timer.status !== 'paused') {
+    return { error: 'The active timer is not paused.' }
+  }
+
+  const subject = await describeTimerSubject(userId, timer)
+
+  const summary = `Resume timer for ${subject}.`
+
+  return createPendingAction(
+    context,
+    'resume_timer',
+    timer._id,
+    {},
+    summary
+  )
+}
+
+async function stopTimerTool(context) {
+  const { userId } = context
+
+  const timer = await scopedFindOne(ActiveTimer, userId, {})
+
+  if (!timer) {
+    return { error: 'No active timer to stop.' }
+  }
+
+  const subject = await describeTimerSubject(userId, timer)
+  const minutes = elapsedMsToDurationMinutes(
+    getElapsedMs(timer, Date.now())
+  )
+
+  const summary = `Stop timer for ${subject} (${minutes} min) and save the time entry.`
+
+  return createPendingAction(
+    context,
+    'stop_timer',
+    timer._id,
+    {},
+    summary
+  )
+}
+
 // --- Confirmed execution (only reached after the user clicks Confirm) ---
 //
 // Re-validates ownership/existence right before writing (the target or a
@@ -1773,6 +1943,118 @@ async function executeUpdateProject(userId, targetId, payload) {
   return { status: 'executed', result: { projectId: project._id } }
 }
 
+async function executeStartTimer(userId, payload) {
+  const task = await scopedFindOne(Task, userId, {
+    _id: payload.taskId,
+  })
+
+  if (!task) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  // Re-checked at confirm time rather than trusting the pending action's
+  // snapshot, since the timer may have changed since it was created.
+  const existingTimer = await ActiveTimer.findOne({ userId })
+
+  if (existingTimer) {
+    if (
+      String(existingTimer.taskId || '') === String(payload.taskId)
+    ) {
+      return {
+        status: 'failed',
+        result: {
+          error: 'A timer for this task is already active.',
+        },
+      }
+    }
+
+    // Stop the old timer exactly like the app's own stop button does.
+    await stopActiveTimerAndSaveEntry(userId, existingTimer)
+  }
+
+  const activeTimer = await ActiveTimer.create({
+    userId,
+    projectId: payload.projectId || null,
+    taskId: payload.taskId,
+    description: payload.description || '',
+    startedAt: new Date(),
+    elapsedMs: 0,
+    segmentStartedAt: new Date(),
+    status: 'running',
+  })
+
+  return {
+    status: 'executed',
+    result: { activeTimerId: activeTimer._id },
+  }
+}
+
+async function executePauseTimer(userId, targetId) {
+  const timer = await ActiveTimer.findOne({ _id: targetId, userId })
+
+  if (!timer) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  if (timer.status !== 'running') {
+    return {
+      status: 'failed',
+      result: { error: 'The active timer is not running.' },
+    }
+  }
+
+  timer.elapsedMs = getElapsedMs(timer, Date.now())
+  timer.segmentStartedAt = null
+  timer.status = 'paused'
+
+  await timer.save()
+
+  return {
+    status: 'executed',
+    result: { activeTimerId: timer._id },
+  }
+}
+
+async function executeResumeTimer(userId, targetId) {
+  const timer = await ActiveTimer.findOne({ _id: targetId, userId })
+
+  if (!timer) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  if (timer.status !== 'paused') {
+    return {
+      status: 'failed',
+      result: { error: 'The active timer is not paused.' },
+    }
+  }
+
+  timer.segmentStartedAt = new Date()
+  timer.status = 'running'
+
+  await timer.save()
+
+  return {
+    status: 'executed',
+    result: { activeTimerId: timer._id },
+  }
+}
+
+async function executeStopTimer(userId, targetId) {
+  const timer = await ActiveTimer.findOne({ _id: targetId, userId })
+
+  if (!timer) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  const timeEntry = await stopActiveTimerAndSaveEntry(userId, timer)
+
+  return {
+    status: 'executed',
+    result: { timeEntryId: timeEntry._id },
+  }
+}
+
 // Dispatches a confirmed pending action to the matching executor. Called
 // only from the /actions/:id/confirm route, only once the action has been
 // atomically claimed (status pending -> executing) so it can never run twice.
@@ -1802,6 +2084,14 @@ async function executeConfirmedAction(action) {
           action.targetId,
           payload
         )
+      case 'start_timer':
+        return await executeStartTimer(userId, payload)
+      case 'pause_timer':
+        return await executePauseTimer(userId, action.targetId)
+      case 'resume_timer':
+        return await executeResumeTimer(userId, action.targetId)
+      case 'stop_timer':
+        return await executeStopTimer(userId, action.targetId)
       default:
         return {
           status: 'failed',
@@ -2291,6 +2581,63 @@ const toolDefinitions = [
     },
     strict: true,
   },
+  {
+    type: 'function',
+    name: 'start_timer',
+    description:
+      "Propose starting a time tracker for a task. If another timer is already running or paused on a different task, confirming this stops it (saving its tracked time as a time entry, the same way the app's own stop button does) and starts the new one. Only creates a pending action; nothing changes until the user confirms.",
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'The task ID to start tracking time for.',
+        },
+      },
+      required: ['taskId'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'pause_timer',
+    description:
+      "Propose pausing the user's currently running time tracker. Only creates a pending action; nothing changes until the user confirms.",
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'resume_timer',
+    description:
+      "Propose resuming the user's currently paused time tracker. Only creates a pending action; nothing changes until the user confirms.",
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'stop_timer',
+    description:
+      "Propose stopping the user's currently active time tracker and saving the tracked time as a time entry, the same way the app's own stop button does. Only creates a pending action; nothing changes until the user confirms.",
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
 ]
 
 // Every tool defined in this file (read tools and write tools, which only
@@ -2322,6 +2669,10 @@ const handlers = {
   delete_note: (context, args) => deleteNoteTool(context, args),
   create_project: (context, args) => createProjectTool(context, args),
   update_project: (context, args) => updateProjectTool(context, args),
+  start_timer: (context, args) => startTimerTool(context, args),
+  pause_timer: (context) => pauseTimerTool(context),
+  resume_timer: (context) => resumeTimerTool(context),
+  stop_timer: (context) => stopTimerTool(context),
 }
 
 // Runs one tool call by name. Never throws: unknown tools and bad arguments

@@ -254,6 +254,34 @@ export function TimeTrackerProvider({ children }) {
     setNow(Date.now())
   }, [])
 
+  // Re-syncs from the server without pushing a local change to it, for
+  // when the timer was changed elsewhere (e.g. a confirmed AI Assistant
+  // timer action) and the dashboard/Tasks page just need to catch up.
+  const refreshActiveTimer = useCallback(async () => {
+    try {
+      const savedTimer = await getActiveTimer()
+
+      const normalizedTimer =
+        normalizeActiveTimer(savedTimer)
+
+      setTimer(normalizedTimer)
+
+      if (normalizedTimer) {
+        setNow(Date.now())
+      }
+    } catch (err) {
+      console.error(
+        'Failed to refresh active timer:',
+        err
+      )
+
+      setError(
+        err.message ||
+          'Failed to refresh active timer.'
+      )
+    }
+  }, [])
+
   const cancelTimer = useCallback(async () => {
     if (!timer) {
       return
@@ -352,6 +380,7 @@ export function TimeTrackerProvider({ children }) {
       resumeTimer,
       stopTimer,
       cancelTimer,
+      refreshActiveTimer,
     }),
     [
       timer,
@@ -366,6 +395,7 @@ export function TimeTrackerProvider({ children }) {
       resumeTimer,
       stopTimer,
       cancelTimer,
+      refreshActiveTimer,
     ]
   )
 

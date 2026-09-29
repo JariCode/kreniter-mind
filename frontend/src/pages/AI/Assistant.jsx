@@ -11,9 +11,12 @@ import {
   generateSpeech,
   deleteConversation,
 } from '../../api/ai'
+import { useTimeTracker } from '../../components/TimeTracker/TimeTracker'
+import { TIMER_ACTION_TYPES } from '../../utils/timerActionTypes'
 import './Assistant.css'
 
 function Assistant() {
+  const { refreshActiveTimer } = useTimeTracker()
   const [conversations, setConversations] = useState([])
   const [activeConversation, setActiveConversation] = useState(null)
   const [messages, setMessages] = useState([])
@@ -392,6 +395,15 @@ function Assistant() {
     // messages already triggers the existing scroll-into-view effect.
     if (message) {
       setMessages((current) => [...current, message])
+    }
+
+    // Timer actions change state the TimeTracker context already holds, so
+    // re-sync it immediately instead of waiting for a reload.
+    if (
+      TIMER_ACTION_TYPES.includes(updatedAction.type) &&
+      updatedAction.status === 'executed'
+    ) {
+      refreshActiveTimer()
     }
   }
 

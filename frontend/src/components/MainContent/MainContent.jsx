@@ -25,6 +25,7 @@ import {
 } from '../../api/ai'
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import { formatTimerTime } from '../../utils/formatTimerTime'
+import { TIMER_ACTION_TYPES } from '../../utils/timerActionTypes'
 import AssistantMarkdown from '../AI/AssistantMarkdown'
 import ActionConfirmCard from '../AI/ActionConfirmCard'
 import './MainContent.css'
@@ -44,6 +45,7 @@ function MainContent({
     isSaving,
     error: timerError,
     timeEntriesVersion,
+    refreshActiveTimer,
   } = useTimeTracker()
 
   const [projects, setProjects] = useState([])
@@ -735,6 +737,15 @@ function MainContent({
     // aiMessages already triggers the existing scroll-to-bottom effect.
     if (message) {
       setAiMessages((current) => [...current, message])
+    }
+
+    // Timer actions change state the TimeTracker context already holds, so
+    // re-sync it immediately instead of waiting for a reload.
+    if (
+      TIMER_ACTION_TYPES.includes(updatedAction.type) &&
+      updatedAction.status === 'executed'
+    ) {
+      refreshActiveTimer()
     }
   }
 
