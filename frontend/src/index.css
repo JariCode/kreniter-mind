@@ -430,6 +430,7 @@ button {
 .notes-create-button,
 .projects-create-button,
 .tasks-create-button,
+.calendar-add-button,
 .action-card-confirm {
   padding: 11px 16px;
   border: 1px solid rgba(var(--color-accent-rgb), 0.45);
@@ -449,6 +450,7 @@ button {
 .notes-create-button:hover,
 .projects-create-button:hover,
 .tasks-create-button:hover,
+.calendar-add-button:hover,
 .files-action-button:hover:not(:disabled),
 .reports-print-button:hover:not(:disabled),
 .action-card-confirm:hover:not(:disabled) {
@@ -463,6 +465,7 @@ button {
 
 .project-form-actions button,
 .task-form-actions button,
+.calendar-form-actions button,
 .files-delete-dialog-actions button,
 .action-card-cancel {
   padding: 10px 15px;
@@ -476,6 +479,7 @@ button {
 
 .project-form-actions button:hover,
 .task-form-actions button:hover,
+.calendar-form-actions button:hover,
 .files-delete-dialog-actions button:hover,
 .action-card-cancel:hover:not(:disabled) {
   border-color: rgba(var(--color-accent-rgb), 0.4);
@@ -484,6 +488,7 @@ button {
 
 .project-form-actions button:disabled,
 .task-form-actions button:disabled,
+.calendar-form-actions button:disabled,
 .action-card-confirm:disabled,
 .action-card-cancel:disabled {
   opacity: 0.55;
@@ -754,14 +759,16 @@ button {
 }
 
 .project-form-actions .project-save-button,
-.task-form-actions .task-save-button {
+.task-form-actions .task-save-button,
+.calendar-form-actions .calendar-save-button {
   border-color: rgba(var(--color-accent-rgb), 0.55);
   background: var(--color-accent);
   color: #ffffff;
 }
 
 .project-form-actions .project-save-button:hover,
-.task-form-actions .task-save-button:hover {
+.task-form-actions .task-save-button:hover,
+.calendar-form-actions .calendar-save-button:hover {
   border-color: var(--color-accent);
   background: #0f7be8;
 }

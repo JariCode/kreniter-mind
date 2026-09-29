@@ -1,9 +1,10 @@
-import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { getTasks } from '../../api/tasks'
 import { getProjects } from '../../api/projects'
 import { getTimeEntries } from '../../api/timeEntries'
 import { getTimeline, saveTimeline } from '../../api/timeline'
+import HoverTooltip from '../../components/Tooltip/HoverTooltip'
+import { getTooltipPosition } from '../../components/Tooltip/tooltipPosition'
 import './Timeline.css'
 
 const DAY_WIDTH = 64
@@ -396,24 +397,14 @@ function Timeline() {
   }
 
   function showTooltip(task, event) {
-    const bar = event.currentTarget
-    const rect = bar.getBoundingClientRect()
-    const tooltipWidth = 210
-    const horizontalPadding = 12
-    const center = rect.left + rect.width / 2
-    const left = Math.min(
-      Math.max(center, tooltipWidth / 2 + horizontalPadding),
-      window.innerWidth - tooltipWidth / 2 - horizontalPadding
-    )
-    const top = rect.top < 120
-      ? rect.bottom + 10
-      : rect.top - 10
+    const rect = event.currentTarget.getBoundingClientRect()
+    const { left, top, placement } = getTooltipPosition(rect)
 
     setHoveredTooltip({
       task,
       left,
       top,
-      placement: rect.top < 120 ? 'below' : 'above',
+      placement,
     })
   }
 
@@ -638,19 +629,16 @@ function Timeline() {
         )}
       </main>
 
-      {hoveredTooltip &&
-        createPortal(
-          <div
-            className={`timeline-tooltip-container is-${hoveredTooltip.placement}`}
-            style={{
-              left: `${hoveredTooltip.left}px`,
-              top: `${hoveredTooltip.top}px`,
-            }}
-          >
-            {renderTooltip(hoveredTooltip.task)}
-          </div>,
-          document.body
-        )}
+      {hoveredTooltip && (
+        <HoverTooltip
+          left={hoveredTooltip.left}
+          top={hoveredTooltip.top}
+          placement={hoveredTooltip.placement}
+          containerClassName="timeline-tooltip-container"
+        >
+          {renderTooltip(hoveredTooltip.task)}
+        </HoverTooltip>
+      )}
     </>
   )
 }
