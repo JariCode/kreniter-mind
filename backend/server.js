@@ -24,6 +24,7 @@ const aiRoutes = require('./routes/aiRoutes')
 const folderRoutes = require('./routes/folderRoutes')
 const fileRoutes = require('./routes/fileRoutes')
 const reportsViewRoutes = require('./routes/reportsViewRoutes')
+const calendarEventRoutes = require('./routes/calendarEventRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -108,6 +109,7 @@ app.use('/api/ai', aiLimiter, authMiddleware, aiRoutes)
 app.use('/api/folders', authMiddleware, folderRoutes)
 app.use('/api/files', authMiddleware, fileRoutes)
 app.use('/api/reports-view', authMiddleware, reportsViewRoutes)
+app.use('/api/calendar-events', authMiddleware, calendarEventRoutes)
 
 // 404 handler
 app.use((req, res) => {
