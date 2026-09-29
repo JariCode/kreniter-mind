@@ -863,6 +863,24 @@ When the user asks you to create, generate, draw, or make an image, decide yours
   }
 )
 
+// Builds the assistant message posted to the conversation once a pending
+// action is resolved, so the model (and the user) can see what happened.
+function buildActionResultMessage(status, summary, result) {
+  if (status === 'executed') {
+    return `Done: ${summary}`
+  }
+
+  if (status === 'cancelled') {
+    return `Cancelled: ${summary}`
+  }
+
+  if (status === 'expired') {
+    return `Expired: ${summary}`
+  }
+
+  return `Failed: ${summary}. ${result?.error || 'An error occurred.'}`
+}
+
 // Confirm a pending AI action — this is the only place that actually
 // applies a write tool's proposed change.
 router.post(
@@ -914,8 +932,20 @@ router.post(
           { $set: { status: 'expired' } }
         )
 
+        const expiredMessage = await AIMessage.create({
+          conversationId: claimed.conversationId,
+          role: 'assistant',
+          content: buildActionResultMessage(
+            'expired',
+            claimed.summary
+          ),
+        })
+
         return res.status(410).json({
           error: 'Action expired',
+          status: 'expired',
+          summary: claimed.summary,
+          message: expiredMessage,
         })
       }
 
@@ -960,23 +990,21 @@ router.post(
         )
       }
 
-      const messageContent =
-        finalStatus === 'executed'
-          ? `Confirmed: ${claimed.summary}`
-          : `Failed: ${claimed.summary} (${
-              finalResult?.error || 'error'
-            })`
-
-      await AIMessage.create({
+      const resultMessage = await AIMessage.create({
         conversationId: claimed.conversationId,
         role: 'assistant',
-        content: messageContent,
+        content: buildActionResultMessage(
+          finalStatus,
+          claimed.summary,
+          finalResult
+        ),
       })
 
       res.json({
         status: finalStatus,
         result: finalResult,
         summary: claimed.summary,
+        message: resultMessage,
       })
     } catch (error) {
       next(error)
@@ -1026,15 +1054,19 @@ router.post(
         })
       }
 
-      await AIMessage.create({
+      const message = await AIMessage.create({
         conversationId: cancelled.conversationId,
         role: 'assistant',
-        content: `Cancelled: ${cancelled.summary}`,
+        content: buildActionResultMessage(
+          'cancelled',
+          cancelled.summary
+        ),
       })
 
       res.json({
         status: cancelled.status,
         summary: cancelled.summary,
+        message,
       })
     } catch (error) {
       next(error)

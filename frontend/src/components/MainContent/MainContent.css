@@ -750,6 +750,14 @@
   font-size: 0.64rem;
 }
 
+.ai-chat-messages .action-card-status-success {
+  color: #8fbfa5;
+}
+
+.ai-chat-messages .action-card-status-danger {
+  color: #ff9b9b;
+}
+
 .ai-chat-messages .action-card-error {
   margin: 6px 0 0;
   color: #ff9b9b;

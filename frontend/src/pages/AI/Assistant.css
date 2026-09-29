@@ -471,6 +471,14 @@
   font-size: 0.78rem;
 }
 
+.assistant-message-list .action-card-status-success {
+  color: #8fbfa5;
+}
+
+.assistant-message-list .action-card-status-danger {
+  color: #ff9b9b;
+}
+
 .assistant-message-list .action-card-error {
   margin: 8px 0 0;
   color: #ff9b9b;

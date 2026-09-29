@@ -11,6 +11,14 @@ const STATUS_LABELS = {
 // Shows one AI-proposed write action with Confirm/Cancel buttons while it
 // is pending, then its resolved status once it isn't. Used by both
 // Assistant.jsx and the dashboard AI chat in MainContent.jsx.
+//
+// onUpdate(updatedAction, message) is called once the server has resolved
+// the action: message is the assistant message the server saved to the
+// conversation ("Done: ...", "Failed: ...", etc.), for the caller to add
+// to its own message list immediately, the same way a new message would
+// be. message is omitted if the request itself failed before the server
+// could resolve anything (network/server error) — the card then just
+// shows the error locally and keeps its buttons enabled.
 function ActionConfirmCard({ action, onUpdate }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -28,14 +36,20 @@ function ActionConfirmCard({ action, onUpdate }) {
 
       const response = await confirmAction(action._id)
 
-      onUpdate({
-        ...action,
-        status: response.status,
-        result: response.result,
-      })
+      onUpdate(
+        {
+          ...action,
+          status: response.status,
+          result: response.result,
+        },
+        response.message
+      )
     } catch (confirmError) {
       if (confirmError.status === 410) {
-        onUpdate({ ...action, status: 'expired' })
+        onUpdate(
+          { ...action, status: 'expired' },
+          confirmError.data?.message
+        )
         return
       }
 
@@ -58,10 +72,16 @@ function ActionConfirmCard({ action, onUpdate }) {
 
       const response = await cancelAction(action._id)
 
-      onUpdate({ ...action, status: response.status })
+      onUpdate(
+        { ...action, status: response.status },
+        response.message
+      )
     } catch (cancelError) {
       if (cancelError.status === 410) {
-        onUpdate({ ...action, status: 'expired' })
+        onUpdate(
+          { ...action, status: 'expired' },
+          cancelError.data?.message
+        )
         return
       }
 
@@ -79,6 +99,13 @@ function ActionConfirmCard({ action, onUpdate }) {
       (action.status === 'failed' && action.result?.error
         ? `: ${action.result.error}`
         : '')
+
+  const statusModifierClass =
+    action.status === 'executed'
+      ? ' action-card-status-success'
+      : action.status === 'failed'
+        ? ' action-card-status-danger'
+        : ''
 
   return (
     <div className="action-card">
@@ -106,7 +133,10 @@ function ActionConfirmCard({ action, onUpdate }) {
         </div>
       )}
 
-      <div className="action-card-status" aria-live="polite">
+      <div
+        className={`action-card-status${statusModifierClass}`}
+        aria-live="polite"
+      >
         {statusText}
       </div>
 

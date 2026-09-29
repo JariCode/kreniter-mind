@@ -722,7 +722,7 @@ function MainContent({
     }
   }
 
-  function handleAiActionUpdate(updatedAction) {
+  function handleAiActionUpdate(updatedAction, message) {
     setAiPendingActions((current) =>
       current.map((action) =>
         action._id === updatedAction._id
@@ -730,6 +730,12 @@ function MainContent({
           : action
       )
     )
+
+    // Added the same way a new message from sendMessage is: appending to
+    // aiMessages already triggers the existing scroll-to-bottom effect.
+    if (message) {
+      setAiMessages((current) => [...current, message])
+    }
   }
 
   const availableWidgets =

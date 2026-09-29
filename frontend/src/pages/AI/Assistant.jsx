@@ -379,7 +379,7 @@ function Assistant() {
     }
   }
 
-  function handleActionUpdate(updatedAction) {
+  function handleActionUpdate(updatedAction, message) {
     setPendingActions((current) =>
       current.map((action) =>
         action._id === updatedAction._id
@@ -387,6 +387,12 @@ function Assistant() {
           : action
       )
     )
+
+    // Added the same way a new message from sendMessage is: appending to
+    // messages already triggers the existing scroll-into-view effect.
+    if (message) {
+      setMessages((current) => [...current, message])
+    }
   }
 
   async function handleStartRecording() {
