@@ -188,6 +188,7 @@ export function TimeTrackerProvider({ children }) {
       }
 
       const currentTime = Date.now()
+      const previousTimer = currentTimer
 
       const updatedTimer = {
         ...currentTimer,
@@ -205,6 +206,8 @@ export function TimeTrackerProvider({ children }) {
             'Failed to pause active timer:',
             err
           )
+
+          setTimer(previousTimer)
 
           setError(
             err.message ||
@@ -229,6 +232,7 @@ export function TimeTrackerProvider({ children }) {
       }
 
       const currentTime = Date.now()
+      const previousTimer = currentTimer
 
       const updatedTimer = {
         ...currentTimer,
@@ -242,6 +246,8 @@ export function TimeTrackerProvider({ children }) {
             'Failed to resume active timer:',
             err
           )
+
+          setTimer(previousTimer)
 
           setError(
             err.message ||
