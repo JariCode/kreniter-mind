@@ -9,10 +9,9 @@ const Folder = require('../models/Folder')
 const CalendarEvent = require('../models/CalendarEvent')
 const AIPendingAction = require('../models/AIPendingAction')
 const {
-  MAX_RANGE_DAYS: MAX_CALENDAR_RANGE_DAYS,
-  parseDateOnly,
   buildEventData: buildCalendarEventData,
 } = require('../utils/calendarEventValidation')
+const { buildCalendarItems } = require('../utils/calendarItems')
 const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
 const {
   getElapsedMs,
@@ -831,36 +830,21 @@ async function listFiles(userId, args) {
   }
 }
 
+// Uses the same server-side aggregator as GET /api/calendar/items (and
+// therefore the Calendar page and dashboard widget), so the AI Assistant
+// never disagrees with what the user sees: events and task start/due/
+// completed dates are returned as separate lists, so the model can report
+// them separately rather than only ever seeing CalendarEvent rows.
 async function listCalendarEvents(userId, args) {
-  const from = parseDateOnly(args.from)
-  const to = parseDateOnly(args.to)
+  const result = await buildCalendarItems(userId, args.from, args.to)
 
-  if (!from || !to) {
-    return { error: 'from and to must be valid dates' }
+  if (result.error) {
+    return { error: result.error }
   }
-
-  if (to < from) {
-    return { error: 'to must not be before from' }
-  }
-
-  const rangeDays = Math.round((to - from) / 86400000) + 1
-
-  if (rangeDays > MAX_CALENDAR_RANGE_DAYS) {
-    return { error: 'Date range is too long' }
-  }
-
-  const events = await scopedFind(
-    CalendarEvent,
-    userId,
-    { date: { $gte: from, $lte: to } },
-    { sort: { date: 1, startTime: 1 }, limit: MAX_ROWS + 1 }
-  )
-
-  const truncated = events.length > MAX_ROWS
 
   return {
-    calendarEvents: events.slice(0, MAX_ROWS),
-    truncated,
+    events: result.events,
+    taskDates: result.taskDates,
   }
 }
 
@@ -2589,7 +2573,7 @@ const toolDefinitions = [
     type: 'function',
     name: 'list_calendar_events',
     description:
-      "List the user's calendar events in a date range (inclusive, at most 366 days), with title, date, allDay, start/end time, description and project.",
+      "List everything on the user's calendar in a date range (inclusive, at most 366 days), exactly as the Calendar page shows it: 'events' (title, date, allDay, start/end time, description, project) and 'taskDates' (tasks whose startDate, dueDate or completedDate falls in the range, each entry naming which one via 'kind': 'start', 'due' or 'completed'). Report events and task dates separately, not merged into one list.",
     parameters: {
       type: 'object',
       properties: {
