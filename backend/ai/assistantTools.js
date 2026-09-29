@@ -12,6 +12,9 @@ const {
   getElapsedMs,
   elapsedMsToDurationMinutes,
   stopActiveTimerAndSaveEntry,
+  switchActiveTimer,
+  pauseActiveTimer,
+  resumeActiveTimer,
 } = require('../utils/timerActions')
 
 // Read-only tools the AI Assistant can call to look at the current user's
@@ -1954,34 +1957,25 @@ async function executeStartTimer(userId, payload) {
 
   // Re-checked at confirm time rather than trusting the pending action's
   // snapshot, since the timer may have changed since it was created.
-  const existingTimer = await ActiveTimer.findOne({ userId })
+  const now = Date.now()
 
-  if (existingTimer) {
-    if (
-      String(existingTimer.taskId || '') === String(payload.taskId)
-    ) {
-      return {
-        status: 'failed',
-        result: {
-          error: 'A timer for this task is already active.',
-        },
-      }
-    }
-
-    // Stop the old timer exactly like the app's own stop button does.
-    await stopActiveTimerAndSaveEntry(userId, existingTimer)
-  }
-
-  const activeTimer = await ActiveTimer.create({
-    userId,
-    projectId: payload.projectId || null,
+  const { activeTimer, error } = await switchActiveTimer(userId, {
     taskId: payload.taskId,
+    projectId: payload.projectId || null,
     description: payload.description || '',
-    startedAt: new Date(),
-    elapsedMs: 0,
-    segmentStartedAt: new Date(),
-    status: 'running',
+    startedAt: new Date(now),
+    segmentStartedAt: new Date(now),
+    now,
   })
+
+  if (error === 'SAME_TASK_ACTIVE') {
+    return {
+      status: 'failed',
+      result: {
+        error: 'A timer for this task is already active.',
+      },
+    }
+  }
 
   return {
     status: 'executed',
@@ -1996,18 +1990,14 @@ async function executePauseTimer(userId, targetId) {
     return { status: 'failed', result: { error: 'Not found' } }
   }
 
-  if (timer.status !== 'running') {
+  const { error } = await pauseActiveTimer(timer, Date.now())
+
+  if (error === 'NOT_RUNNING') {
     return {
       status: 'failed',
       result: { error: 'The active timer is not running.' },
     }
   }
-
-  timer.elapsedMs = getElapsedMs(timer, Date.now())
-  timer.segmentStartedAt = null
-  timer.status = 'paused'
-
-  await timer.save()
 
   return {
     status: 'executed',
@@ -2022,17 +2012,14 @@ async function executeResumeTimer(userId, targetId) {
     return { status: 'failed', result: { error: 'Not found' } }
   }
 
-  if (timer.status !== 'paused') {
+  const { error } = await resumeActiveTimer(timer, Date.now())
+
+  if (error === 'NOT_PAUSED') {
     return {
       status: 'failed',
       result: { error: 'The active timer is not paused.' },
     }
   }
-
-  timer.segmentStartedAt = new Date()
-  timer.status = 'running'
-
-  await timer.save()
 
   return {
     status: 'executed',
