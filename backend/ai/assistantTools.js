@@ -6,6 +6,8 @@ const TimeEntry = require('../models/TimeEntry')
 const ActiveTimer = require('../models/ActiveTimer')
 const File = require('../models/File')
 const Folder = require('../models/Folder')
+const AIPendingAction = require('../models/AIPendingAction')
+const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
 
 // Read-only tools the AI Assistant can call to look at the current user's
 // own workspace data. Every database read in this file goes through
@@ -15,6 +17,12 @@ const Folder = require('../models/Folder')
 const MAX_ROWS = 200
 const MAX_NOTE_CONTENT_LENGTH = 4000
 const MAX_PROJECT_CONTEXT_LENGTH = 60000
+const MAX_PENDING_ACTIONS_PER_RESPONSE = 10
+
+const TASK_STATUSES = ['todo', 'in-progress', 'completed']
+const TASK_PRIORITIES = ['low', 'medium', 'high']
+const NOTE_PRIORITIES = ['low', 'medium', 'high']
+const PROJECT_STATUSES = ['active', 'completed', 'archived']
 
 const SENSITIVE_FIELDS = ['userId', 'clerkId', 'gridFsId', '__v']
 
@@ -72,6 +80,15 @@ async function scopedFindOne(Model, userId, filter, options = {}) {
   const doc = await query
 
   return stripSensitiveFields(doc)
+}
+
+// The only way any tool in this file counts documents. Always scopes to the
+// given userId.
+async function scopedCount(Model, userId, filter) {
+  return Model.countDocuments({
+    ...filter,
+    userId,
+  })
 }
 
 // Resolves a projectId tool argument to a query filter value:
@@ -187,6 +204,31 @@ async function resolveOwnedFolder(userId, folderId) {
 
   return {
     folder,
+  }
+}
+
+async function resolveOwnedNote(userId, noteId) {
+  if (
+    typeof noteId !== 'string' ||
+    !mongoose.Types.ObjectId.isValid(noteId)
+  ) {
+    return {
+      error: 'Invalid noteId',
+    }
+  }
+
+  const note = await scopedFindOne(Note, userId, {
+    _id: noteId,
+  })
+
+  if (!note) {
+    return {
+      error: 'Not found',
+    }
+  }
+
+  return {
+    note,
   }
 }
 
@@ -729,6 +771,1052 @@ async function listFiles(userId, args) {
   }
 }
 
+// --- Write tools (create a pending action, never change data directly) ---
+//
+// Every write tool below only validates its arguments and saves an
+// AIPendingAction. The actual database change happens later, in
+// executeConfirmedAction, only after the user confirms via
+// POST /api/ai/actions/:id/confirm.
+
+// Parses an optional ISO date string argument. null/undefined -> no date.
+function parseOptionalDateArg(value) {
+  if (value === null || value === undefined) {
+    return { value: null }
+  }
+
+  if (typeof value !== 'string') {
+    return { error: 'Invalid date' }
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return { error: 'Invalid date' }
+  }
+
+  return { value: date }
+}
+
+function formatValueForSummary(value) {
+  if (value === null || value === undefined || value === '') {
+    return 'none'
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0]
+  }
+
+  return String(value)
+}
+
+function buildUpdateSummary(kind, name, changes) {
+  if (changes.length === 0) {
+    return `Update ${kind} '${name}': no changes`
+  }
+
+  const changeText = changes
+    .map(
+      ({ field, from, to }) =>
+        `${field} ${formatValueForSummary(from)} → ${formatValueForSummary(to)}`
+    )
+    .join(', ')
+
+  return `Update ${kind} '${name}': ${changeText}`
+}
+
+async function describeProjectName(userId, projectId) {
+  if (!projectId) {
+    return 'no project'
+  }
+
+  const project = await scopedFindOne(
+    Project,
+    userId,
+    { _id: projectId },
+    { select: 'name' }
+  )
+
+  return project ? project.name : 'unknown project'
+}
+
+// Saves a pending action and returns the tool result the model sees. This
+// is the only place a write tool touches the database — it never changes
+// app data, only records what the user would be confirming.
+async function createPendingAction(
+  context,
+  type,
+  targetId,
+  payload,
+  summary
+) {
+  context.pendingActionCount = (context.pendingActionCount || 0) + 1
+
+  if (context.pendingActionCount > MAX_PENDING_ACTIONS_PER_RESPONSE) {
+    return {
+      error: 'Too many pending actions requested in this response',
+    }
+  }
+
+  const action = await AIPendingAction.create({
+    userId: context.userId,
+    conversationId: context.conversationId,
+    type,
+    targetId: targetId || null,
+    payload,
+    summary,
+  })
+
+  if (context.createdActionIds) {
+    context.createdActionIds.push(action._id)
+  }
+
+  return {
+    status: 'pending_confirmation',
+    actionId: action._id,
+    summary,
+  }
+}
+
+async function createTaskTool(context, args) {
+  const { userId } = context
+
+  if (typeof args.title !== 'string' || !args.title.trim()) {
+    return { error: 'Title is required' }
+  }
+
+  if (args.title.length > 200) {
+    return { error: 'Title must be at most 200 characters' }
+  }
+
+  if (
+    args.description !== null &&
+    args.description !== undefined &&
+    typeof args.description !== 'string'
+  ) {
+    return { error: 'Invalid description' }
+  }
+
+  if (
+    typeof args.description === 'string' &&
+    args.description.length > 2000
+  ) {
+    return { error: 'Description must be at most 2000 characters' }
+  }
+
+  if (
+    args.status !== null &&
+    args.status !== undefined &&
+    !TASK_STATUSES.includes(args.status)
+  ) {
+    return { error: 'Invalid status' }
+  }
+
+  if (
+    args.priority !== null &&
+    args.priority !== undefined &&
+    !TASK_PRIORITIES.includes(args.priority)
+  ) {
+    return { error: 'Invalid priority' }
+  }
+
+  if (
+    args.estimatedMinutes !== null &&
+    args.estimatedMinutes !== undefined &&
+    (typeof args.estimatedMinutes !== 'number' ||
+      args.estimatedMinutes < 0)
+  ) {
+    return { error: 'Invalid estimatedMinutes' }
+  }
+
+  const startDate = parseOptionalDateArg(args.startDate)
+
+  if (startDate.error) {
+    return { error: startDate.error }
+  }
+
+  const dueDate = parseOptionalDateArg(args.dueDate)
+
+  if (dueDate.error) {
+    return { error: dueDate.error }
+  }
+
+  const { value: projectId, error: projectError } =
+    await resolveProjectFilter(userId, args.projectId)
+
+  if (projectError) {
+    return { error: projectError }
+  }
+
+  let parentTask = null
+
+  if (args.parentTaskId !== null && args.parentTaskId !== undefined) {
+    const { task, error: parentError } = await resolveOwnedTask(
+      userId,
+      args.parentTaskId
+    )
+
+    if (parentError) {
+      return { error: parentError }
+    }
+
+    parentTask = task
+
+    if (
+      projectId &&
+      String(parentTask.projectId || '') !== String(projectId)
+    ) {
+      return { error: 'Parent task must belong to the same project' }
+    }
+  }
+
+  const payload = {
+    projectId: projectId || null,
+    parentTaskId: parentTask ? parentTask._id : null,
+    title: args.title.trim(),
+    description:
+      typeof args.description === 'string' ? args.description : '',
+    status: args.status || 'todo',
+    priority: args.priority || 'medium',
+    startDate: startDate.value,
+    dueDate: dueDate.value,
+    estimatedMinutes:
+      typeof args.estimatedMinutes === 'number'
+        ? args.estimatedMinutes
+        : 0,
+  }
+
+  const projectName = await describeProjectName(
+    userId,
+    payload.projectId
+  )
+
+  let summary = `Create task '${payload.title}' (project: ${projectName})`
+
+  if (parentTask) {
+    summary += `, parent: '${parentTask.title}'`
+  }
+
+  summary += '.'
+
+  return createPendingAction(
+    context,
+    'create_task',
+    null,
+    payload,
+    summary
+  )
+}
+
+async function updateTaskTool(context, args) {
+  const { userId } = context
+
+  const { task: currentTask, error: taskError } =
+    await resolveOwnedTask(userId, args.taskId)
+
+  if (taskError) {
+    return { error: taskError }
+  }
+
+  const payload = {}
+  const changes = []
+
+  if (args.title !== null && args.title !== undefined) {
+    if (typeof args.title !== 'string' || !args.title.trim()) {
+      return { error: 'Title is required' }
+    }
+
+    if (args.title.length > 200) {
+      return { error: 'Title must be at most 200 characters' }
+    }
+
+    const newTitle = args.title.trim()
+
+    if (newTitle !== currentTask.title) {
+      payload.title = newTitle
+      changes.push({
+        field: 'title',
+        from: currentTask.title,
+        to: newTitle,
+      })
+    }
+  }
+
+  if (args.description !== null && args.description !== undefined) {
+    if (typeof args.description !== 'string') {
+      return { error: 'Invalid description' }
+    }
+
+    if (args.description.length > 2000) {
+      return { error: 'Description must be at most 2000 characters' }
+    }
+
+    if (args.description !== (currentTask.description || '')) {
+      payload.description = args.description
+      changes.push({
+        field: 'description',
+        from: currentTask.description,
+        to: args.description,
+      })
+    }
+  }
+
+  if (args.status !== null && args.status !== undefined) {
+    if (!TASK_STATUSES.includes(args.status)) {
+      return { error: 'Invalid status' }
+    }
+
+    if (args.status !== currentTask.status) {
+      payload.status = args.status
+      changes.push({
+        field: 'status',
+        from: currentTask.status,
+        to: args.status,
+      })
+    }
+  }
+
+  if (args.priority !== null && args.priority !== undefined) {
+    if (!TASK_PRIORITIES.includes(args.priority)) {
+      return { error: 'Invalid priority' }
+    }
+
+    if (args.priority !== currentTask.priority) {
+      payload.priority = args.priority
+      changes.push({
+        field: 'priority',
+        from: currentTask.priority,
+        to: args.priority,
+      })
+    }
+  }
+
+  if (
+    args.estimatedMinutes !== null &&
+    args.estimatedMinutes !== undefined
+  ) {
+    if (
+      typeof args.estimatedMinutes !== 'number' ||
+      args.estimatedMinutes < 0
+    ) {
+      return { error: 'Invalid estimatedMinutes' }
+    }
+
+    if (args.estimatedMinutes !== currentTask.estimatedMinutes) {
+      payload.estimatedMinutes = args.estimatedMinutes
+      changes.push({
+        field: 'estimatedMinutes',
+        from: currentTask.estimatedMinutes,
+        to: args.estimatedMinutes,
+      })
+    }
+  }
+
+  for (const dateField of ['startDate', 'dueDate']) {
+    if (args[dateField] !== null && args[dateField] !== undefined) {
+      const parsed = parseOptionalDateArg(args[dateField])
+
+      if (parsed.error) {
+        return { error: parsed.error }
+      }
+
+      const currentValue = currentTask[dateField]
+        ? new Date(currentTask[dateField]).toISOString()
+        : null
+      const newValue = parsed.value ? parsed.value.toISOString() : null
+
+      if (newValue !== currentValue) {
+        payload[dateField] = parsed.value
+        changes.push({
+          field: dateField,
+          from: currentTask[dateField],
+          to: parsed.value,
+        })
+      }
+    }
+  }
+
+  if (args.projectId !== null && args.projectId !== undefined) {
+    const { value: newProjectId, error: projectError } =
+      await resolveProjectFilter(userId, args.projectId)
+
+    if (projectError) {
+      return { error: projectError }
+    }
+
+    const currentProjectIdString = currentTask.projectId
+      ? String(currentTask.projectId)
+      : null
+    const newProjectIdString = newProjectId
+      ? String(newProjectId)
+      : null
+
+    if (newProjectIdString !== currentProjectIdString) {
+      payload.projectId = newProjectId
+      changes.push({
+        field: 'projectId',
+        from: currentProjectIdString,
+        to: newProjectIdString,
+      })
+    }
+  }
+
+  let newParentTask = null
+
+  if (args.parentTaskId !== null && args.parentTaskId !== undefined) {
+    if (String(args.parentTaskId) === String(currentTask._id)) {
+      return { error: 'Task cannot be its own parent' }
+    }
+
+    const { task: resolvedParent, error: parentError } =
+      await resolveOwnedTask(userId, args.parentTaskId)
+
+    if (parentError) {
+      return { error: parentError }
+    }
+
+    newParentTask = resolvedParent
+
+    const effectiveProjectId =
+      payload.projectId !== undefined
+        ? payload.projectId
+        : currentTask.projectId
+
+    if (
+      effectiveProjectId &&
+      String(newParentTask.projectId || '') !==
+        String(effectiveProjectId)
+    ) {
+      return { error: 'Parent task must belong to the same project' }
+    }
+
+    const hasCycle = await wouldCreateParentCycle(
+      userId,
+      currentTask._id,
+      newParentTask
+    )
+
+    if (hasCycle) {
+      return { error: 'Invalid parent task' }
+    }
+
+    const currentParentIdString = currentTask.parentTaskId
+      ? String(currentTask.parentTaskId)
+      : null
+
+    if (String(newParentTask._id) !== currentParentIdString) {
+      payload.parentTaskId = newParentTask._id
+      changes.push({
+        field: 'parentTaskId',
+        from: currentParentIdString,
+        to: String(newParentTask._id),
+      })
+    }
+  }
+
+  const summary = buildUpdateSummary('task', currentTask.title, changes)
+
+  return createPendingAction(
+    context,
+    'update_task',
+    currentTask._id,
+    payload,
+    summary
+  )
+}
+
+async function deleteTaskTool(context, args) {
+  const { userId } = context
+
+  const { task, error } = await resolveOwnedTask(userId, args.taskId)
+
+  if (error) {
+    return { error }
+  }
+
+  const subtaskCount = await scopedCount(Task, userId, {
+    parentTaskId: task._id,
+  })
+
+  const projectName = await describeProjectName(userId, task.projectId)
+
+  let summary = `Delete task '${task.title}' (project: ${projectName}).`
+
+  if (subtaskCount > 0) {
+    summary += ` ${subtaskCount} subtask${
+      subtaskCount === 1 ? '' : 's'
+    } will remain without a parent.`
+  }
+
+  return createPendingAction(context, 'delete_task', task._id, {}, summary)
+}
+
+async function createNoteTool(context, args) {
+  const { userId } = context
+
+  if (typeof args.title !== 'string' || !args.title.trim()) {
+    return { error: 'Title is required' }
+  }
+
+  if (args.title.length > 200) {
+    return { error: 'Title must be at most 200 characters' }
+  }
+
+  if (typeof args.content !== 'string' || !args.content.trim()) {
+    return { error: 'Content is required' }
+  }
+
+  if (
+    args.priority !== null &&
+    args.priority !== undefined &&
+    !NOTE_PRIORITIES.includes(args.priority)
+  ) {
+    return { error: 'Invalid priority' }
+  }
+
+  const { value: projectId, error: projectError } =
+    await resolveProjectFilter(userId, args.projectId)
+
+  if (projectError) {
+    return { error: projectError }
+  }
+
+  const payload = {
+    projectId: projectId || null,
+    title: args.title.trim(),
+    content: args.content,
+    priority: args.priority || 'medium',
+  }
+
+  const projectName = await describeProjectName(
+    userId,
+    payload.projectId
+  )
+
+  const summary = `Create note '${payload.title}' (project: ${projectName}).`
+
+  return createPendingAction(
+    context,
+    'create_note',
+    null,
+    payload,
+    summary
+  )
+}
+
+async function updateNoteTool(context, args) {
+  const { userId } = context
+
+  const { note: currentNote, error: noteError } =
+    await resolveOwnedNote(userId, args.noteId)
+
+  if (noteError) {
+    return { error: noteError }
+  }
+
+  const payload = {}
+  const changes = []
+
+  if (args.title !== null && args.title !== undefined) {
+    if (typeof args.title !== 'string' || !args.title.trim()) {
+      return { error: 'Title is required' }
+    }
+
+    if (args.title.length > 200) {
+      return { error: 'Title must be at most 200 characters' }
+    }
+
+    const newTitle = args.title.trim()
+
+    if (newTitle !== currentNote.title) {
+      payload.title = newTitle
+      changes.push({
+        field: 'title',
+        from: currentNote.title,
+        to: newTitle,
+      })
+    }
+  }
+
+  if (args.content !== null && args.content !== undefined) {
+    if (typeof args.content !== 'string' || !args.content.trim()) {
+      return { error: 'Content is required' }
+    }
+
+    if (args.content !== currentNote.content) {
+      payload.content = args.content
+      changes.push({
+        field: 'content',
+        from: '(previous content)',
+        to: '(new content)',
+      })
+    }
+  }
+
+  if (args.priority !== null && args.priority !== undefined) {
+    if (!NOTE_PRIORITIES.includes(args.priority)) {
+      return { error: 'Invalid priority' }
+    }
+
+    if (args.priority !== currentNote.priority) {
+      payload.priority = args.priority
+      changes.push({
+        field: 'priority',
+        from: currentNote.priority,
+        to: args.priority,
+      })
+    }
+  }
+
+  if (args.projectId !== null && args.projectId !== undefined) {
+    const { value: newProjectId, error: projectError } =
+      await resolveProjectFilter(userId, args.projectId)
+
+    if (projectError) {
+      return { error: projectError }
+    }
+
+    const currentProjectIdString = currentNote.projectId
+      ? String(currentNote.projectId)
+      : null
+    const newProjectIdString = newProjectId
+      ? String(newProjectId)
+      : null
+
+    if (newProjectIdString !== currentProjectIdString) {
+      payload.projectId = newProjectId
+      changes.push({
+        field: 'projectId',
+        from: currentProjectIdString,
+        to: newProjectIdString,
+      })
+    }
+  }
+
+  const summary = buildUpdateSummary('note', currentNote.title, changes)
+
+  return createPendingAction(
+    context,
+    'update_note',
+    currentNote._id,
+    payload,
+    summary
+  )
+}
+
+async function deleteNoteTool(context, args) {
+  const { userId } = context
+
+  const { note, error } = await resolveOwnedNote(userId, args.noteId)
+
+  if (error) {
+    return { error }
+  }
+
+  const projectName = await describeProjectName(userId, note.projectId)
+
+  const summary = `Delete note '${note.title}' (project: ${projectName}).`
+
+  return createPendingAction(context, 'delete_note', note._id, {}, summary)
+}
+
+async function createProjectTool(context, args) {
+  if (typeof args.name !== 'string' || !args.name.trim()) {
+    return { error: 'Name is required' }
+  }
+
+  if (args.name.length > 150) {
+    return { error: 'Name must be at most 150 characters' }
+  }
+
+  if (
+    args.description !== null &&
+    args.description !== undefined &&
+    typeof args.description !== 'string'
+  ) {
+    return { error: 'Invalid description' }
+  }
+
+  if (
+    typeof args.description === 'string' &&
+    args.description.length > 2000
+  ) {
+    return { error: 'Description must be at most 2000 characters' }
+  }
+
+  if (
+    args.repositoryUrl !== null &&
+    args.repositoryUrl !== undefined &&
+    typeof args.repositoryUrl !== 'string'
+  ) {
+    return { error: 'Invalid repositoryUrl' }
+  }
+
+  if (
+    typeof args.repositoryUrl === 'string' &&
+    args.repositoryUrl.length > 500
+  ) {
+    return { error: 'Repository URL must be at most 500 characters' }
+  }
+
+  if (
+    args.status !== null &&
+    args.status !== undefined &&
+    !PROJECT_STATUSES.includes(args.status)
+  ) {
+    return { error: 'Invalid status' }
+  }
+
+  if (
+    args.color !== null &&
+    args.color !== undefined &&
+    typeof args.color !== 'string'
+  ) {
+    return { error: 'Invalid color' }
+  }
+
+  const payload = {
+    name: args.name.trim(),
+    description:
+      typeof args.description === 'string'
+        ? args.description.trim()
+        : '',
+    repositoryUrl:
+      typeof args.repositoryUrl === 'string'
+        ? args.repositoryUrl.trim()
+        : '',
+    status: args.status || 'active',
+    color: args.color || '#1688ff',
+  }
+
+  const summary = `Create project '${payload.name}'.`
+
+  return createPendingAction(
+    context,
+    'create_project',
+    null,
+    payload,
+    summary
+  )
+}
+
+async function updateProjectTool(context, args) {
+  const { userId } = context
+
+  const { project: currentProject, error: projectError } =
+    await resolveOwnedProject(userId, args.projectId)
+
+  if (projectError) {
+    return { error: projectError }
+  }
+
+  const payload = {}
+  const changes = []
+
+  if (args.name !== null && args.name !== undefined) {
+    if (typeof args.name !== 'string' || !args.name.trim()) {
+      return { error: 'Name is required' }
+    }
+
+    if (args.name.length > 150) {
+      return { error: 'Name must be at most 150 characters' }
+    }
+
+    const newName = args.name.trim()
+
+    if (newName !== currentProject.name) {
+      payload.name = newName
+      changes.push({
+        field: 'name',
+        from: currentProject.name,
+        to: newName,
+      })
+    }
+  }
+
+  if (args.description !== null && args.description !== undefined) {
+    if (typeof args.description !== 'string') {
+      return { error: 'Invalid description' }
+    }
+
+    if (args.description.length > 2000) {
+      return { error: 'Description must be at most 2000 characters' }
+    }
+
+    if (args.description !== (currentProject.description || '')) {
+      payload.description = args.description
+      changes.push({
+        field: 'description',
+        from: currentProject.description,
+        to: args.description,
+      })
+    }
+  }
+
+  if (args.repositoryUrl !== null && args.repositoryUrl !== undefined) {
+    if (typeof args.repositoryUrl !== 'string') {
+      return { error: 'Invalid repositoryUrl' }
+    }
+
+    if (args.repositoryUrl.length > 500) {
+      return { error: 'Repository URL must be at most 500 characters' }
+    }
+
+    if (args.repositoryUrl !== (currentProject.repositoryUrl || '')) {
+      payload.repositoryUrl = args.repositoryUrl
+      changes.push({
+        field: 'repositoryUrl',
+        from: currentProject.repositoryUrl,
+        to: args.repositoryUrl,
+      })
+    }
+  }
+
+  if (args.status !== null && args.status !== undefined) {
+    if (!PROJECT_STATUSES.includes(args.status)) {
+      return { error: 'Invalid status' }
+    }
+
+    if (args.status !== currentProject.status) {
+      payload.status = args.status
+      changes.push({
+        field: 'status',
+        from: currentProject.status,
+        to: args.status,
+      })
+    }
+  }
+
+  if (args.color !== null && args.color !== undefined) {
+    if (typeof args.color !== 'string') {
+      return { error: 'Invalid color' }
+    }
+
+    if (args.color !== currentProject.color) {
+      payload.color = args.color
+      changes.push({
+        field: 'color',
+        from: currentProject.color,
+        to: args.color,
+      })
+    }
+  }
+
+  const summary = buildUpdateSummary(
+    'project',
+    currentProject.name,
+    changes
+  )
+
+  return createPendingAction(
+    context,
+    'update_project',
+    currentProject._id,
+    payload,
+    summary
+  )
+}
+
+// --- Confirmed execution (only reached after the user clicks Confirm) ---
+//
+// Re-validates ownership/existence right before writing (the target or a
+// referenced project/parent may have been deleted since the action was
+// created), then performs the same kind of change the matching REST route
+// would. Never throws: any failure comes back as a failed result instead.
+
+async function executeCreateTask(userId, payload) {
+  if (payload.projectId) {
+    const project = await scopedFindOne(Project, userId, {
+      _id: payload.projectId,
+    })
+
+    if (!project) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  if (payload.parentTaskId) {
+    const parentTask = await scopedFindOne(Task, userId, {
+      _id: payload.parentTaskId,
+    })
+
+    if (!parentTask) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  const task = await Task.create({ userId, ...payload })
+
+  return { status: 'executed', result: { taskId: task._id } }
+}
+
+async function executeUpdateTask(userId, targetId, payload) {
+  const task = await Task.findOne({ _id: targetId, userId })
+
+  if (!task) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  if (payload.projectId) {
+    const project = await scopedFindOne(Project, userId, {
+      _id: payload.projectId,
+    })
+
+    if (!project) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  if (payload.parentTaskId) {
+    const parentTask = await scopedFindOne(Task, userId, {
+      _id: payload.parentTaskId,
+    })
+
+    if (!parentTask) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+
+    const hasCycle = await wouldCreateParentCycle(
+      userId,
+      task._id,
+      parentTask
+    )
+
+    if (hasCycle) {
+      return { status: 'failed', result: { error: 'Invalid parent task' } }
+    }
+  }
+
+  Object.assign(task, payload)
+
+  await task.save()
+
+  return { status: 'executed', result: { taskId: task._id } }
+}
+
+async function executeDeleteTask(userId, targetId) {
+  const task = await Task.findOneAndDelete({ _id: targetId, userId })
+
+  if (!task) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  return { status: 'executed', result: { taskId: targetId } }
+}
+
+async function executeCreateNote(userId, payload) {
+  if (payload.projectId) {
+    const project = await scopedFindOne(Project, userId, {
+      _id: payload.projectId,
+    })
+
+    if (!project) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  const note = await Note.create({ userId, ...payload })
+
+  return { status: 'executed', result: { noteId: note._id } }
+}
+
+async function executeUpdateNote(userId, targetId, payload) {
+  const note = await Note.findOne({ _id: targetId, userId })
+
+  if (!note) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  if (payload.projectId) {
+    const project = await scopedFindOne(Project, userId, {
+      _id: payload.projectId,
+    })
+
+    if (!project) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  Object.assign(note, payload)
+
+  await note.save()
+
+  return { status: 'executed', result: { noteId: note._id } }
+}
+
+async function executeDeleteNote(userId, targetId) {
+  const note = await Note.findOneAndDelete({ _id: targetId, userId })
+
+  if (!note) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  return { status: 'executed', result: { noteId: targetId } }
+}
+
+async function executeCreateProject(userId, payload) {
+  const project = await Project.create({ userId, ...payload })
+
+  return { status: 'executed', result: { projectId: project._id } }
+}
+
+async function executeUpdateProject(userId, targetId, payload) {
+  const project = await Project.findOne({ _id: targetId, userId })
+
+  if (!project) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  Object.assign(project, payload)
+
+  await project.save()
+
+  return { status: 'executed', result: { projectId: project._id } }
+}
+
+// Dispatches a confirmed pending action to the matching executor. Called
+// only from the /actions/:id/confirm route, only once the action has been
+// atomically claimed (status pending -> executing) so it can never run twice.
+async function executeConfirmedAction(action) {
+  const userId = action.userId
+  const payload = action.payload || {}
+
+  try {
+    switch (action.type) {
+      case 'create_task':
+        return await executeCreateTask(userId, payload)
+      case 'update_task':
+        return await executeUpdateTask(userId, action.targetId, payload)
+      case 'delete_task':
+        return await executeDeleteTask(userId, action.targetId)
+      case 'create_note':
+        return await executeCreateNote(userId, payload)
+      case 'update_note':
+        return await executeUpdateNote(userId, action.targetId, payload)
+      case 'delete_note':
+        return await executeDeleteNote(userId, action.targetId)
+      case 'create_project':
+        return await executeCreateProject(userId, payload)
+      case 'update_project':
+        return await executeUpdateProject(
+          userId,
+          action.targetId,
+          payload
+        )
+      default:
+        return {
+          status: 'failed',
+          result: { error: 'Unknown action type' },
+        }
+    }
+  } catch (error) {
+    console.error(
+      `Failed to execute confirmed action "${action.type}":`,
+      error
+    )
+    return { status: 'failed', result: { error: 'Execution failed' } }
+  }
+}
+
 // Tool definitions in the Responses API function-tool format, alongside the
 // existing generate_image tool. Every argument is required in strict mode;
 // optional filters accept null instead of being omitted.
@@ -876,27 +1964,371 @@ const toolDefinitions = [
     },
     strict: true,
   },
+  {
+    type: 'function',
+    name: 'create_task',
+    description:
+      'Propose creating a new task. This only creates a pending action for the user to confirm — nothing is created until they confirm it.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: ['string', 'null'],
+          description:
+            'Project ID, "no-project" for no project, or null for no project.',
+        },
+        parentTaskId: {
+          type: ['string', 'null'],
+          description: 'Parent task ID, or null for a top-level task.',
+        },
+        title: {
+          type: 'string',
+          description: 'Task title (required, max 200 characters).',
+        },
+        description: {
+          type: ['string', 'null'],
+          description: 'Task description, or null for none.',
+        },
+        status: {
+          type: ['string', 'null'],
+          enum: ['todo', 'in-progress', 'completed', null],
+          description: 'Status, or null to default to todo.',
+        },
+        priority: {
+          type: ['string', 'null'],
+          enum: ['low', 'medium', 'high', null],
+          description: 'Priority, or null to default to medium.',
+        },
+        startDate: {
+          type: ['string', 'null'],
+          description: 'ISO 8601 start date, or null for none.',
+        },
+        dueDate: {
+          type: ['string', 'null'],
+          description: 'ISO 8601 due date, or null for none.',
+        },
+        estimatedMinutes: {
+          type: ['number', 'null'],
+          description: 'Estimated time in minutes, or null for 0.',
+        },
+      },
+      required: [
+        'projectId',
+        'parentTaskId',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'startDate',
+        'dueDate',
+        'estimatedMinutes',
+      ],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'update_task',
+    description:
+      'Propose updating an existing task. Pass null for any field that should stay unchanged. For projectId, pass "no-project" to remove the project. Only creates a pending action; nothing changes until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'The task ID to update.',
+        },
+        projectId: {
+          type: ['string', 'null'],
+          description:
+            'New project ID, "no-project" to remove the project, or null to leave unchanged.',
+        },
+        parentTaskId: {
+          type: ['string', 'null'],
+          description:
+            'New parent task ID, or null to leave unchanged.',
+        },
+        title: {
+          type: ['string', 'null'],
+          description: 'New title, or null to leave unchanged.',
+        },
+        description: {
+          type: ['string', 'null'],
+          description: 'New description, or null to leave unchanged.',
+        },
+        status: {
+          type: ['string', 'null'],
+          enum: ['todo', 'in-progress', 'completed', null],
+          description: 'New status, or null to leave unchanged.',
+        },
+        priority: {
+          type: ['string', 'null'],
+          enum: ['low', 'medium', 'high', null],
+          description: 'New priority, or null to leave unchanged.',
+        },
+        startDate: {
+          type: ['string', 'null'],
+          description:
+            'New ISO 8601 start date, or null to leave unchanged.',
+        },
+        dueDate: {
+          type: ['string', 'null'],
+          description:
+            'New ISO 8601 due date, or null to leave unchanged.',
+        },
+        estimatedMinutes: {
+          type: ['number', 'null'],
+          description:
+            'New estimated time in minutes, or null to leave unchanged.',
+        },
+      },
+      required: [
+        'taskId',
+        'projectId',
+        'parentTaskId',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'startDate',
+        'dueDate',
+        'estimatedMinutes',
+      ],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'delete_task',
+    description:
+      'Propose deleting a task. Subtasks are not deleted and will remain without a parent. Only creates a pending action; nothing is deleted until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'The task ID to delete.',
+        },
+      },
+      required: ['taskId'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'create_note',
+    description:
+      "Propose creating a new note. To create a note from a task, first read the task with a read tool and use its details to write the note's content. Only creates a pending action; nothing is created until the user confirms.",
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: ['string', 'null'],
+          description:
+            'Project ID, "no-project" for no project, or null for no project.',
+        },
+        title: {
+          type: 'string',
+          description: 'Note title (required, max 200 characters).',
+        },
+        content: {
+          type: 'string',
+          description: 'Note content (required).',
+        },
+        priority: {
+          type: ['string', 'null'],
+          enum: ['low', 'medium', 'high', null],
+          description: 'Priority, or null to default to medium.',
+        },
+      },
+      required: ['projectId', 'title', 'content', 'priority'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'update_note',
+    description:
+      'Propose updating an existing note. Pass null for any field that should stay unchanged. Only creates a pending action; nothing changes until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        noteId: {
+          type: 'string',
+          description: 'The note ID to update.',
+        },
+        title: {
+          type: ['string', 'null'],
+          description: 'New title, or null to leave unchanged.',
+        },
+        content: {
+          type: ['string', 'null'],
+          description: 'New content, or null to leave unchanged.',
+        },
+        priority: {
+          type: ['string', 'null'],
+          enum: ['low', 'medium', 'high', null],
+          description: 'New priority, or null to leave unchanged.',
+        },
+        projectId: {
+          type: ['string', 'null'],
+          description:
+            'New project ID, "no-project" to remove the project, or null to leave unchanged.',
+        },
+      },
+      required: ['noteId', 'title', 'content', 'priority', 'projectId'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'delete_note',
+    description:
+      'Propose deleting a note. Only creates a pending action; nothing is deleted until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        noteId: {
+          type: 'string',
+          description: 'The note ID to delete.',
+        },
+      },
+      required: ['noteId'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'create_project',
+    description:
+      'Propose creating a new project. Only creates a pending action; nothing is created until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Project name (required, max 150 characters).',
+        },
+        description: {
+          type: ['string', 'null'],
+          description: 'Project description, or null for none.',
+        },
+        repositoryUrl: {
+          type: ['string', 'null'],
+          description: 'Repository URL, or null for none.',
+        },
+        status: {
+          type: ['string', 'null'],
+          enum: ['active', 'completed', 'archived', null],
+          description: 'Status, or null to default to active.',
+        },
+        color: {
+          type: ['string', 'null'],
+          description: 'Hex color, or null to use the default.',
+        },
+      },
+      required: [
+        'name',
+        'description',
+        'repositoryUrl',
+        'status',
+        'color',
+      ],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'update_project',
+    description:
+      'Propose updating an existing project. Pass null for any field that should stay unchanged. There is no tool to delete a project. Only creates a pending action; nothing changes until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'The project ID to update.',
+        },
+        name: {
+          type: ['string', 'null'],
+          description: 'New name, or null to leave unchanged.',
+        },
+        description: {
+          type: ['string', 'null'],
+          description: 'New description, or null to leave unchanged.',
+        },
+        repositoryUrl: {
+          type: ['string', 'null'],
+          description:
+            'New repository URL, or null to leave unchanged.',
+        },
+        status: {
+          type: ['string', 'null'],
+          enum: ['active', 'completed', 'archived', null],
+          description: 'New status, or null to leave unchanged.',
+        },
+        color: {
+          type: ['string', 'null'],
+          description: 'New hex color, or null to leave unchanged.',
+        },
+      },
+      required: [
+        'projectId',
+        'name',
+        'description',
+        'repositoryUrl',
+        'status',
+        'color',
+      ],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
 ]
 
-const READ_ONLY_TOOL_NAMES = new Set(
+// Every tool defined in this file (read tools and write tools, which only
+// ever create a pending action and never mutate data themselves). Used by
+// aiRoutes.js to tell these apart from generate_image, which is handled
+// separately and never goes through executeAssistantTool.
+const ASSISTANT_TOOL_NAMES = new Set(
   toolDefinitions.map((tool) => tool.name)
 )
 
+// Read tool handlers only need the userId; write tool handlers need the
+// full context (userId, conversationId, and the pending-action bookkeeping
+// createPendingAction attaches to it), so every handler takes (context, args).
 const handlers = {
-  list_projects: (userId) => listProjects(userId),
-  get_project_context: (userId, args) =>
-    getProjectContext(userId, args),
-  list_tasks: (userId, args) => listTasks(userId, args),
-  list_notes: (userId, args) => listNotes(userId, args),
-  list_time_entries: (userId, args) =>
-    listTimeEntries(userId, args),
-  get_active_timer: (userId) => getActiveTimer(userId),
-  list_files: (userId, args) => listFiles(userId, args),
+  list_projects: (context) => listProjects(context.userId),
+  get_project_context: (context, args) =>
+    getProjectContext(context.userId, args),
+  list_tasks: (context, args) => listTasks(context.userId, args),
+  list_notes: (context, args) => listNotes(context.userId, args),
+  list_time_entries: (context, args) =>
+    listTimeEntries(context.userId, args),
+  get_active_timer: (context) => getActiveTimer(context.userId),
+  list_files: (context, args) => listFiles(context.userId, args),
+  create_task: (context, args) => createTaskTool(context, args),
+  update_task: (context, args) => updateTaskTool(context, args),
+  delete_task: (context, args) => deleteTaskTool(context, args),
+  create_note: (context, args) => createNoteTool(context, args),
+  update_note: (context, args) => updateNoteTool(context, args),
+  delete_note: (context, args) => deleteNoteTool(context, args),
+  create_project: (context, args) => createProjectTool(context, args),
+  update_project: (context, args) => updateProjectTool(context, args),
 }
 
 // Runs one tool call by name. Never throws: unknown tools and bad arguments
-// come back as an { error } result for the model instead of failing the request.
-async function executeAssistantTool(name, argsJson, userId) {
+// come back as an { error } result for the model instead of failing the
+// request. context is { userId, conversationId, pendingActionCount,
+// createdActionIds } — see createPendingAction.
+async function executeAssistantTool(name, argsJson, context) {
   const handler = handlers[name]
 
   if (!handler) {
@@ -912,7 +2344,7 @@ async function executeAssistantTool(name, argsJson, userId) {
   }
 
   try {
-    return await handler(userId, args)
+    return await handler(context, args)
   } catch (error) {
     console.error(`Assistant tool "${name}" failed:`, error)
     return { error: 'Tool execution failed' }
@@ -921,6 +2353,7 @@ async function executeAssistantTool(name, argsJson, userId) {
 
 module.exports = {
   toolDefinitions,
-  READ_ONLY_TOOL_NAMES,
+  ASSISTANT_TOOL_NAMES,
   executeAssistantTool,
+  executeConfirmedAction,
 }

@@ -1,6 +1,7 @@
 const express = require('express')
 const Task = require('../models/Task')
 const Project = require('../models/Project')
+const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
 
 const router = express.Router()
 
@@ -149,36 +150,16 @@ router.patch('/:id', async (req, res, next) => {
         })
       }
 
-      // Walk up the parentTaskId chain and check that it does not contain the
-      // task being edited (a cycle). The visited set guards against an infinite loop.
-      const visited = new Set()
-      let currentParentId = parentTask.parentTaskId
+      const hasCycle = await wouldCreateParentCycle(
+        req.user._id,
+        task._id,
+        parentTask
+      )
 
-      while (currentParentId) {
-        const currentParentIdString = String(currentParentId)
-
-        if (currentParentIdString === String(task._id)) {
-          return res.status(400).json({
-            error: 'Invalid parent task',
-          })
-        }
-
-        if (visited.has(currentParentIdString)) {
-          break
-        }
-
-        visited.add(currentParentIdString)
-
-        const currentParent = await Task.findOne({
-          _id: currentParentId,
-          userId: req.user._id,
+      if (hasCycle) {
+        return res.status(400).json({
+          error: 'Invalid parent task',
         })
-
-        if (!currentParent) {
-          break
-        }
-
-        currentParentId = currentParent.parentTaskId
       }
     }
 
