@@ -2,12 +2,59 @@ import { useEffect, useState } from 'react'
 import {
   createProject,
   deleteProject,
+  getProjectDeletePreview,
   getProjects,
   updateProject,
 } from '../../api/projects'
 import { getTasks } from '../../api/tasks'
 import { getTimeEntries } from '../../api/timeEntries'
 import './Project.css'
+
+// "12 tasks, 4 notes and 3 files" -- lists only the counts that are
+// actually blocking the delete, in a natural comma-and-"and" list.
+function describeBlockingCounts(preview) {
+  const parts = []
+
+  if (preview.taskCount > 0) {
+    parts.push(
+      `${preview.taskCount} task${
+        preview.taskCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (preview.noteCount > 0) {
+    parts.push(
+      `${preview.noteCount} note${
+        preview.noteCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (preview.folderCount > 0) {
+    parts.push(
+      `${preview.folderCount} folder${
+        preview.folderCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (preview.fileCount > 0) {
+    parts.push(
+      `${preview.fileCount} file${
+        preview.fileCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (parts.length <= 1) {
+    return parts.join('')
+  }
+
+  return `${parts
+    .slice(0, -1)
+    .join(', ')} and ${parts[parts.length - 1]}`
+}
 
 function Projects() {
   const [projects, setProjects] = useState([])
@@ -18,6 +65,9 @@ function Projects() {
   const [showForm, setShowForm] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [projectToDelete, setProjectToDelete] = useState(null)
+  const [deletePreview, setDeletePreview] = useState(null)
+  const [deletePreviewLoading, setDeletePreviewLoading] =
+    useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [repositoryUrl, setRepositoryUrl] = useState('')
@@ -131,6 +181,17 @@ function Projects() {
 
   function handleDelete(project) {
     setProjectToDelete(project)
+    setDeletePreview(null)
+    setDeletePreviewLoading(true)
+
+    getProjectDeletePreview(project._id)
+      .then(setDeletePreview)
+      .catch((error) => {
+        setError(error.message)
+      })
+      .finally(() => {
+        setDeletePreviewLoading(false)
+      })
   }
 
   async function confirmDelete() {
@@ -143,29 +204,19 @@ function Projects() {
       setError('')
       await deleteProject(projectToDelete._id)
 
-      setProjects((currentProjects) =>
-        currentProjects.filter(
-          (item) => item._id !== projectToDelete._id
-        )
-      )
+      const [projectsData, tasksData, timeEntriesData] =
+        await Promise.all([
+          getProjects(),
+          getTasks(),
+          getTimeEntries(),
+        ])
 
-      setTasks((currentTasks) =>
-        currentTasks.filter(
-          (task) =>
-            String(task.projectId) !==
-            String(projectToDelete._id)
-        )
-      )
-
-      setTimeEntries((currentEntries) =>
-        currentEntries.filter(
-          (entry) =>
-            String(entry.projectId) !==
-            String(projectToDelete._id)
-        )
-      )
+      setProjects(projectsData)
+      setTasks(tasksData)
+      setTimeEntries(timeEntriesData)
 
       setProjectToDelete(null)
+      setDeletePreview(null)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -496,11 +547,31 @@ function Projects() {
               Delete project?
             </h3>
 
-            <p>
-              Are you sure you want to delete{' '}
-              <strong>{projectToDelete.name}</strong>?
-              This action cannot be undone.
-            </p>
+            {deletePreview &&
+            deletePreview.isEmpty === false ? (
+              <p>
+                {`This project still has ${describeBlockingCounts(
+                  deletePreview
+                )}. Delete them first.`}
+              </p>
+            ) : (
+              <>
+                <p>
+                  Are you sure you want to delete{' '}
+                  <strong>{projectToDelete.name}</strong>?
+                  This action cannot be undone.
+                </p>
+
+                {deletePreview &&
+                  deletePreview.trackedMinutes > 0 && (
+                    <p>
+                      {`This project has ${formatDuration(
+                        deletePreview.trackedMinutes
+                      )} of tracked time. It will be deleted.`}
+                    </p>
+                  )}
+              </>
+            )}
 
             <div className="delete-dialog-actions">
               <button
@@ -511,14 +582,21 @@ function Projects() {
                 Cancel
               </button>
 
-              <button
-                className="delete-dialog-confirm"
-                type="button"
-                onClick={confirmDelete}
-                disabled={deleting}
-              >
-                {deleting ? 'Deleting...' : 'Delete project'}
-              </button>
+              {(!deletePreview ||
+                deletePreview.isEmpty !== false) && (
+                <button
+                  className="delete-dialog-confirm"
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={
+                    deleting || deletePreviewLoading
+                  }
+                >
+                  {deleting
+                    ? 'Deleting...'
+                    : 'Delete project'}
+                </button>
+              )}
             </div>
           </div>
         </div>

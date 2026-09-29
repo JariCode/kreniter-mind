@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   createTask,
   deleteTask,
+  getTaskDeletePreview,
   getTasks,
   updateTask,
 } from '../../api/tasks'
@@ -25,7 +26,7 @@ function Task() {
     pauseTimer,
     resumeTimer,
     stopTimer,
-    cancelTimer,
+    refreshActiveTimer,
     isSaving: timerSaving,
     error: timerError,
     timeEntriesVersion,
@@ -43,6 +44,9 @@ function Task() {
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [taskToDelete, setTaskToDelete] = useState(null)
+  const [deletePreview, setDeletePreview] = useState(null)
+  const [deletePreviewLoading, setDeletePreviewLoading] =
+    useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [projectId, setProjectId] = useState('')
@@ -351,6 +355,17 @@ function Task() {
 
   function handleDelete(task) {
     setTaskToDelete(task)
+    setDeletePreview(null)
+    setDeletePreviewLoading(true)
+
+    getTaskDeletePreview(task._id)
+      .then(setDeletePreview)
+      .catch((error) => {
+        setError(error.message)
+      })
+      .finally(() => {
+        setDeletePreviewLoading(false)
+      })
   }
 
   async function confirmDelete() {
@@ -362,39 +377,23 @@ function Task() {
       setDeleting(true)
       setError('')
 
-      if (
-        activeTimer &&
-        String(activeTimer.taskId) ===
-          String(taskToDelete._id)
-      ) {
-        try {
-          await cancelTimer()
-        } catch (error) {
-          console.error(
-            'Failed to cancel active timer while deleting task:',
-            error
-          )
-        }
-      }
-
+      // The backend detaches direct subtasks and cancels any active timer
+      // that belongs to this task as part of the same delete, so the
+      // task list, time entries and timer all need a fresh fetch rather
+      // than an optimistic local filter.
       await deleteTask(taskToDelete._id)
 
-      setTasks((currentTasks) =>
-        currentTasks.filter(
-          (item) =>
-            item._id !== taskToDelete._id
-        )
-      )
+      const [tasksData, timeEntriesData] = await Promise.all([
+        getTasks(),
+        getTimeEntries(),
+      ])
 
-      setTimeEntries((currentEntries) =>
-        currentEntries.filter(
-          (entry) =>
-            String(entry.taskId) !==
-            String(taskToDelete._id)
-        )
-      )
+      setTasks(tasksData)
+      setTimeEntries(timeEntriesData)
+      refreshActiveTimer()
 
       setTaskToDelete(null)
+      setDeletePreview(null)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -1375,6 +1374,34 @@ function Task() {
               ? This action cannot be undone.
             </p>
 
+            {deletePreview &&
+              deletePreview.trackedMinutes > 0 && (
+                <p>
+                  {`This task has ${formatDuration(
+                    deletePreview.trackedMinutes
+                  )} of tracked time. It will be deleted.`}
+                </p>
+              )}
+
+            {deletePreview &&
+              deletePreview.subtasks.length > 0 && (
+                <p>
+                  {`This task has ${
+                    deletePreview.subtasks.length
+                  } subtask${
+                    deletePreview.subtasks.length === 1
+                      ? ''
+                      : 's'
+                  }: ${deletePreview.subtasks
+                    .map((subtask) => subtask.title)
+                    .join(', ')}. ${
+                    deletePreview.subtasks.length === 1
+                      ? 'It will become a task without a parent.'
+                      : 'They will become tasks without a parent.'
+                  }`}
+                </p>
+              )}
+
             <div className="delete-dialog-actions">
               <button
                 type="button"
@@ -1390,7 +1417,9 @@ function Task() {
                 className="delete-dialog-confirm"
                 type="button"
                 onClick={confirmDelete}
-                disabled={deleting}
+                disabled={
+                  deleting || deletePreviewLoading
+                }
               >
                 {deleting
                   ? 'Deleting...'

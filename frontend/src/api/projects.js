@@ -27,3 +27,7 @@ export function deleteProject(id) {
     method: 'DELETE',
   })
 }
+
+export function getProjectDeletePreview(id) {
+  return apiRequest(`/projects/${id}/delete-preview`)
+}

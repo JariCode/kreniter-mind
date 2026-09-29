@@ -27,3 +27,7 @@ export function deleteTask(id) {
     method: 'DELETE',
   })
 }
+
+export function getTaskDeletePreview(id) {
+  return apiRequest(`/tasks/${id}/delete-preview`)
+}
