@@ -60,3 +60,15 @@ export function deleteConversation(conversationId) {
     }
   )
 }
+
+export function confirmAction(actionId) {
+  return apiRequest(`/ai/actions/${actionId}/confirm`, {
+    method: 'POST',
+  })
+}
+
+export function cancelAction(actionId) {
+  return apiRequest(`/ai/actions/${actionId}/cancel`, {
+    method: 'POST',
+  })
+}

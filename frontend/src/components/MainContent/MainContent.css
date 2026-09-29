@@ -719,6 +719,43 @@
   animation-delay: 0.3s;
 }
 
+/* AI action confirmation card (ActionConfirmCard), shown under the
+   assistant message that proposed the change. Confirm/Cancel button
+   colors come from the shared button styles in index.css. */
+
+.ai-chat-messages .action-card {
+  max-width: 82%;
+  margin: -4px 0 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.ai-chat-messages .action-card-summary {
+  margin: 0 0 6px;
+  color: #b7c2ce;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.ai-chat-messages .action-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.ai-chat-messages .action-card-status {
+  color: #b7c2ce;
+  font-size: 0.64rem;
+}
+
+.ai-chat-messages .action-card-error {
+  margin: 6px 0 0;
+  color: #ff9b9b;
+  font-size: 0.62rem;
+}
+
 .ai-chat-form {
   display: flex;
   align-items: center;

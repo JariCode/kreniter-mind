@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import AI from '../../components/AI/AI'
 import AssistantMarkdown from '../../components/AI/AssistantMarkdown'
+import ActionConfirmCard from '../../components/AI/ActionConfirmCard'
 import {
   getConversations,
   getConversation,
@@ -16,6 +17,7 @@ function Assistant() {
   const [conversations, setConversations] = useState([])
   const [activeConversation, setActiveConversation] = useState(null)
   const [messages, setMessages] = useState([])
+  const [pendingActions, setPendingActions] = useState([])
   const [input, setInput] = useState('')
 
   const [loading, setLoading] = useState(true)
@@ -94,6 +96,7 @@ function Assistant() {
 
       setActiveConversation(data.conversation)
       setMessages(data.messages)
+      setPendingActions(data.pendingActions || [])
       setConversationsOpen(false)
     } catch (error) {
       setError(error.message)
@@ -116,6 +119,7 @@ function Assistant() {
 
       setActiveConversation(conversation)
       setMessages([])
+      setPendingActions([])
       setConversationsOpen(false)
     } catch (error) {
       setError(error.message)
@@ -149,6 +153,7 @@ function Assistant() {
         } else {
           setActiveConversation(null)
           setMessages([])
+          setPendingActions([])
         }
       }
     } catch (error) {
@@ -341,6 +346,13 @@ function Assistant() {
         assistantMessage,
       ])
 
+      if (data.pendingActions?.length > 0) {
+        setPendingActions((current) => [
+          ...current,
+          ...data.pendingActions,
+        ])
+      }
+
       setConversations((current) =>
         current.map((item) =>
           item._id === conversation._id
@@ -365,6 +377,16 @@ function Assistant() {
     } finally {
       setSending(false)
     }
+  }
+
+  function handleActionUpdate(updatedAction) {
+    setPendingActions((current) =>
+      current.map((action) =>
+        action._id === updatedAction._id
+          ? updatedAction
+          : action
+      )
+    )
   }
 
   async function handleStartRecording() {
@@ -720,8 +742,8 @@ function Assistant() {
             ) : (
               <div className="assistant-message-list">
                 {messages.map((message) => (
+                  <Fragment key={message._id}>
                   <div
-                    key={message._id}
                     className={`assistant-message assistant-message-${message.role}`}
                   >
                     {message.role ===
@@ -789,6 +811,21 @@ function Assistant() {
                       </div>
                     )}
                   </div>
+
+                  {pendingActions
+                    .filter(
+                      (action) =>
+                        String(action.messageId) ===
+                        String(message._id)
+                    )
+                    .map((action) => (
+                      <ActionConfirmCard
+                        key={action._id}
+                        action={action}
+                        onUpdate={handleActionUpdate}
+                      />
+                    ))}
+                  </Fragment>
                 ))}
 
                 {sending && (

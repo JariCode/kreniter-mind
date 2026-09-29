@@ -440,6 +440,43 @@
   transform: scale(0.42);
 }
 
+/* AI action confirmation card (ActionConfirmCard), shown under the
+   assistant message that proposed the change. Confirm/Cancel button
+   colors come from the shared button styles in index.css. */
+
+.assistant-message-list .action-card {
+  max-width: min(680px, 80%);
+  margin: -12px 0 24px 42px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.assistant-message-list .action-card-summary {
+  margin: 0 0 10px;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.assistant-message-list .action-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.assistant-message-list .action-card-status {
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+}
+
+.assistant-message-list .action-card-error {
+  margin: 8px 0 0;
+  color: #ff9b9b;
+  font-size: 0.74rem;
+}
+
 .assistant-loading {
   display: flex;
   align-items: center;

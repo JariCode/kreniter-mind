@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { getProjects } from '../../api/projects'
 import { getTasks } from '../../api/tasks'
 import { getTimeEntries } from '../../api/timeEntries'
@@ -26,6 +26,7 @@ import {
 import { useTimeTracker } from '../TimeTracker/TimeTracker'
 import { formatTimerTime } from '../../utils/formatTimerTime'
 import AssistantMarkdown from '../AI/AssistantMarkdown'
+import ActionConfirmCard from '../AI/ActionConfirmCard'
 import './MainContent.css'
 import '../TimeTracker/TimeTracker.css'
 
@@ -65,6 +66,7 @@ function MainContent({
   const [aiChatOpen, setAiChatOpen] = useState(false)
   const [aiConversation, setAiConversation] = useState(null)
   const [aiMessages, setAiMessages] = useState([])
+  const [aiPendingActions, setAiPendingActions] = useState([])
   const [aiInput, setAiInput] = useState('')
   const [aiSending, setAiSending] = useState(false)
   const aiMessagesRef = useRef(null)
@@ -697,6 +699,13 @@ function MainContent({
         data.userMessage,
         data.assistantMessage,
       ])
+
+      if (data.pendingActions?.length > 0) {
+        setAiPendingActions((current) => [
+          ...current,
+          ...data.pendingActions,
+        ])
+      }
     } catch (error) {
       setAiMessages((current) => [
         ...current,
@@ -711,6 +720,16 @@ function MainContent({
     } finally {
       setAiSending(false)
     }
+  }
+
+  function handleAiActionUpdate(updatedAction) {
+    setAiPendingActions((current) =>
+      current.map((action) =>
+        action._id === updatedAction._id
+          ? updatedAction
+          : action
+      )
+    )
   }
 
   const availableWidgets =
@@ -1665,8 +1684,8 @@ function MainContent({
                     )}
 
                     {aiMessages.map((message) => (
+                      <Fragment key={message._id}>
                       <div
-                        key={message._id}
                         className={`ai-chat-message ai-chat-message-${message.role}`}
                       >
                         {message.role === 'assistant' ? (
@@ -1677,6 +1696,21 @@ function MainContent({
                           message.content
                         )}
                       </div>
+
+                      {aiPendingActions
+                        .filter(
+                          (action) =>
+                            String(action.messageId) ===
+                            String(message._id)
+                        )
+                        .map((action) => (
+                          <ActionConfirmCard
+                            key={action._id}
+                            action={action}
+                            onUpdate={handleAiActionUpdate}
+                          />
+                        ))}
+                      </Fragment>
                     ))}
 
                     {aiSending && (

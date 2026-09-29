@@ -429,7 +429,8 @@ button {
 .assistant-new-button,
 .notes-create-button,
 .projects-create-button,
-.tasks-create-button {
+.tasks-create-button,
+.action-card-confirm {
   padding: 11px 16px;
   border: 1px solid rgba(var(--color-accent-rgb), 0.45);
   border-radius: 7px;
@@ -449,7 +450,8 @@ button {
 .projects-create-button:hover,
 .tasks-create-button:hover,
 .files-action-button:hover:not(:disabled),
-.reports-print-button:hover:not(:disabled) {
+.reports-print-button:hover:not(:disabled),
+.action-card-confirm:hover:not(:disabled) {
   border-color: rgba(var(--color-accent-rgb), 0.75);
   background: rgba(var(--color-accent-rgb), 0.16);
   box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.12);
@@ -461,7 +463,8 @@ button {
 
 .project-form-actions button,
 .task-form-actions button,
-.files-delete-dialog-actions button {
+.files-delete-dialog-actions button,
+.action-card-cancel {
   padding: 10px 15px;
   border: 1px solid var(--color-border);
   border-radius: 7px;
@@ -473,13 +476,16 @@ button {
 
 .project-form-actions button:hover,
 .task-form-actions button:hover,
-.files-delete-dialog-actions button:hover {
+.files-delete-dialog-actions button:hover,
+.action-card-cancel:hover:not(:disabled) {
   border-color: rgba(var(--color-accent-rgb), 0.4);
   color: var(--color-text);
 }
 
 .project-form-actions button:disabled,
-.task-form-actions button:disabled {
+.task-form-actions button:disabled,
+.action-card-confirm:disabled,
+.action-card-cancel:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
