@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -36,6 +37,18 @@ function getElapsedMs(timer, currentTime) {
   )
 }
 
+// A conflict response (409, or 404 meaning "no timer at all") carries the
+// server's current state in `activeTimer` when it was caused by another
+// tab/action changing the timer first. In that case the view should just
+// reconcile to that state instead of showing an error.
+function isReconcilableConflict(err) {
+  return (
+    (err.status === 409 || err.status === 404) &&
+    err.data &&
+    'activeTimer' in err.data
+  )
+}
+
 function normalizeActiveTimer(timer) {
   if (!timer) {
     return null
@@ -58,6 +71,7 @@ export function TimeTrackerProvider({ children }) {
   const [error, setError] = useState('')
   const [timeEntriesVersion, setTimeEntriesVersion] =
     useState(0)
+  const broadcastChannelRef = useRef(null)
 
   // Haetaan aktiivinen timer tietokannasta sovelluksen käynnistyessä.
   useEffect(() => {
@@ -159,19 +173,34 @@ export function TimeTrackerProvider({ children }) {
         projectId,
         description,
         now: currentTime,
-      }).catch((err) => {
-        console.error(
-          'Failed to save active timer:',
-          err
-        )
-
-        setTimer(null)
-
-        setError(
-          err.message ||
-            'Failed to save active timer.'
-        )
       })
+        .then((savedTimer) => {
+          setTimer(normalizeActiveTimer(savedTimer))
+          broadcastTimerChanged()
+        })
+        .catch((err) => {
+          if (isReconcilableConflict(err)) {
+            setTimer(
+              normalizeActiveTimer(
+                err.data.activeTimer
+              )
+            )
+
+            return
+          }
+
+          console.error(
+            'Failed to save active timer:',
+            err
+          )
+
+          setTimer(null)
+
+          setError(
+            err.message ||
+              'Failed to save active timer.'
+          )
+        })
 
       return true
     },
@@ -200,8 +229,22 @@ export function TimeTrackerProvider({ children }) {
         status: 'paused',
       }
 
-      pauseActiveTimerAction(currentTime).catch(
-        (err) => {
+      pauseActiveTimerAction(currentTime)
+        .then((savedTimer) => {
+          setTimer(normalizeActiveTimer(savedTimer))
+          broadcastTimerChanged()
+        })
+        .catch((err) => {
+          if (isReconcilableConflict(err)) {
+            setTimer(
+              normalizeActiveTimer(
+                err.data.activeTimer
+              )
+            )
+
+            return
+          }
+
           console.error(
             'Failed to pause active timer:',
             err
@@ -213,8 +256,7 @@ export function TimeTrackerProvider({ children }) {
             err.message ||
               'Failed to pause active timer.'
           )
-        }
-      )
+        })
 
       return updatedTimer
     })
@@ -240,8 +282,22 @@ export function TimeTrackerProvider({ children }) {
         status: 'running',
       }
 
-      resumeActiveTimerAction(currentTime).catch(
-        (err) => {
+      resumeActiveTimerAction(currentTime)
+        .then((savedTimer) => {
+          setTimer(normalizeActiveTimer(savedTimer))
+          broadcastTimerChanged()
+        })
+        .catch((err) => {
+          if (isReconcilableConflict(err)) {
+            setTimer(
+              normalizeActiveTimer(
+                err.data.activeTimer
+              )
+            )
+
+            return
+          }
+
           console.error(
             'Failed to resume active timer:',
             err
@@ -253,8 +309,7 @@ export function TimeTrackerProvider({ children }) {
             err.message ||
               'Failed to resume active timer.'
           )
-        }
-      )
+        })
 
       return updatedTimer
     })
@@ -290,6 +345,61 @@ export function TimeTrackerProvider({ children }) {
     }
   }, [])
 
+  // Catches up with the server when the tab was in the background and is
+  // now visible/focused again, in case the timer changed while it wasn't.
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        refreshActiveTimer()
+      }
+    }
+
+    function handleFocus() {
+      refreshActiveTimer()
+    }
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    )
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      )
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [refreshActiveTimer])
+
+  // Instantly syncs tabs of the same browser: whenever one tab changes the
+  // timer, it posts on this channel, and every other tab re-fetches.
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') {
+      return
+    }
+
+    const channel = new BroadcastChannel(
+      'active-timer-sync'
+    )
+
+    broadcastChannelRef.current = channel
+
+    channel.onmessage = () => {
+      refreshActiveTimer()
+    }
+
+    return () => {
+      channel.close()
+      broadcastChannelRef.current = null
+    }
+  }, [refreshActiveTimer])
+
+  function broadcastTimerChanged() {
+    broadcastChannelRef.current?.postMessage('changed')
+  }
+
   const cancelTimer = useCallback(async () => {
     if (!timer) {
       return
@@ -301,7 +411,16 @@ export function TimeTrackerProvider({ children }) {
       await deleteActiveTimer()
 
       setTimer(null)
+      broadcastTimerChanged()
     } catch (err) {
+      if (isReconcilableConflict(err)) {
+        setTimer(
+          normalizeActiveTimer(err.data.activeTimer)
+        )
+
+        return
+      }
+
       console.error(
         'Failed to cancel active timer:',
         err
@@ -325,10 +444,13 @@ export function TimeTrackerProvider({ children }) {
     setError('')
 
     try {
-      const { timeEntry: savedEntry } =
-        await stopActiveTimerAction(Date.now())
+      const {
+        timeEntry: savedEntry,
+        activeTimer: savedTimer,
+      } = await stopActiveTimerAction(Date.now())
 
-      setTimer(null)
+      setTimer(normalizeActiveTimer(savedTimer))
+      broadcastTimerChanged()
 
       // Ilmoitetaan muille komponenteille,
       // että palvelimella oleva tracked time muuttui.
@@ -338,6 +460,20 @@ export function TimeTrackerProvider({ children }) {
 
       return savedEntry
     } catch (err) {
+      if (isReconcilableConflict(err)) {
+        setTimer(
+          normalizeActiveTimer(err.data.activeTimer)
+        )
+
+        // Another tab already stopped it and saved the entry, so this
+        // tab's own tracked-time views need to catch up too.
+        setTimeEntriesVersion(
+          (version) => version + 1
+        )
+
+        return null
+      }
+
       console.error(
         'Failed to save time entry:',
         err

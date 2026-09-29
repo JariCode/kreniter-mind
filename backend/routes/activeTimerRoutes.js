@@ -88,6 +88,7 @@ router.delete('/', async (req, res, next) => {
     if (!activeTimer) {
       return res.status(404).json({
         error: 'Active timer not found',
+        activeTimer: null,
       })
     }
 
@@ -131,8 +132,15 @@ router.post('/start', async (req, res, next) => {
     )
 
     if (error === 'ACTIVE_TIMER_EXISTS') {
+      // Another tab may have started this timer -- send back the current
+      // state so the caller can reconcile instead of just erroring out.
+      const currentTimer = await ActiveTimer.findOne({
+        userId: req.user._id,
+      })
+
       return res.status(409).json({
         error: 'An active timer already exists',
+        activeTimer: currentTimer,
       })
     }
 
@@ -176,8 +184,13 @@ router.post('/switch', async (req, res, next) => {
     )
 
     if (error === 'SAME_TASK_ACTIVE') {
+      const currentTimer = await ActiveTimer.findOne({
+        userId: req.user._id,
+      })
+
       return res.status(409).json({
         error: 'A timer for this task is already active.',
+        activeTimer: currentTimer,
       })
     }
 
@@ -201,16 +214,22 @@ router.post('/pause', async (req, res, next) => {
     })
 
     if (!timer) {
+      // No timer at all (e.g. another tab already stopped/cancelled it) --
+      // the caller reconciles to "no active timer" instead of erroring.
       return res.status(404).json({
         error: 'Active timer not found',
+        activeTimer: null,
       })
     }
 
     const { error } = await pauseActiveTimer(timer, now)
 
     if (error === 'NOT_RUNNING') {
+      // Already paused by another tab/action -- send back its current
+      // state so the caller can reconcile instead of just erroring out.
       return res.status(409).json({
         error: 'The active timer is not running.',
+        activeTimer: timer,
       })
     }
 
@@ -236,6 +255,7 @@ router.post('/resume', async (req, res, next) => {
     if (!timer) {
       return res.status(404).json({
         error: 'Active timer not found',
+        activeTimer: null,
       })
     }
 
@@ -244,6 +264,7 @@ router.post('/resume', async (req, res, next) => {
     if (error === 'NOT_PAUSED') {
       return res.status(409).json({
         error: 'The active timer is not paused.',
+        activeTimer: timer,
       })
     }
 
@@ -270,6 +291,7 @@ router.post('/stop', async (req, res, next) => {
     if (!timer) {
       return res.status(404).json({
         error: 'Active timer not found',
+        activeTimer: null,
       })
     }
 
@@ -279,7 +301,7 @@ router.post('/stop', async (req, res, next) => {
       now
     )
 
-    res.json({ timeEntry })
+    res.json({ timeEntry, activeTimer: null })
   } catch (error) {
     next(error)
   }
