@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const ActiveTimer = require('../models/ActiveTimer')
 const TimeEntry = require('../models/TimeEntry')
 
@@ -51,6 +52,10 @@ async function findActiveTimer(userId) {
 // Stops the given (already-fetched, hydrated) timer and saves its tracked
 // time as a TimeEntry: whole rounded minutes, minimum 1 if any time was
 // tracked. `now` is the caller-supplied stop moment.
+//
+// The create and the delete run inside one MongoDB transaction so they can
+// never partially succeed -- either both happen, or neither does, even if
+// the delete fails after the create would otherwise have gone through.
 async function stopActiveTimerAndSaveEntry(
   userId,
   timer,
@@ -60,16 +65,35 @@ async function stopActiveTimerAndSaveEntry(
   const durationInMinutes =
     elapsedMsToDurationMinutes(finalElapsedMs)
 
-  const timeEntry = await TimeEntry.create({
-    userId,
-    projectId: timer.projectId,
-    taskId: timer.taskId,
-    description: timer.description,
-    duration: durationInMinutes,
-    startedAt: timer.startedAt,
-  })
+  const session = await mongoose.startSession()
+  let timeEntry
 
-  await ActiveTimer.deleteOne({ _id: timer._id })
+  try {
+    await session.withTransaction(async () => {
+      const [createdEntry] = await TimeEntry.create(
+        [
+          {
+            userId,
+            projectId: timer.projectId,
+            taskId: timer.taskId,
+            description: timer.description,
+            duration: durationInMinutes,
+            startedAt: timer.startedAt,
+          },
+        ],
+        { session }
+      )
+
+      timeEntry = createdEntry
+
+      await ActiveTimer.deleteOne(
+        { _id: timer._id },
+        { session }
+      )
+    })
+  } finally {
+    await session.endSession()
+  }
 
   return timeEntry
 }
