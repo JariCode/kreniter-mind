@@ -5,23 +5,46 @@ export function getActiveTimer() {
   return apiRequest('/active-timer')
 }
 
-// Create active timer
-export function createActiveTimer(timer) {
-  return apiRequest('/active-timer', {
+// Start a new timer. `now` is the client's own Date.now() at click time,
+// so the server's elapsed-time math is based on the same instant the UI
+// already reflects, not on whenever the request happens to arrive.
+export function startActiveTimerAction({
+  taskId,
+  projectId,
+  description,
+  now,
+}) {
+  return apiRequest('/active-timer/start', {
     method: 'POST',
-    body: JSON.stringify(timer),
+    body: JSON.stringify({ taskId, projectId, description, now }),
   })
 }
 
-// Update active timer
-export function updateActiveTimer(timer) {
-  return apiRequest('/active-timer', {
-    method: 'PATCH',
-    body: JSON.stringify(timer),
+// Pause the active timer.
+export function pauseActiveTimerAction(now) {
+  return apiRequest('/active-timer/pause', {
+    method: 'POST',
+    body: JSON.stringify({ now }),
   })
 }
 
-// Delete active timer
+// Resume the active timer.
+export function resumeActiveTimerAction(now) {
+  return apiRequest('/active-timer/resume', {
+    method: 'POST',
+    body: JSON.stringify({ now }),
+  })
+}
+
+// Stop the active timer and save its tracked time as a time entry.
+export function stopActiveTimerAction(now) {
+  return apiRequest('/active-timer/stop', {
+    method: 'POST',
+    body: JSON.stringify({ now }),
+  })
+}
+
+// Delete active timer (discard without saving a time entry)
 export function deleteActiveTimer() {
   return apiRequest('/active-timer', {
     method: 'DELETE',

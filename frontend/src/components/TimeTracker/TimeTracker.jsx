@@ -6,12 +6,13 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { createTimeEntry } from '../../api/timeEntries'
 import {
-  createActiveTimer,
   deleteActiveTimer,
   getActiveTimer,
-  updateActiveTimer,
+  pauseActiveTimerAction,
+  resumeActiveTimerAction,
+  startActiveTimerAction,
+  stopActiveTimerAction,
 } from '../../api/activeTimer'
 
 const TimeTrackerContext = createContext(null)
@@ -153,7 +154,12 @@ export function TimeTrackerProvider({ children }) {
       setNow(currentTime)
 
       // Tallennetaan aktiivinen timer tietokantaan.
-      createActiveTimer(newTimer).catch((err) => {
+      startActiveTimerAction({
+        taskId,
+        projectId,
+        description,
+        now: currentTime,
+      }).catch((err) => {
         console.error(
           'Failed to save active timer:',
           err
@@ -185,29 +191,27 @@ export function TimeTrackerProvider({ children }) {
 
       const updatedTimer = {
         ...currentTimer,
-        elapsedMs:
-          currentTimer.elapsedMs +
-          (currentTime -
-            currentTimer.segmentStartedAt),
+        elapsedMs: getElapsedMs(
+          currentTimer,
+          currentTime
+        ),
         segmentStartedAt: null,
         status: 'paused',
       }
 
-      updateActiveTimer({
-        elapsedMs: updatedTimer.elapsedMs,
-        segmentStartedAt: null,
-        status: 'paused',
-      }).catch((err) => {
-        console.error(
-          'Failed to pause active timer:',
-          err
-        )
+      pauseActiveTimerAction(currentTime).catch(
+        (err) => {
+          console.error(
+            'Failed to pause active timer:',
+            err
+          )
 
-        setError(
-          err.message ||
-            'Failed to pause active timer.'
-        )
-      })
+          setError(
+            err.message ||
+              'Failed to pause active timer.'
+          )
+        }
+      )
 
       return updatedTimer
     })
@@ -232,21 +236,19 @@ export function TimeTrackerProvider({ children }) {
         status: 'running',
       }
 
-      updateActiveTimer({
-        segmentStartedAt:
-          new Date(currentTime).toISOString(),
-        status: 'running',
-      }).catch((err) => {
-        console.error(
-          'Failed to resume active timer:',
-          err
-        )
+      resumeActiveTimerAction(currentTime).catch(
+        (err) => {
+          console.error(
+            'Failed to resume active timer:',
+            err
+          )
 
-        setError(
-          err.message ||
-            'Failed to resume active timer.'
-        )
-      })
+          setError(
+            err.message ||
+              'Failed to resume active timer.'
+          )
+        }
+      )
 
       return updatedTimer
     })
@@ -313,32 +315,12 @@ export function TimeTrackerProvider({ children }) {
       return null
     }
 
-    const finalElapsedMs = getElapsedMs(
-      timer,
-      Date.now()
-    )
-
-    const durationInMinutes =
-      finalElapsedMs > 0
-        ? Math.max(
-            1,
-            Math.round(finalElapsedMs / 60000)
-          )
-        : 0
-
     setIsSaving(true)
     setError('')
 
     try {
-      const savedEntry = await createTimeEntry({
-        projectId: timer.projectId,
-        taskId: timer.taskId,
-        description: timer.description,
-        duration: durationInMinutes,
-        startedAt: timer.startedAt,
-      })
-
-      await deleteActiveTimer()
+      const { timeEntry: savedEntry } =
+        await stopActiveTimerAction(Date.now())
 
       setTimer(null)
 

@@ -9,13 +9,6 @@ export function getTimeEntry(id) {
   return apiRequest(`/time-entries/${id}`)
 }
 
-export function createTimeEntry(timeEntry) {
-  return apiRequest('/time-entries', {
-    method: 'POST',
-    body: JSON.stringify(timeEntry),
-  })
-}
-
 export function updateTimeEntry(id, timeEntry) {
   return apiRequest(`/time-entries/${id}`, {
     method: 'PATCH',

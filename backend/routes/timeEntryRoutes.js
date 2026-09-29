@@ -38,60 +38,6 @@ router.get('/:id', async (req, res, next) => {
   }
 })
 
-// Create time entry
-router.post('/', async (req, res, next) => {
-  try {
-    if (req.body.projectId) {
-      const project = await Project.findOne({
-        _id: req.body.projectId,
-        userId: req.user._id,
-      })
-
-      if (!project) {
-        return res.status(404).json({
-          error: 'Project not found',
-        })
-      }
-    }
-
-    if (req.body.taskId) {
-      const task = await Task.findOne({
-        _id: req.body.taskId,
-        userId: req.user._id,
-      })
-
-      if (!task) {
-        return res.status(404).json({
-          error: 'Task not found',
-        })
-      }
-
-      if (
-        req.body.projectId &&
-        task.projectId &&
-        String(task.projectId) !== String(req.body.projectId)
-      ) {
-        return res.status(400).json({
-          error: 'Task must belong to the selected project',
-        })
-      }
-    }
-
-    const timeEntry = await TimeEntry.create({
-      userId: req.user._id,
-      projectId: req.body.projectId,
-      taskId: req.body.taskId,
-      description: req.body.description,
-      duration: req.body.duration,
-      startedAt: req.body.startedAt,
-    })
-
-    res.status(201).json(timeEntry)
-  } catch (error) {
-    next(error)
-  }
-})
-
 // Update time entry
 router.patch('/:id', async (req, res, next) => {
   try {
