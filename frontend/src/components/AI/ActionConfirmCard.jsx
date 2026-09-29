@@ -8,6 +8,12 @@ const STATUS_LABELS = {
   failed: 'Failed',
 }
 
+const CALENDAR_ACTION_TYPES = new Set([
+  'create_calendar_event',
+  'update_calendar_event',
+  'delete_calendar_event',
+])
+
 // Shows one AI-proposed write action with Confirm/Cancel buttons while it
 // is pending, then its resolved status once it isn't. Used by both
 // Assistant.jsx and the dashboard AI chat in MainContent.jsx.
@@ -35,6 +41,15 @@ function ActionConfirmCard({ action, onUpdate }) {
       setError('')
 
       const response = await confirmAction(action._id)
+
+      if (
+        response.status === 'executed' &&
+        CALENDAR_ACTION_TYPES.has(action.type)
+      ) {
+        // Lets the Calendar page and dashboard widget refresh themselves
+        // immediately if they happen to be open right now.
+        window.dispatchEvent(new Event('calendar-events-changed'))
+      }
 
       onUpdate(
         {

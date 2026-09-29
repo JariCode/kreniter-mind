@@ -150,6 +150,28 @@ function CalendarWidget({ onViewAll }) {
     }
   }, [tooltip])
 
+  // Keeps the widget in sync when a calendar event is created, updated or
+  // deleted elsewhere -- in particular when the AI Assistant confirms one
+  // of its calendar actions while this widget is visible on the dashboard.
+  useEffect(() => {
+    function handleCalendarEventsChanged() {
+      refreshEvents()
+    }
+
+    window.addEventListener(
+      'calendar-events-changed',
+      handleCalendarEventsChanged
+    )
+
+    return () => {
+      window.removeEventListener(
+        'calendar-events-changed',
+        handleCalendarEventsChanged
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayKey])
+
   async function refreshEvents() {
     const data = await getCalendarEvents(today, today)
     setEvents(data)

@@ -6,7 +6,13 @@ const TimeEntry = require('../models/TimeEntry')
 const ActiveTimer = require('../models/ActiveTimer')
 const File = require('../models/File')
 const Folder = require('../models/Folder')
+const CalendarEvent = require('../models/CalendarEvent')
 const AIPendingAction = require('../models/AIPendingAction')
+const {
+  MAX_RANGE_DAYS: MAX_CALENDAR_RANGE_DAYS,
+  parseDateOnly,
+  buildEventData: buildCalendarEventData,
+} = require('../utils/calendarEventValidation')
 const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
 const {
   getElapsedMs,
@@ -244,6 +250,31 @@ async function resolveOwnedNote(userId, noteId) {
   }
 }
 
+async function resolveOwnedCalendarEvent(userId, eventId) {
+  if (
+    typeof eventId !== 'string' ||
+    !mongoose.Types.ObjectId.isValid(eventId)
+  ) {
+    return {
+      error: 'Invalid eventId',
+    }
+  }
+
+  const event = await scopedFindOne(CalendarEvent, userId, {
+    _id: eventId,
+  })
+
+  if (!event) {
+    return {
+      error: 'Not found',
+    }
+  }
+
+  return {
+    event,
+  }
+}
+
 function truncateNoteContent(note) {
   const content = note.content || ''
 
@@ -468,6 +499,7 @@ async function getProjectContext(userId, args) {
     tasks,
     notes,
     files,
+    calendarEvents,
     estimatedByProject,
     trackedByProject,
   ] = await Promise.all([
@@ -492,6 +524,12 @@ async function getProjectContext(userId, args) {
         limit: MAX_ROWS + 1,
       }
     ),
+    scopedFind(
+      CalendarEvent,
+      userId,
+      { projectId: project._id },
+      { sort: { date: 1 }, limit: MAX_ROWS + 1 }
+    ),
     // Unbounded (not capped at MAX_ROWS), so the project-level totals below
     // stay accurate even when the task list itself gets truncated.
     sumEstimatedMinutesByProjectId(userId, [project._id]),
@@ -501,10 +539,12 @@ async function getProjectContext(userId, args) {
   const tasksTruncated = tasks.length > MAX_ROWS
   const notesTruncated = notes.length > MAX_ROWS
   const filesTruncated = files.length > MAX_ROWS
+  const calendarEventsTruncated = calendarEvents.length > MAX_ROWS
 
   const boundedTasks = tasks.slice(0, MAX_ROWS)
   const boundedNotes = notes.slice(0, MAX_ROWS)
   const boundedFiles = files.slice(0, MAX_ROWS)
+  const boundedCalendarEvents = calendarEvents.slice(0, MAX_ROWS)
 
   const taskIds = boundedTasks.map((task) => task._id)
   const trackedMinutesByTaskId = await sumTrackedTimeByTaskId(
@@ -543,11 +583,13 @@ async function getProjectContext(userId, args) {
     tasks: taskTree,
     notes: boundedNotesWithTruncatedContent,
     files: boundedFiles,
+    calendarEvents: boundedCalendarEvents,
     totals: projectTotals,
     truncated:
       tasksTruncated ||
       notesTruncated ||
       filesTruncated ||
+      calendarEventsTruncated ||
       notesTruncatedByLength,
   }
 
@@ -558,6 +600,7 @@ async function getProjectContext(userId, args) {
     JSON.stringify(result).length > MAX_PROJECT_CONTEXT_LENGTH &&
     (result.notes.length > 0 ||
       result.files.length > 0 ||
+      result.calendarEvents.length > 0 ||
       result.tasks.length > 0)
   ) {
     result.truncated = true
@@ -569,6 +612,11 @@ async function getProjectContext(userId, args) {
 
     if (result.files.length > 0) {
       result.files.pop()
+      continue
+    }
+
+    if (result.calendarEvents.length > 0) {
+      result.calendarEvents.pop()
       continue
     }
 
@@ -783,6 +831,39 @@ async function listFiles(userId, args) {
   }
 }
 
+async function listCalendarEvents(userId, args) {
+  const from = parseDateOnly(args.from)
+  const to = parseDateOnly(args.to)
+
+  if (!from || !to) {
+    return { error: 'from and to must be valid dates' }
+  }
+
+  if (to < from) {
+    return { error: 'to must not be before from' }
+  }
+
+  const rangeDays = Math.round((to - from) / 86400000) + 1
+
+  if (rangeDays > MAX_CALENDAR_RANGE_DAYS) {
+    return { error: 'Date range is too long' }
+  }
+
+  const events = await scopedFind(
+    CalendarEvent,
+    userId,
+    { date: { $gte: from, $lte: to } },
+    { sort: { date: 1, startTime: 1 }, limit: MAX_ROWS + 1 }
+  )
+
+  const truncated = events.length > MAX_ROWS
+
+  return {
+    calendarEvents: events.slice(0, MAX_ROWS),
+    truncated,
+  }
+}
+
 // --- Write tools (create a pending action, never change data directly) ---
 //
 // Every write tool below only validates its arguments and saves an
@@ -865,6 +946,36 @@ function formatDurationMinutes(minutes) {
   }
 
   return `${hours} h ${remainingMinutes} min`
+}
+
+const WEEKDAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+]
+
+// "Thursday 1.10.2026" -- CalendarEvent.date is a UTC-midnight date-only
+// value (parsed from a "YYYY-MM-DD" string), so the UTC getters are used
+// here rather than local ones to avoid a server-timezone-dependent shift.
+function formatEventDateForSummary(date) {
+  const weekday = WEEKDAY_NAMES[date.getUTCDay()]
+
+  return `${weekday} ${date.getUTCDate()}.${
+    date.getUTCMonth() + 1
+  }.${date.getUTCFullYear()}`
+}
+
+// "Thursday 1.10.2026 10:00–11:00" or "Thursday 1.10.2026, all day".
+function formatEventDateTimeLabel(event) {
+  const dateLabel = formatEventDateForSummary(event.date)
+
+  return event.allDay
+    ? `${dateLabel}, all day`
+    : `${dateLabel} ${event.startTime}–${event.endTime}`
 }
 
 // Saves a pending action and returns the tool result the model sees. This
@@ -1479,6 +1590,98 @@ async function deleteNoteTool(context, args) {
   return createPendingAction(context, 'delete_note', note._id, {}, summary)
 }
 
+async function createCalendarEventTool(context, args) {
+  const { userId } = context
+
+  const result = await buildCalendarEventData(userId, args)
+
+  if (result.error) {
+    return { error: result.error }
+  }
+
+  const payload = result.data
+
+  const projectName = await describeProjectName(
+    userId,
+    payload.projectId
+  )
+
+  const summary = `Create event '${payload.title}' on ${formatEventDateTimeLabel(
+    payload
+  )} (project: ${projectName}).`
+
+  return createPendingAction(
+    context,
+    'create_calendar_event',
+    null,
+    payload,
+    summary
+  )
+}
+
+async function updateCalendarEventTool(context, args) {
+  const { userId } = context
+
+  const { event: currentEvent, error: eventError } =
+    await resolveOwnedCalendarEvent(userId, args.eventId)
+
+  if (eventError) {
+    return { error: eventError }
+  }
+
+  const result = await buildCalendarEventData(userId, args)
+
+  if (result.error) {
+    return { error: result.error }
+  }
+
+  const payload = result.data
+
+  const projectName = await describeProjectName(
+    userId,
+    payload.projectId
+  )
+
+  const summary = `Update event '${payload.title}' to ${formatEventDateTimeLabel(
+    payload
+  )} (project: ${projectName}).`
+
+  return createPendingAction(
+    context,
+    'update_calendar_event',
+    currentEvent._id,
+    payload,
+    summary
+  )
+}
+
+async function deleteCalendarEventTool(context, args) {
+  const { userId } = context
+
+  const { event, error } = await resolveOwnedCalendarEvent(
+    userId,
+    args.eventId
+  )
+
+  if (error) {
+    return { error }
+  }
+
+  const projectName = await describeProjectName(userId, event.projectId)
+
+  const summary = `Delete event '${event.title}' on ${formatEventDateTimeLabel(
+    event
+  )} (project: ${projectName}).`
+
+  return createPendingAction(
+    context,
+    'delete_calendar_event',
+    event._id,
+    {},
+    summary
+  )
+}
+
 async function createProjectTool(context, args) {
   if (typeof args.name !== 'string' || !args.name.trim()) {
     return { error: 'Name is required' }
@@ -2024,6 +2227,59 @@ async function executeUpdateProject(userId, targetId, payload) {
   return { status: 'executed', result: { projectId: project._id } }
 }
 
+async function executeCreateCalendarEvent(userId, payload) {
+  if (payload.projectId) {
+    const project = await scopedFindOne(Project, userId, {
+      _id: payload.projectId,
+    })
+
+    if (!project) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  const event = await CalendarEvent.create({ userId, ...payload })
+
+  return { status: 'executed', result: { eventId: event._id } }
+}
+
+async function executeUpdateCalendarEvent(userId, targetId, payload) {
+  const event = await CalendarEvent.findOne({ _id: targetId, userId })
+
+  if (!event) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  if (payload.projectId) {
+    const project = await scopedFindOne(Project, userId, {
+      _id: payload.projectId,
+    })
+
+    if (!project) {
+      return { status: 'failed', result: { error: 'Not found' } }
+    }
+  }
+
+  Object.assign(event, payload)
+
+  await event.save()
+
+  return { status: 'executed', result: { eventId: event._id } }
+}
+
+async function executeDeleteCalendarEvent(userId, targetId) {
+  const event = await CalendarEvent.findOneAndDelete({
+    _id: targetId,
+    userId,
+  })
+
+  if (!event) {
+    return { status: 'failed', result: { error: 'Not found' } }
+  }
+
+  return { status: 'executed', result: { eventId: targetId } }
+}
+
 async function executeStartTimer(userId, payload) {
   const task = await scopedFindOne(Task, userId, {
     _id: payload.taskId,
@@ -2149,6 +2405,16 @@ async function executeConfirmedAction(action) {
           action.targetId,
           payload
         )
+      case 'create_calendar_event':
+        return await executeCreateCalendarEvent(userId, payload)
+      case 'update_calendar_event':
+        return await executeUpdateCalendarEvent(
+          userId,
+          action.targetId,
+          payload
+        )
+      case 'delete_calendar_event':
+        return await executeDeleteCalendarEvent(userId, action.targetId)
       case 'start_timer':
         return await executeStartTimer(userId, payload)
       case 'pause_timer':
@@ -2315,6 +2581,29 @@ const toolDefinitions = [
         },
       },
       required: ['projectId', 'folderId'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'list_calendar_events',
+    description:
+      "List the user's calendar events in a date range (inclusive, at most 366 days), with title, date, allDay, start/end time, description and project.",
+    parameters: {
+      type: 'object',
+      properties: {
+        from: {
+          type: 'string',
+          description: 'Start of the date range, "YYYY-MM-DD".',
+        },
+        to: {
+          type: 'string',
+          description:
+            'End of the date range (inclusive), "YYYY-MM-DD".',
+        },
+      },
+      required: ['from', 'to'],
       additionalProperties: false,
     },
     strict: true,
@@ -2648,6 +2937,135 @@ const toolDefinitions = [
   },
   {
     type: 'function',
+    name: 'create_calendar_event',
+    description:
+      'Propose creating a new calendar event. Only creates a pending action for the user to confirm — nothing is created until they confirm it.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Event title (required, max 200 characters).',
+        },
+        date: {
+          type: 'string',
+          description: 'Event date, "YYYY-MM-DD".',
+        },
+        allDay: {
+          type: ['boolean', 'null'],
+          description:
+            'true or null for an all-day event, false for a timed event.',
+        },
+        startTime: {
+          type: ['string', 'null'],
+          description:
+            'Start time "HH:MM" (required when allDay is false), or null.',
+        },
+        endTime: {
+          type: ['string', 'null'],
+          description:
+            'End time "HH:MM", after startTime (required when allDay is false), or null.',
+        },
+        description: {
+          type: ['string', 'null'],
+          description: 'Event description, or null for none.',
+        },
+        projectId: {
+          type: ['string', 'null'],
+          description: 'Project ID, or null for no project.',
+        },
+      },
+      required: [
+        'title',
+        'date',
+        'allDay',
+        'startTime',
+        'endTime',
+        'description',
+        'projectId',
+      ],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'update_calendar_event',
+    description:
+      'Propose replacing an existing calendar event with a full new set of fields (matching how editing an event works in the app). Only creates a pending action; nothing changes until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        eventId: {
+          type: 'string',
+          description: 'The calendar event ID to update.',
+        },
+        title: {
+          type: 'string',
+          description: 'Event title (required, max 200 characters).',
+        },
+        date: {
+          type: 'string',
+          description: 'Event date, "YYYY-MM-DD".',
+        },
+        allDay: {
+          type: ['boolean', 'null'],
+          description:
+            'true or null for an all-day event, false for a timed event.',
+        },
+        startTime: {
+          type: ['string', 'null'],
+          description:
+            'Start time "HH:MM" (required when allDay is false), or null.',
+        },
+        endTime: {
+          type: ['string', 'null'],
+          description:
+            'End time "HH:MM", after startTime (required when allDay is false), or null.',
+        },
+        description: {
+          type: ['string', 'null'],
+          description: 'Event description, or null for none.',
+        },
+        projectId: {
+          type: ['string', 'null'],
+          description: 'Project ID, or null for no project.',
+        },
+      },
+      required: [
+        'eventId',
+        'title',
+        'date',
+        'allDay',
+        'startTime',
+        'endTime',
+        'description',
+        'projectId',
+      ],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
+    name: 'delete_calendar_event',
+    description:
+      'Propose deleting a calendar event. Only creates a pending action; nothing is deleted until the user confirms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        eventId: {
+          type: 'string',
+          description: 'The calendar event ID to delete.',
+        },
+      },
+      required: ['eventId'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: 'function',
     name: 'start_timer',
     description:
       "Propose starting a time tracker for a task. If another timer is already running or paused on a different task, confirming this stops it (saving its tracked time as a time entry, the same way the app's own stop button does) and starts the new one. Only creates a pending action; nothing changes until the user confirms.",
@@ -2726,6 +3144,8 @@ const handlers = {
     listTimeEntries(context.userId, args),
   get_active_timer: (context) => getActiveTimer(context.userId),
   list_files: (context, args) => listFiles(context.userId, args),
+  list_calendar_events: (context, args) =>
+    listCalendarEvents(context.userId, args),
   create_task: (context, args) => createTaskTool(context, args),
   update_task: (context, args) => updateTaskTool(context, args),
   delete_task: (context, args) => deleteTaskTool(context, args),
@@ -2734,6 +3154,12 @@ const handlers = {
   delete_note: (context, args) => deleteNoteTool(context, args),
   create_project: (context, args) => createProjectTool(context, args),
   update_project: (context, args) => updateProjectTool(context, args),
+  create_calendar_event: (context, args) =>
+    createCalendarEventTool(context, args),
+  update_calendar_event: (context, args) =>
+    updateCalendarEventTool(context, args),
+  delete_calendar_event: (context, args) =>
+    deleteCalendarEventTool(context, args),
   start_timer: (context, args) => startTimerTool(context, args),
   pause_timer: (context) => pauseTimerTool(context),
   resume_timer: (context) => resumeTimerTool(context),

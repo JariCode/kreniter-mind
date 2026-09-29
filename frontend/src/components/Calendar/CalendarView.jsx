@@ -183,6 +183,37 @@ const CalendarView = forwardRef(function CalendarView(
     }
   }, [tooltip])
 
+  async function refreshEvents() {
+    const refreshed = await getCalendarEvents(
+      range.from,
+      range.to
+    )
+
+    setEvents(refreshed)
+  }
+
+  // Keeps this view in sync when a calendar event is created, updated or
+  // deleted elsewhere -- in particular when the AI Assistant confirms one
+  // of its calendar actions while the Calendar page is open.
+  useEffect(() => {
+    function handleCalendarEventsChanged() {
+      refreshEvents()
+    }
+
+    window.addEventListener(
+      'calendar-events-changed',
+      handleCalendarEventsChanged
+    )
+
+    return () => {
+      window.removeEventListener(
+        'calendar-events-changed',
+        handleCalendarEventsChanged
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range])
+
   function changeView(nextView) {
     setView(nextView)
     writeStoredView(storageKey, nextView)
@@ -248,12 +279,7 @@ const CalendarView = forwardRef(function CalendarView(
         await createCalendarEvent(data)
       }
 
-      const refreshed = await getCalendarEvents(
-        range.from,
-        range.to
-      )
-
-      setEvents(refreshed)
+      await refreshEvents()
       setFormDialog(null)
     } catch (err) {
       setFormError(err.message)
@@ -277,12 +303,7 @@ const CalendarView = forwardRef(function CalendarView(
 
       await deleteCalendarEvent(eventToDelete._id)
 
-      const refreshed = await getCalendarEvents(
-        range.from,
-        range.to
-      )
-
-      setEvents(refreshed)
+      await refreshEvents()
       setEventToDelete(null)
     } catch (err) {
       setError(err.message)

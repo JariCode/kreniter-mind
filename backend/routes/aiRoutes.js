@@ -10,6 +10,9 @@ const {
   executeAssistantTool,
   executeConfirmedAction,
 } = require('../ai/assistantTools')
+const {
+  formatCurrentDateTimeForAssistant,
+} = require('../utils/currentDateTime')
 
 const router = express.Router()
 
@@ -46,10 +49,16 @@ const assistantTools = [
   generateImageTool,
 ]
 
-const systemInstructions = `
+// Rebuilt on every request so the current-date line is always accurate,
+// including across a conversation that spans midnight.
+function buildSystemInstructions() {
+  return `
 You are Kreniter, the built-in AI assistant of Kreniter Mind.
 
 Help the user work with their projects, tasks, notes, time tracking and other information in Kreniter Mind.
+
+Current date and time: ${formatCurrentDateTimeForAssistant()}.
+Relative days (e.g. "tomorrow", "next Thursday", "huomenna") are calculated from this date and time, in the Europe/Helsinki timezone.
 
 Be clear, practical and concise.
 Answer in the same language as the user.
@@ -67,8 +76,11 @@ Before calling create_task, if the user has not said which project it belongs to
 
 Before calling create_note, if the user has not said which project it belongs to or what priority it should have, ask for both in a single message before calling the tool.
 
+Before calling create_calendar_event, if the user has not said which day the event is on, whether it is an all-day event or has a specific time, or which project it belongs to, ask for all of that missing information in a single message before calling the tool.
+
 Never re-ask for a piece of information the user has already provided earlier in the conversation.
 `
+}
 
 // Get all conversations
 router.get('/conversations', async (req, res, next) => {
@@ -647,7 +659,7 @@ router.post(
               model:
                 process.env.OPENAI_MODEL ||
                 'gpt-5.6-terra',
-              instructions: `${systemInstructions}
+              instructions: `${buildSystemInstructions()}
 
 When the user asks you to create, generate, draw, or make an image, decide yourself whether an image should actually be generated. If an image is appropriate and you can fulfill the request, call the generate_image function. Do not merely say that you cannot generate an image when the generate_image function can fulfill the request. If the user is not asking for an image, answer normally without calling the function.`,
               input: currentInput,
