@@ -70,7 +70,7 @@ router.patch('/:id', async (req, res, next) => {
         color: req.body.color,
       },
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     )

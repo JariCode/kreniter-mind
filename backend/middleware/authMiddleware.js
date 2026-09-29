@@ -15,7 +15,7 @@ async function authMiddleware(req, res, next) {
       { clerkId },
       { clerkId },
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
         setDefaultsOnInsert: true,
       }

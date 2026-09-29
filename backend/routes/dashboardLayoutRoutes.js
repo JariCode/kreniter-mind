@@ -47,7 +47,7 @@ router.put('/', async (req, res, next) => {
         widgets,
       },
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
         runValidators: true,
         setDefaultsOnInsert: true,

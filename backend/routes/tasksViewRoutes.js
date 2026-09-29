@@ -37,7 +37,7 @@ router.put('/', async (req, res, next) => {
           selectedProjectId,
         },
         {
-          new: true,
+          returnDocument: 'after',
           upsert: true,
           runValidators: true,
           setDefaultsOnInsert: true,

@@ -888,7 +888,7 @@ router.post(
         {
           $set: { status: 'executing' },
         },
-        { new: true }
+        { returnDocument: 'after' }
       )
 
       if (!claimed) {
@@ -972,7 +972,7 @@ router.post(
         {
           $set: { status: 'cancelled' },
         },
-        { new: true }
+        { returnDocument: 'after' }
       )
 
       if (!cancelled) {
