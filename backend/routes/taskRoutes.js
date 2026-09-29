@@ -2,6 +2,10 @@ const express = require('express')
 const Task = require('../models/Task')
 const Project = require('../models/Project')
 const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
+const {
+  getTaskDeletePreview,
+  deleteTask,
+} = require('../utils/deleteActions')
 
 const router = express.Router()
 
@@ -182,15 +186,41 @@ router.patch('/:id', async (req, res, next) => {
   }
 })
 
-// Delete task
+// Preview the consequences of deleting a task: tracked time that will be
+// removed with it, and direct subtasks that will become parent-less.
+router.get('/:id/delete-preview', async (req, res, next) => {
+  try {
+    const preview = await getTaskDeletePreview(
+      req.user._id,
+      req.params.id
+    )
+
+    if (preview.error) {
+      return res.status(404).json({
+        error: 'Task not found',
+      })
+    }
+
+    res.json({
+      trackedMinutes: preview.trackedMinutes,
+      subtasks: preview.subtasks,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Delete task, without leaving orphan rows: its own TimeEntries and
+// active timer (if any) go with it, and its direct subtasks are detached
+// (parentTaskId -> null) rather than deleted.
 router.delete('/:id', async (req, res, next) => {
   try {
-    const task = await Task.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id,
-    })
+    const result = await deleteTask(
+      req.user._id,
+      req.params.id
+    )
 
-    if (!task) {
+    if (result.error) {
       return res.status(404).json({
         error: 'Task not found',
       })

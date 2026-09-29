@@ -1,5 +1,9 @@
 const express = require('express')
 const Project = require('../models/Project')
+const {
+  getProjectDeletePreview,
+  deleteProject,
+} = require('../utils/deleteActions')
 
 const router = express.Router()
 
@@ -87,17 +91,60 @@ router.patch('/:id', async (req, res, next) => {
   }
 })
 
-// Delete project
-router.delete('/:id', async (req, res, next) => {
+// Preview the consequences of deleting a project: what still blocks it
+// (tasks, notes, folders, files), and tracked time that will be removed
+// with it if it's empty.
+router.get('/:id/delete-preview', async (req, res, next) => {
   try {
-    const project = await Project.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id,
-    })
+    const preview = await getProjectDeletePreview(
+      req.user._id,
+      req.params.id
+    )
 
-    if (!project) {
+    if (preview.error) {
       return res.status(404).json({
         error: 'Project not found',
+      })
+    }
+
+    res.json({
+      taskCount: preview.taskCount,
+      noteCount: preview.noteCount,
+      folderCount: preview.folderCount,
+      fileCount: preview.fileCount,
+      trackedMinutes: preview.trackedMinutes,
+      isEmpty: preview.isEmpty,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Delete project, without leaving orphan rows. Refuses (409) if the
+// project still has tasks, notes, folders or files -- those must be
+// removed first, so nothing is ever cascade-deleted. Otherwise deletes
+// the project along with any TimeEntries still pointing at it, and
+// resets any saved view that had this project selected.
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const result = await deleteProject(
+      req.user._id,
+      req.params.id
+    )
+
+    if (result.error) {
+      return res.status(404).json({
+        error: 'Project not found',
+      })
+    }
+
+    if (result.blocked) {
+      return res.status(409).json({
+        error: 'Project is not empty',
+        taskCount: result.taskCount,
+        noteCount: result.noteCount,
+        folderCount: result.folderCount,
+        fileCount: result.fileCount,
       })
     }
 

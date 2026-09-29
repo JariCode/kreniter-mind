@@ -961,6 +961,11 @@ router.post(
       // action must end up executed or failed, never stuck in executing.
       let finalStatus = 'failed'
       let finalResult = { error: 'Execution failed' }
+      // Some action types (e.g. delete_task) recompute their consequences
+      // fresh at execution time and report an updated summary here, since
+      // the proposal-time summary may be stale by the time it's confirmed.
+      // Falls back to the original summary when an action doesn't provide one.
+      let finalSummary = claimed.summary
 
       try {
         // Re-validates ownership and target existence again right before
@@ -970,6 +975,7 @@ router.post(
 
         finalStatus = outcome.status
         finalResult = outcome.result
+        finalSummary = outcome.summary || claimed.summary
       } catch (executionError) {
         console.error(
           'Confirmed action execution threw:',
@@ -1001,7 +1007,7 @@ router.post(
         role: 'assistant',
         content: buildActionResultMessage(
           finalStatus,
-          claimed.summary,
+          finalSummary,
           finalResult
         ),
       })
@@ -1009,7 +1015,7 @@ router.post(
       res.json({
         status: finalStatus,
         result: finalResult,
-        summary: claimed.summary,
+        summary: finalSummary,
         message: resultMessage,
       })
     } catch (error) {

@@ -16,6 +16,10 @@ const {
   pauseActiveTimer,
   resumeActiveTimer,
 } = require('../utils/timerActions')
+const {
+  getTaskDeletePreview,
+  deleteTask,
+} = require('../utils/deleteActions')
 
 // Read-only tools the AI Assistant can call to look at the current user's
 // own workspace data. Every database read in this file goes through
@@ -847,6 +851,22 @@ async function describeProjectName(userId, projectId) {
   return project ? project.name : 'unknown project'
 }
 
+// "X h Y min", omitting whichever part is zero (never "2 h 0 min").
+function formatDurationMinutes(minutes) {
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+
+  if (hours === 0) {
+    return `${remainingMinutes} min`
+  }
+
+  if (remainingMinutes === 0) {
+    return `${hours} h`
+  }
+
+  return `${hours} h ${remainingMinutes} min`
+}
+
 // Saves a pending action and returns the tool result the model sees. This
 // is the only place a write tool touches the database — it never changes
 // app data, only records what the user would be confirming.
@@ -1232,6 +1252,38 @@ async function updateTaskTool(context, args) {
   )
 }
 
+// Builds the "Delete task '...' ... " summary from a getTaskDeletePreview
+// result, reporting the real consequences (tracked time removed, subtasks
+// that will become parent-less) as computed by the server -- not guessed
+// by the model. Used both when proposing the action and, again, right
+// before executing it, so the summary is always freshly computed.
+function describeTaskDeleteConsequences(task, projectName, preview) {
+  let summary = `Delete task '${task.title}' (project: ${projectName})`
+
+  if (preview.trackedMinutes > 0) {
+    summary += ` and ${formatDurationMinutes(
+      preview.trackedMinutes
+    )} of tracked time.`
+  } else {
+    summary += '.'
+  }
+
+  if (preview.subtasks.length > 0) {
+    const names = preview.subtasks
+      .map((subtask) => `'${subtask.title}'`)
+      .join(', ')
+
+    const subtaskWord =
+      preview.subtasks.length === 1 ? 'subtask' : 'subtasks'
+    const taskWord =
+      preview.subtasks.length === 1 ? 'a task' : 'tasks'
+
+    summary += ` ${preview.subtasks.length} ${subtaskWord} (${names}) will become ${taskWord} without a parent.`
+  }
+
+  return summary
+}
+
 async function deleteTaskTool(context, args) {
   const { userId } = context
 
@@ -1241,19 +1293,19 @@ async function deleteTaskTool(context, args) {
     return { error }
   }
 
-  const subtaskCount = await scopedCount(Task, userId, {
-    parentTaskId: task._id,
-  })
+  const preview = await getTaskDeletePreview(userId, task._id)
+
+  if (preview.error) {
+    return { error: preview.error }
+  }
 
   const projectName = await describeProjectName(userId, task.projectId)
 
-  let summary = `Delete task '${task.title}' (project: ${projectName}).`
-
-  if (subtaskCount > 0) {
-    summary += ` ${subtaskCount} subtask${
-      subtaskCount === 1 ? '' : 's'
-    } will remain without a parent.`
-  }
+  const summary = describeTaskDeleteConsequences(
+    task,
+    projectName,
+    preview
+  )
 
   return createPendingAction(context, 'delete_task', task._id, {}, summary)
 }
@@ -1867,13 +1919,39 @@ async function executeUpdateTask(userId, targetId, payload) {
 }
 
 async function executeDeleteTask(userId, targetId) {
-  const task = await Task.findOneAndDelete({ _id: targetId, userId })
+  // Recomputes the consequences from what actually happened, rather than
+  // trusting the proposal-time snapshot, which may be stale by now.
+  const outcome = await deleteTask(userId, targetId)
 
-  if (!task) {
+  if (outcome.error) {
     return { status: 'failed', result: { error: 'Not found' } }
   }
 
-  return { status: 'executed', result: { taskId: targetId } }
+  const projectName = await describeProjectName(
+    userId,
+    outcome.task.projectId
+  )
+
+  const summary = describeTaskDeleteConsequences(
+    outcome.task,
+    projectName,
+    {
+      trackedMinutes: outcome.deletedDurationMinutes,
+      subtasks: outcome.reparentedSubtasks,
+    }
+  )
+
+  return {
+    status: 'executed',
+    result: {
+      taskId: outcome.task._id,
+      deletedTimeEntryCount: outcome.deletedTimeEntryCount,
+      deletedDurationMinutes: outcome.deletedDurationMinutes,
+      reparentedSubtaskCount: outcome.reparentedSubtasks.length,
+      cancelledActiveTimer: outcome.cancelledActiveTimer,
+    },
+    summary,
+  }
 }
 
 async function executeCreateNote(userId, payload) {
