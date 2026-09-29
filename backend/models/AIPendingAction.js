@@ -49,9 +49,15 @@ const aiPendingActionSchema = new mongoose.Schema(
     },
 
     // Already-validated data, ready to apply as-is at confirmation time.
+    // Delete actions have nothing to store here, so this is {} rather than
+    // required: Mongoose's default minimize:true strips empty objects
+    // before writing, which would make a later save() of this same
+    // document fail required validation since the field would then be
+    // genuinely absent. default: {} means Mongoose fills it back in on
+    // load whether or not it was actually persisted, for old rows too.
     payload: {
       type: mongoose.Schema.Types.Mixed,
-      required: true,
+      default: {},
     },
 
     // Human-readable description built from real database values, shown to

@@ -909,28 +909,62 @@ router.post(
       }
 
       if (claimed.expiresAt < new Date()) {
-        claimed.status = 'expired'
-        await claimed.save()
+        await AIPendingAction.updateOne(
+          { _id: claimed._id },
+          { $set: { status: 'expired' } }
+        )
 
         return res.status(410).json({
           error: 'Action expired',
         })
       }
 
-      // Re-validates ownership and target existence again right before
-      // writing, since the target (or a referenced project/parent) may
-      // have been deleted since the action was created.
-      const outcome = await executeConfirmedAction(claimed)
+      // From here on the action is claimed (status: executing), and
+      // executeConfirmedAction may already have changed real data. No
+      // matter what goes wrong next — including saving this outcome — the
+      // action must end up executed or failed, never stuck in executing.
+      let finalStatus = 'failed'
+      let finalResult = { error: 'Execution failed' }
 
-      claimed.status = outcome.status
-      claimed.result = outcome.result
-      await claimed.save()
+      try {
+        // Re-validates ownership and target existence again right before
+        // writing, since the target (or a referenced project/parent) may
+        // have been deleted since the action was created.
+        const outcome = await executeConfirmedAction(claimed)
+
+        finalStatus = outcome.status
+        finalResult = outcome.result
+      } catch (executionError) {
+        console.error(
+          'Confirmed action execution threw:',
+          executionError
+        )
+      }
+
+      try {
+        // A targeted update (not claimed.save()) so this can never fail
+        // by re-validating unrelated fields on the loaded document.
+        await AIPendingAction.updateOne(
+          { _id: claimed._id },
+          {
+            $set: {
+              status: finalStatus,
+              result: finalResult,
+            },
+          }
+        )
+      } catch (saveError) {
+        console.error(
+          'Failed to save confirmed action result:',
+          saveError
+        )
+      }
 
       const messageContent =
-        outcome.status === 'executed'
+        finalStatus === 'executed'
           ? `Confirmed: ${claimed.summary}`
           : `Failed: ${claimed.summary} (${
-              outcome.result?.error || 'error'
+              finalResult?.error || 'error'
             })`
 
       await AIMessage.create({
@@ -940,8 +974,8 @@ router.post(
       })
 
       res.json({
-        status: claimed.status,
-        result: claimed.result,
+        status: finalStatus,
+        result: finalResult,
         summary: claimed.summary,
       })
     } catch (error) {
