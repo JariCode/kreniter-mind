@@ -121,7 +121,7 @@ function WeekView({
   anchorDate,
   today,
   events,
-  tasks,
+  taskMarkers,
   onSelectEvent,
   onAddEvent,
   onShowEventTooltip,
@@ -141,7 +141,7 @@ function WeekView({
           day={day}
           isToday={isSameDay(day, today)}
           events={getEventsForDay(events, day)}
-          taskMarkers={getTaskMarkersForDay(tasks, day)}
+          taskMarkers={getTaskMarkersForDay(taskMarkers, day)}
           onSelectEvent={onSelectEvent}
           onAddEvent={onAddEvent}
           onShowEventTooltip={onShowEventTooltip}

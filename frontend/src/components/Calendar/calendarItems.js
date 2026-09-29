@@ -1,4 +1,4 @@
-import { isSameDay } from './calendarDates'
+import { isSameDay, toDateKey } from './calendarDates'
 
 export function getEventsForDay(events, day) {
   return events
@@ -16,37 +16,16 @@ export function getEventsForDay(events, day) {
     })
 }
 
-// Tasks whose startDate, dueDate or completedDate falls on this day. A
-// task with more than one of those dates on the same day appears once per
-// reason, each carrying which one it is so the caller can label it
-// accordingly.
-export function getTaskMarkersForDay(tasks, day) {
-  const markers = []
+// Task start/due/completed markers for this day, out of the server's
+// already-matched taskDates list (backend/utils/calendarItems.js, shared
+// with the AI Assistant) -- each entry already carries which of a task's
+// dates it is ("kind") and which day it falls on ("dayKey"), so this is
+// just a display-time filter, not a decision about which day a task's
+// dates belong to.
+export function getTaskMarkersForDay(taskMarkers, day) {
+  const dayKey = toDateKey(day)
 
-  for (const task of tasks) {
-    if (
-      task.startDate &&
-      isSameDay(new Date(task.startDate), day)
-    ) {
-      markers.push({ task, kind: 'start' })
-    }
-
-    if (
-      task.dueDate &&
-      isSameDay(new Date(task.dueDate), day)
-    ) {
-      markers.push({ task, kind: 'due' })
-    }
-
-    if (
-      task.completedDate &&
-      isSameDay(new Date(task.completedDate), day)
-    ) {
-      markers.push({ task, kind: 'completed' })
-    }
-  }
-
-  return markers
+  return taskMarkers.filter((marker) => marker.dayKey === dayKey)
 }
 
 const TASK_MARKER_LABELS = {

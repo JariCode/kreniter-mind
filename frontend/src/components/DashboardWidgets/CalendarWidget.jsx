@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  getCalendarEvents,
   updateCalendarEvent,
   deleteCalendarEvent,
 } from '../../api/calendarEvents'
-import { getTasks } from '../../api/tasks'
+import { getCalendarItems } from '../../api/calendar'
 import { getProjects } from '../../api/projects'
 import {
   formatWeekdayDate,
@@ -74,7 +73,7 @@ function CalendarWidget({ onViewAll }) {
   const todayKey = toDateKey(today)
 
   const [events, setEvents] = useState([])
-  const [tasks, setTasks] = useState([])
+  const [taskDates, setTaskDates] = useState([])
   const [projects, setProjects] = useState([])
   const [error, setError] = useState('')
   const [editingEvent, setEditingEvent] = useState(null)
@@ -87,15 +86,16 @@ function CalendarWidget({ onViewAll }) {
   useEffect(() => {
     let cancelled = false
 
-    async function loadTodayEvents() {
+    async function loadTodayItems() {
       try {
-        const data = await getCalendarEvents(
+        const data = await getCalendarItems(
           today,
           today
         )
 
         if (!cancelled) {
-          setEvents(data)
+          setEvents(data.events)
+          setTaskDates(data.taskDates)
         }
       } catch (err) {
         if (!cancelled) {
@@ -104,7 +104,7 @@ function CalendarWidget({ onViewAll }) {
       }
     }
 
-    loadTodayEvents()
+    loadTodayItems()
 
     return () => {
       cancelled = true
@@ -115,21 +115,17 @@ function CalendarWidget({ onViewAll }) {
   }, [todayKey])
 
   useEffect(() => {
-    async function loadTasksAndProjects() {
+    async function loadProjects() {
       try {
-        const [tasksData, projectsData] = await Promise.all([
-          getTasks(),
-          getProjects(),
-        ])
+        const projectsData = await getProjects()
 
-        setTasks(tasksData)
         setProjects(projectsData)
       } catch (err) {
         setError(err.message)
       }
     }
 
-    loadTasksAndProjects()
+    loadProjects()
   }, [])
 
   useEffect(() => {
@@ -155,7 +151,7 @@ function CalendarWidget({ onViewAll }) {
   // of its calendar actions while this widget is visible on the dashboard.
   useEffect(() => {
     function handleCalendarEventsChanged() {
-      refreshEvents()
+      refreshCalendarItems()
     }
 
     window.addEventListener(
@@ -172,9 +168,10 @@ function CalendarWidget({ onViewAll }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayKey])
 
-  async function refreshEvents() {
-    const data = await getCalendarEvents(today, today)
-    setEvents(data)
+  async function refreshCalendarItems() {
+    const data = await getCalendarItems(today, today)
+    setEvents(data.events)
+    setTaskDates(data.taskDates)
   }
 
   function showEventTooltip(calendarEvent, domEvent) {
@@ -234,7 +231,7 @@ function CalendarWidget({ onViewAll }) {
       setFormError('')
 
       await updateCalendarEvent(editingEvent._id, data)
-      await refreshEvents()
+      await refreshCalendarItems()
 
       setEditingEvent(null)
     } catch (err) {
@@ -258,7 +255,7 @@ function CalendarWidget({ onViewAll }) {
       setDeleting(true)
 
       await deleteCalendarEvent(eventToDelete._id)
-      await refreshEvents()
+      await refreshCalendarItems()
 
       setEventToDelete(null)
     } catch (err) {
@@ -282,7 +279,7 @@ function CalendarWidget({ onViewAll }) {
   const timedEvents = todaysEvents.filter(
     (event) => !event.allDay
   )
-  const taskMarkers = getTaskMarkersForDay(tasks, today)
+  const taskMarkers = getTaskMarkersForDay(taskDates, today)
 
   const items = [
     ...allDayEvents.map((event) => ({

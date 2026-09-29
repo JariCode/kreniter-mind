@@ -117,7 +117,7 @@ function MonthView({
   anchorDate,
   today,
   events,
-  tasks,
+  taskMarkers,
   maxEventsPerDay,
   onSelectEvent,
   onAddEvent,
@@ -160,7 +160,7 @@ function MonthView({
               }
               isToday={isSameDay(day, today)}
               events={getEventsForDay(events, day)}
-              taskMarkers={getTaskMarkersForDay(tasks, day)}
+              taskMarkers={getTaskMarkersForDay(taskMarkers, day)}
               maxEventsPerDay={maxEventsPerDay}
               onSelectEvent={onSelectEvent}
               onAddEvent={onAddEvent}

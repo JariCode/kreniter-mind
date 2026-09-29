@@ -8,7 +8,7 @@ import {
 function DayView({
   anchorDate,
   events,
-  tasks,
+  taskMarkers,
   onSelectEvent,
   onAddEvent,
   onShowEventTooltip,
@@ -16,7 +16,7 @@ function DayView({
   onHideTooltip,
 }) {
   const dayEvents = getEventsForDay(events, anchorDate)
-  const taskMarkers = getTaskMarkersForDay(tasks, anchorDate)
+  const dayTaskMarkers = getTaskMarkersForDay(taskMarkers, anchorDate)
 
   const allDayEvents = dayEvents.filter(
     (event) => event.allDay
@@ -26,7 +26,7 @@ function DayView({
   )
 
   const isEmpty =
-    dayEvents.length === 0 && taskMarkers.length === 0
+    dayEvents.length === 0 && dayTaskMarkers.length === 0
 
   return (
     <div
@@ -64,7 +64,7 @@ function DayView({
         </button>
       ))}
 
-      {taskMarkers.map(({ task, kind }) => (
+      {dayTaskMarkers.map(({ task, kind }) => (
         <button
           key={`${kind}-${task._id}`}
           type="button"

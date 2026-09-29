@@ -6,12 +6,11 @@ import {
   useState,
 } from 'react'
 import {
-  getCalendarEvents,
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
 } from '../../api/calendarEvents'
-import { getTasks } from '../../api/tasks'
+import { getCalendarItems } from '../../api/calendar'
 import { getProjects } from '../../api/projects'
 import HoverTooltip from '../Tooltip/HoverTooltip'
 import { getTooltipPosition } from '../Tooltip/tooltipPosition'
@@ -76,7 +75,7 @@ const CalendarView = forwardRef(function CalendarView(
     toDateOnly(new Date())
   )
   const [events, setEvents] = useState([])
-  const [tasks, setTasks] = useState([])
+  const [taskMarkers, setTaskMarkers] = useState([])
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -114,18 +113,19 @@ const CalendarView = forwardRef(function CalendarView(
   useEffect(() => {
     let cancelled = false
 
-    async function loadEvents() {
+    async function loadCalendarItems() {
       try {
         setLoading(true)
         setError('')
 
-        const data = await getCalendarEvents(
+        const data = await getCalendarItems(
           range.from,
           range.to
         )
 
         if (!cancelled) {
-          setEvents(data)
+          setEvents(data.events)
+          setTaskMarkers(data.taskDates)
         }
       } catch (err) {
         if (!cancelled) {
@@ -138,7 +138,7 @@ const CalendarView = forwardRef(function CalendarView(
       }
     }
 
-    loadEvents()
+    loadCalendarItems()
 
     return () => {
       cancelled = true
@@ -146,21 +146,17 @@ const CalendarView = forwardRef(function CalendarView(
   }, [range])
 
   useEffect(() => {
-    async function loadTasksAndProjects() {
+    async function loadProjects() {
       try {
-        const [tasksData, projectsData] = await Promise.all([
-          getTasks(),
-          getProjects(),
-        ])
+        const projectsData = await getProjects()
 
-        setTasks(tasksData)
         setProjects(projectsData)
       } catch (err) {
         setError(err.message)
       }
     }
 
-    loadTasksAndProjects()
+    loadProjects()
   }, [])
 
   // Closes an open tooltip on Escape, matching every other dialog/popover
@@ -183,13 +179,14 @@ const CalendarView = forwardRef(function CalendarView(
     }
   }, [tooltip])
 
-  async function refreshEvents() {
-    const refreshed = await getCalendarEvents(
+  async function refreshCalendarItems() {
+    const refreshed = await getCalendarItems(
       range.from,
       range.to
     )
 
-    setEvents(refreshed)
+    setEvents(refreshed.events)
+    setTaskMarkers(refreshed.taskDates)
   }
 
   // Keeps this view in sync when a calendar event is created, updated or
@@ -197,7 +194,7 @@ const CalendarView = forwardRef(function CalendarView(
   // of its calendar actions while the Calendar page is open.
   useEffect(() => {
     function handleCalendarEventsChanged() {
-      refreshEvents()
+      refreshCalendarItems()
     }
 
     window.addEventListener(
@@ -279,7 +276,7 @@ const CalendarView = forwardRef(function CalendarView(
         await createCalendarEvent(data)
       }
 
-      await refreshEvents()
+      await refreshCalendarItems()
       setFormDialog(null)
     } catch (err) {
       setFormError(err.message)
@@ -303,7 +300,7 @@ const CalendarView = forwardRef(function CalendarView(
 
       await deleteCalendarEvent(eventToDelete._id)
 
-      await refreshEvents()
+      await refreshCalendarItems()
       setEventToDelete(null)
     } catch (err) {
       setError(err.message)
@@ -385,7 +382,7 @@ const CalendarView = forwardRef(function CalendarView(
     anchorDate,
     today,
     events,
-    tasks,
+    taskMarkers,
     projects,
     maxEventsPerDay,
     onSelectEvent: openEditDialog,
