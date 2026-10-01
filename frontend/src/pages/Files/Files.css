@@ -396,7 +396,20 @@
 }
 
 .files-preview-modal {
+  display: flex;
+  flex-direction: column;
+  /* An explicit height (matching the max-height above) rather than relying
+     on max-height alone, so the content area below has a definite size to
+     size percentage heights (the preview image and PDF iframe) against. */
+  height: min(720px, 90vh);
   width: min(1000px, 100%);
+}
+
+/* Keeps the header at its natural size and lets .files-preview-content
+   claim whatever space is left inside the modal's height, so a tall
+   preview is always bounded by the modal instead of overflowing past it. */
+.files-preview-modal .files-modal-header {
+  flex-shrink: 0;
 }
 
 .files-modal-header {
@@ -520,10 +533,10 @@
 
 .files-preview-content {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   min-height: 420px;
-  max-height: calc(90vh - 90px);
   padding: 20px;
   overflow: auto;
   background: #080d13;
@@ -532,13 +545,13 @@
 .files-preview-content img {
   display: block;
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 100%;
   object-fit: contain;
 }
 
 .files-preview-content iframe {
   width: 100%;
-  min-height: 65vh;
+  height: 100%;
   border: 0;
   background: white;
 }
