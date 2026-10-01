@@ -893,12 +893,52 @@ function Files() {
 
   function isImageFile(file) {
     const extension = getFileExtensionValue(file.name)
+    const mimeType = String(file.mimeType || '').toLowerCase()
+
+    const imageExtensions = [
+      'png',
+      'jpg',
+      'jpeg',
+      'gif',
+      'webp',
+      'bmp',
+      'avif',
+      'ico',
+      'svg',
+    ]
+
+    // Some browsers/OSes report no MIME type (or a non-image one) for .ico
+    // files, so an empty MIME type is accepted for that extension only.
+    const icoMimeTypes = [
+      '',
+      'image/x-icon',
+      'image/vnd.microsoft.icon',
+    ]
+
+    if (extension === 'ico') {
+      return (
+        mimeType.startsWith('image/') ||
+        icoMimeTypes.includes(mimeType)
+      )
+    }
 
     return (
-      String(file.mimeType || '')
-        .toLowerCase()
-        .startsWith('image/') &&
-      extension !== 'svg'
+      mimeType.startsWith('image/') ||
+      imageExtensions.includes(extension)
+    )
+  }
+
+  // SVGs are images, but only ever rendered through <img src={blobUrl}> --
+  // never in an iframe or injected as HTML -- since <img> won't execute any
+  // <script> the SVG contains. Keep this check separate from isImageFile so
+  // the editor-launch logic below stays correct if that list ever changes.
+  function isSvgFile(file) {
+    const extension = getFileExtensionValue(file.name)
+
+    return (
+      extension === 'svg' ||
+      String(file.mimeType || '').toLowerCase() ===
+        'image/svg+xml'
     )
   }
 
@@ -942,29 +982,30 @@ function Files() {
     ].includes(extension)
   }
 
-  async function openFile(file) {
-    if (isEditableFile(file)) {
-      try {
-        setEditorLoading(true)
-        setEditorFile(file)
-        setEditorContent('')
-        setActionError('')
+  async function openEditor(file) {
+    try {
+      setEditorLoading(true)
+      setEditorFile(file)
+      setEditorContent('')
+      setActionError('')
 
-        const blob = await downloadFile(file._id)
-        const text = await blob.text()
-        setEditorContent(text)
-      } catch (error) {
-        setEditorFile(null)
-        setActionError(
-          error.message || 'Failed to open file.'
-        )
-      } finally {
-        setEditorLoading(false)
-      }
-
-      return
+      const blob = await downloadFile(file._id)
+      const text = await blob.text()
+      setEditorContent(text)
+    } catch (error) {
+      setEditorFile(null)
+      setActionError(
+        error.message || 'Failed to open file.'
+      )
+    } finally {
+      setEditorLoading(false)
     }
+  }
 
+  async function openFile(file) {
+    // Checked before isEditableFile so SVGs (which are both an editable
+    // text format and an image) open as a preview first; editing them is a
+    // separate action -- see the "Edit" row button.
     if (isImageFile(file) || isPdfFile(file)) {
       try {
         setPreviewLoading(true)
@@ -983,6 +1024,11 @@ function Files() {
         setPreviewLoading(false)
       }
 
+      return
+    }
+
+    if (isEditableFile(file)) {
+      await openEditor(file)
       return
     }
 
@@ -1337,6 +1383,16 @@ function Files() {
                     >
                       Rename
                     </button>
+                    {isSvgFile(file) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openEditor(file)
+                        }
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() =>

@@ -364,6 +364,15 @@ router.get('/:id/download', async (req, res, next) => {
       file.mimeType
     )
 
+    // helmet() in server.js already sends X-Content-Type-Options: nosniff
+    // globally. This CSP overrides helmet's default for this route only, so
+    // an SVG opened directly from its URL (bypassing the app's sandboxed
+    // <img> preview) can't run scripts or styles from elsewhere.
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+    )
+
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${encodeURIComponent(
