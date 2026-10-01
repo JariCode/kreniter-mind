@@ -1110,7 +1110,7 @@ function MainContent({
               String(timelineProjectId)
           ) || projects[0]
 
-        const timelineTasks = tasks
+        const timelineEligibleTasks = tasks
           .filter(
             (task) =>
               String(task.projectId) ===
@@ -1122,22 +1122,76 @@ function MainContent({
               task.completedDate ||
               task.dueDate
           )
-          .sort((a, b) => {
-            const dateA = new Date(
-              a.startDate ||
-                a.completedDate ||
-                a.dueDate
-            ).getTime()
 
-            const dateB = new Date(
-              b.startDate ||
-                b.completedDate ||
-                b.dueDate
-            ).getTime()
+        // The latest of a task's dates, used to rank tasks by how current
+        // they are when picking which ones fill the widget.
+        function getLatestTimelineTaskDate(task) {
+          const dates = [
+            task.startDate,
+            task.dueDate,
+            task.completedDate,
+          ]
+            .filter(Boolean)
+            .map((date) => new Date(date).getTime())
 
-            return dateA - dateB
-          })
-          .slice(0, 7)
+          return Math.max(...dates)
+        }
+
+        function sortByLatestTimelineDateDescending(
+          a,
+          b
+        ) {
+          return (
+            getLatestTimelineTaskDate(b) -
+            getLatestTimelineTaskDate(a)
+          )
+        }
+
+        // In-progress tasks always take priority; the remaining slots (if
+        // any) go to the most recent other tasks, so the widget favors
+        // current and recent work over whatever happens to be oldest.
+        const inProgressTimelineTasks =
+          timelineEligibleTasks
+            .filter(
+              (task) => task.status === 'in-progress'
+            )
+            .sort(sortByLatestTimelineDateDescending)
+            .slice(0, 7)
+
+        const remainingTimelineSlots =
+          7 - inProgressTimelineTasks.length
+
+        const otherTimelineTasks =
+          remainingTimelineSlots > 0
+            ? timelineEligibleTasks
+                .filter(
+                  (task) =>
+                    task.status !== 'in-progress'
+                )
+                .sort(
+                  sortByLatestTimelineDateDescending
+                )
+                .slice(0, remainingTimelineSlots)
+            : []
+
+        const timelineTasks = [
+          ...inProgressTimelineTasks,
+          ...otherTimelineTasks,
+        ].sort((a, b) => {
+          const dateA = new Date(
+            a.startDate ||
+              a.completedDate ||
+              a.dueDate
+          ).getTime()
+
+          const dateB = new Date(
+            b.startDate ||
+              b.completedDate ||
+              b.dueDate
+          ).getTime()
+
+          return dateA - dateB
+        })
 
         const today = new Date()
         today.setHours(0, 0, 0, 0)
