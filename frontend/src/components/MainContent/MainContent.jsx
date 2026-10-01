@@ -1814,7 +1814,7 @@ function MainContent({
           </span>
 
           <h1>
-            Good evening.
+            Dashboard
           </h1>
 
           <p>
