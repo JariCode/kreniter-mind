@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="a" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
-  <rect x="0" y="0" width="512" height="512" rx="35" ry="35" stroke="#1264a3" stroke-miterlimit="10" stroke-width=".75"/>
+  <rect x="0" y="0" width="512" height="512" rx="35" ry="35"/>
   <rect x="80.22" y="79.22" width="353.55" height="353.55" transform="translate(-105.75 256.71) rotate(-45)" stroke="#1264a3" stroke-miterlimit="10" stroke-width=".75"/>
   <rect x="142.94" y="141.18" width="230" height="230" fill="none" stroke="#42a5ff" stroke-miterlimit="10"/>
   <path d="M186.16,342.6v-173.2h22.92v85.89l86.01-85.89h31.07l-72.66,70.18,75.85,103.02h-30.24l-61.67-87.66-28.35,27.65v60.02h-22.92Z" fill="#b9e1ff"/>
