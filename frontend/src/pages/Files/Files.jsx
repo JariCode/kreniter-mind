@@ -18,6 +18,8 @@ import './Files.css'
 
 const NO_PROJECT = 'no-project'
 const PROJECT_STORAGE_KEY = 'kreniter-files-project'
+const FOLDER_DROP_MESSAGE =
+  "Folders can't be uploaded. Open the folder and drag the files instead."
 
 function Files() {
   const [projects, setProjects] = useState([])
@@ -334,13 +336,17 @@ function Files() {
 
   async function uploadFiles(
     selectedFiles,
-    targetFolderId = currentFolder?._id || null
+    targetFolderId = currentFolder?._id || null,
+    { preserveActionError = false } = {}
   ) {
     if (selectedFiles.length === 0) {
       return
     }
 
-    setActionError('')
+    if (!preserveActionError) {
+      setActionError('')
+    }
+
     await processUploadQueue(selectedFiles, targetFolderId)
   }
 
@@ -388,7 +394,9 @@ function Files() {
 
       setUploading(false)
       setActionError(
-        error.message || 'Failed to upload file.'
+        error.message === 'Failed to fetch'
+          ? 'Upload failed. Check your connection and try again.'
+          : error.message || 'Failed to upload file.'
       )
     }
   }
@@ -413,7 +421,9 @@ function Files() {
       await updateFileContent(existingFileId, file)
     } catch (error) {
       setActionError(
-        error.message || 'Failed to replace file.'
+        error.message === 'Failed to fetch'
+          ? 'Upload failed. Check your connection and try again.'
+          : error.message || 'Failed to replace file.'
       )
     }
 
@@ -484,16 +494,90 @@ function Files() {
     setDragActive(false)
   }
 
+  // Separates a drop's files from any dropped folders. webkitGetAsEntry is
+  // the reliable way to tell them apart; when a browser doesn't support it,
+  // fall back to treating a zero-size or unreadable item as a folder.
+  async function classifyDroppedEntries(dataTransfer) {
+    const items = dataTransfer?.items
+
+    if (!items || items.length === 0) {
+      return {
+        files: Array.from(dataTransfer?.files || []),
+        folderCount: 0,
+      }
+    }
+
+    // Read every item and its entry synchronously first -- the browser only
+    // guarantees the drag data store is valid for the duration of the drop
+    // event, so nothing here can be deferred until after an await.
+    const candidates = []
+
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index]
+
+      if (item.kind !== 'file') {
+        continue
+      }
+
+      const getEntry = item.webkitGetAsEntry
+      const entry =
+        typeof getEntry === 'function'
+          ? getEntry.call(item)
+          : null
+
+      candidates.push({ entry, file: item.getAsFile() })
+    }
+
+    const files = []
+    let folderCount = 0
+
+    for (const { entry, file } of candidates) {
+      if (entry) {
+        if (entry.isDirectory) {
+          folderCount += 1
+        } else if (file) {
+          files.push(file)
+        }
+        continue
+      }
+
+      if (!file) {
+        continue
+      }
+
+      if (file.size === 0) {
+        folderCount += 1
+        continue
+      }
+
+      try {
+        await file.slice(0, 1).arrayBuffer()
+        files.push(file)
+      } catch {
+        folderCount += 1
+      }
+    }
+
+    return { files, folderCount }
+  }
+
   async function handleDrop(event) {
     event.preventDefault()
     event.stopPropagation()
     setDragActive(false)
 
-    const droppedFiles = Array.from(
-      event.dataTransfer.files || []
-    )
+    const { files: droppedFiles, folderCount } =
+      await classifyDroppedEntries(event.dataTransfer)
 
-    await uploadFiles(droppedFiles)
+    if (folderCount > 0) {
+      setActionError(FOLDER_DROP_MESSAGE)
+    }
+
+    if (droppedFiles.length > 0) {
+      await uploadFiles(droppedFiles, undefined, {
+        preserveActionError: folderCount > 0,
+      })
+    }
   }
 
   function handleFolderDragOver(event, folderId) {
@@ -549,15 +633,20 @@ function Files() {
       return
     }
 
-    const droppedFiles = Array.from(
-      event.dataTransfer.files || []
-    )
+    const { files: droppedFiles, folderCount } =
+      await classifyDroppedEntries(event.dataTransfer)
+
+    if (folderCount > 0) {
+      setActionError(FOLDER_DROP_MESSAGE)
+    }
 
     if (droppedFiles.length === 0) {
       return
     }
 
-    await uploadFiles(droppedFiles, folder._id)
+    await uploadFiles(droppedFiles, folder._id, {
+      preserveActionError: folderCount > 0,
+    })
   }
 
   function handleRenameFile(file) {
