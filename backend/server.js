@@ -26,6 +26,7 @@ const fileRoutes = require('./routes/fileRoutes')
 const reportsViewRoutes = require('./routes/reportsViewRoutes')
 const calendarEventRoutes = require('./routes/calendarEventRoutes')
 const calendarRoutes = require('./routes/calendarRoutes')
+const webhookRoutes = require('./routes/webhookRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -61,6 +62,11 @@ app.use(
     },
   })
 )
+
+// Clerk webhooks: mounted before the app-wide body parsers below, since
+// signature verification needs the exact raw request body. Not behind
+// authMiddleware -- the caller is Clerk, not a signed-in user.
+app.use('/api/webhooks', webhookRoutes)
 
 // Rate limiting
 app.use('/api', apiLimiter)
