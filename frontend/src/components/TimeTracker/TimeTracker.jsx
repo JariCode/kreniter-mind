@@ -49,6 +49,21 @@ function isReconcilableConflict(err) {
   )
 }
 
+// The server rejects a start/pause/resume/stop request when the client's
+// "now" is too far from its own clock to be credible. That's almost always
+// a wrong device clock, so it gets a message pointing at the actual cause
+// instead of the generic "Invalid now" from the API.
+const INVALID_NOW_MESSAGE =
+  'Your device clock seems to be wrong. Check your date and time settings.'
+
+function isInvalidNowError(err) {
+  return err.status === 400 && err.data?.error === 'Invalid now'
+}
+
+function describeTimerError(err, fallback) {
+  return isInvalidNowError(err) ? INVALID_NOW_MESSAGE : err.message || fallback
+}
+
 function normalizeActiveTimer(timer) {
   if (!timer) {
     return null
@@ -197,8 +212,10 @@ export function TimeTrackerProvider({ children }) {
           setTimer(null)
 
           setError(
-            err.message ||
+            describeTimerError(
+              err,
               'Failed to save active timer.'
+            )
           )
         })
 
@@ -253,8 +270,10 @@ export function TimeTrackerProvider({ children }) {
           setTimer(previousTimer)
 
           setError(
-            err.message ||
+            describeTimerError(
+              err,
               'Failed to pause active timer.'
+            )
           )
         })
 
@@ -306,8 +325,10 @@ export function TimeTrackerProvider({ children }) {
           setTimer(previousTimer)
 
           setError(
-            err.message ||
+            describeTimerError(
+              err,
               'Failed to resume active timer.'
+            )
           )
         })
 
@@ -480,8 +501,10 @@ export function TimeTrackerProvider({ children }) {
       )
 
       setError(
-        err.message ||
+        describeTimerError(
+          err,
           'Failed to save time entry.'
+        )
       )
 
       return null

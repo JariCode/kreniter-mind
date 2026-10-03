@@ -50,14 +50,42 @@ async function checkTimerOwnership(userId, { projectId, taskId }) {
   return {}
 }
 
+// How far the browser-supplied "now" may drift from the server's own
+// clock, in either direction, before it's rejected as not credible.
+// Generous enough to absorb normal network latency and small clock skew,
+// far short of the hours/days a wrong device clock would be off by.
+const NOW_TOLERANCE_MS = 5 * 60 * 1000
+
 // Every start/switch/pause/resume/stop request carries the moment (epoch
 // ms) the browser captured the action at, so the elapsed-time math is
 // based on the same instant it always was -- not on whenever the request
-// happens to reach the server.
+// happens to reach the server. That timestamp is still client-supplied
+// input though, so it's sanity-checked against the server's own clock
+// before being trusted: a device with a wrong clock (or a deliberately
+// forged value) could otherwise inflate or erase tracked time.
 function parseNow(body) {
   const now = Number(body.now)
 
-  return Number.isFinite(now) ? now : null
+  if (!Number.isFinite(now)) {
+    return null
+  }
+
+  if (Math.abs(now - Date.now()) > NOW_TOLERANCE_MS) {
+    return null
+  }
+
+  return now
+}
+
+// A pause/stop "now" earlier than the running segment's own start would
+// produce a negative elapsed duration for that segment. Returns false for
+// a paused timer (segmentStartedAt is null), since there's no running
+// segment to measure against.
+function isBeforeSegmentStart(timer, now) {
+  return (
+    !!timer.segmentStartedAt &&
+    now < new Date(timer.segmentStartedAt).getTime()
+  )
 }
 
 // Get active timer for current user
@@ -222,6 +250,10 @@ router.post('/pause', async (req, res, next) => {
       })
     }
 
+    if (isBeforeSegmentStart(timer, now)) {
+      return res.status(400).json({ error: 'Invalid now' })
+    }
+
     const { error } = await pauseActiveTimer(timer, now)
 
     if (error === 'NOT_RUNNING') {
@@ -293,6 +325,10 @@ router.post('/stop', async (req, res, next) => {
         error: 'Active timer not found',
         activeTimer: null,
       })
+    }
+
+    if (isBeforeSegmentStart(timer, now)) {
+      return res.status(400).json({ error: 'Invalid now' })
     }
 
     const timeEntry = await stopActiveTimerAndSaveEntry(
