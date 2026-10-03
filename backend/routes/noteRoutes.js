@@ -1,6 +1,8 @@
 const express = require('express')
+const mongoose = require('mongoose')
 const Note = require('../models/Note')
 const Project = require('../models/Project')
+const validateStringFields = require('../middleware/validateStringFields')
 
 const router = express.Router()
 
@@ -24,6 +26,12 @@ router.get('/', async (req, res, next) => {
 // Get one note for current user
 router.get('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const note = await Note.findOne({
       _id: req.params.id,
       userId: req.user._id,
@@ -42,83 +50,103 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // Create note
-router.post('/', async (req, res, next) => {
-  try {
-    if (req.body.projectId) {
-      const project = await Project.findOne({
-        _id: req.body.projectId,
+router.post(
+  '/',
+  validateStringFields('title', 'content'),
+  async (req, res, next) => {
+    try {
+      if (req.body.projectId) {
+        const project = await Project.findOne({
+          _id: req.body.projectId,
+          userId: req.user._id,
+        })
+
+        if (!project) {
+          return res.status(404).json({
+            error: 'Project not found',
+          })
+        }
+      }
+
+      const note = await Note.create({
         userId: req.user._id,
+        projectId: req.body.projectId,
+        title: req.body.title,
+        content: req.body.content,
+        priority: req.body.priority || 'medium',
+        order: req.body.order || 0,
       })
 
-      if (!project) {
-        return res.status(404).json({
-          error: 'Project not found',
-        })
-      }
+      res.status(201).json(note)
+    } catch (error) {
+      next(error)
     }
-
-    const note = await Note.create({
-      userId: req.user._id,
-      projectId: req.body.projectId,
-      title: req.body.title,
-      content: req.body.content,
-      priority: req.body.priority || 'medium',
-      order: req.body.order || 0,
-    })
-
-    res.status(201).json(note)
-  } catch (error) {
-    next(error)
   }
-})
+)
 
 // Update note
-router.patch('/:id', async (req, res, next) => {
-  try {
-    const note = await Note.findOne({
-      _id: req.params.id,
-      userId: req.user._id,
-    })
+router.patch(
+  '/:id',
+  validateStringFields('title', 'content'),
+  async (req, res, next) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          error: 'Invalid ID',
+        })
+      }
 
-    if (!note) {
-      return res.status(404).json({
-        error: 'Note not found',
-      })
-    }
-
-    if (req.body.projectId) {
-      const project = await Project.findOne({
-        _id: req.body.projectId,
+      const note = await Note.findOne({
+        _id: req.params.id,
         userId: req.user._id,
       })
 
-      if (!project) {
+      if (!note) {
         return res.status(404).json({
-          error: 'Project not found',
+          error: 'Note not found',
         })
       }
+
+      if (req.body.projectId) {
+        const project = await Project.findOne({
+          _id: req.body.projectId,
+          userId: req.user._id,
+        })
+
+        if (!project) {
+          return res.status(404).json({
+            error: 'Project not found',
+          })
+        }
+      }
+
+      note.projectId = req.body.projectId
+      note.title = req.body.title
+      note.content = req.body.content
+      note.priority = req.body.priority || note.priority
+      note.order =
+        req.body.order !== undefined
+          ? req.body.order
+          : note.order
+
+      await note.save()
+
+      res.json(note)
+    } catch (error) {
+      next(error)
     }
-
-    note.projectId = req.body.projectId
-    note.title = req.body.title
-    note.content = req.body.content
-    note.priority = req.body.priority || note.priority
-    note.order =
-      req.body.order !== undefined
-        ? req.body.order
-        : note.order
-
-    await note.save()
-
-    res.json(note)
-  } catch (error) {
-    next(error)
   }
-})
+)
 
 // Delete note
 router.delete('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const note = await Note.findOneAndDelete({
       _id: req.params.id,
       userId: req.user._id,

@@ -1,5 +1,7 @@
 const express = require('express')
+const mongoose = require('mongoose')
 const Project = require('../models/Project')
+const validateStringFields = require('../middleware/validateStringFields')
 const {
   getProjectDeletePreview,
   deleteProject,
@@ -23,6 +25,12 @@ router.get('/', async (req, res, next) => {
 // Get one project for current user
 router.get('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const project = await Project.findOne({
       _id: req.params.id,
       userId: req.user._id,
@@ -41,61 +49,91 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // Create project
-router.post('/', async (req, res, next) => {
-  try {
-    const project = await Project.create({
-      userId: req.user._id,
-      name: req.body.name,
-      description: req.body.description,
-      repositoryUrl: req.body.repositoryUrl,
-      status: req.body.status,
-      color: req.body.color,
-    })
-
-    res.status(201).json(project)
-  } catch (error) {
-    next(error)
-  }
-})
-
-// Update project
-router.patch('/:id', async (req, res, next) => {
-  try {
-    const project = await Project.findOneAndUpdate(
-      {
-        _id: req.params.id,
+router.post(
+  '/',
+  validateStringFields(
+    'name',
+    'description',
+    'repositoryUrl',
+    'color'
+  ),
+  async (req, res, next) => {
+    try {
+      const project = await Project.create({
         userId: req.user._id,
-      },
-      {
         name: req.body.name,
         description: req.body.description,
         repositoryUrl: req.body.repositoryUrl,
         status: req.body.status,
         color: req.body.color,
-      },
-      {
-        returnDocument: 'after',
-        runValidators: true,
-      }
-    )
-
-    if (!project) {
-      return res.status(404).json({
-        error: 'Project not found',
       })
-    }
 
-    res.json(project)
-  } catch (error) {
-    next(error)
+      res.status(201).json(project)
+    } catch (error) {
+      next(error)
+    }
   }
-})
+)
+
+// Update project
+router.patch(
+  '/:id',
+  validateStringFields(
+    'name',
+    'description',
+    'repositoryUrl',
+    'color'
+  ),
+  async (req, res, next) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          error: 'Invalid ID',
+        })
+      }
+
+      const project = await Project.findOneAndUpdate(
+        {
+          _id: req.params.id,
+          userId: req.user._id,
+        },
+        {
+          name: req.body.name,
+          description: req.body.description,
+          repositoryUrl: req.body.repositoryUrl,
+          status: req.body.status,
+          color: req.body.color,
+        },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        }
+      )
+
+      if (!project) {
+        return res.status(404).json({
+          error: 'Project not found',
+        })
+      }
+
+      res.json(project)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
 
 // Preview the consequences of deleting a project: what still blocks it
 // (tasks, notes, folders, files), and tracked time that will be removed
 // with it if it's empty.
 router.get('/:id/delete-preview', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const preview = await getProjectDeletePreview(
       req.user._id,
       req.params.id
@@ -127,6 +165,12 @@ router.get('/:id/delete-preview', async (req, res, next) => {
 // resets any saved view that had this project selected.
 router.delete('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const result = await deleteProject(
       req.user._id,
       req.params.id

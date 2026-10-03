@@ -1,4 +1,5 @@
 const express = require('express')
+const mongoose = require('mongoose')
 const TimeEntry = require('../models/TimeEntry')
 const Project = require('../models/Project')
 const Task = require('../models/Task')
@@ -21,6 +22,12 @@ router.get('/', async (req, res, next) => {
 // Get one time entry for current user
 router.get('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const timeEntry = await TimeEntry.findOne({
       _id: req.params.id,
       userId: req.user._id,
@@ -41,6 +48,12 @@ router.get('/:id', async (req, res, next) => {
 // Update time entry
 router.patch('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const timeEntry = await TimeEntry.findOne({
       _id: req.params.id,
       userId: req.user._id,
@@ -105,6 +118,12 @@ router.patch('/:id', async (req, res, next) => {
 // Delete time entry
 router.delete('/:id', async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+      })
+    }
+
     const timeEntry = await TimeEntry.findOneAndDelete({
       _id: req.params.id,
       userId: req.user._id,

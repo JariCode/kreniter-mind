@@ -128,6 +128,21 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
+  // Bad input from the client, not a server fault -- return 400 with a
+  // generic message instead of Mongoose's own text, which would leak
+  // field/model names. Not logged as an error since it isn't one.
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      error: 'Invalid ID',
+    })
+  }
+
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      error: 'Invalid input',
+    })
+  }
+
   console.error(err)
 
   res.status(500).json({
