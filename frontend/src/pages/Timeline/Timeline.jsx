@@ -22,6 +22,12 @@ function Timeline() {
   const [error, setError] = useState('')
   const [hoveredTooltip, setHoveredTooltip] =
     useState(null)
+  const [collapsedTaskIds, setCollapsedTaskIds] =
+    useState(() => new Set())
+  const [
+    collapseStateProjectId,
+    setCollapseStateProjectId,
+  ] = useState(selectedProjectId)
 
   async function loadData() {
     try {
@@ -121,6 +127,15 @@ function Timeline() {
       }
     )
   }, [selectedProjectId, timelineLoaded])
+
+  // Subtask collapse state is not persisted, so switching projects
+  // should not leave stale ids referring to another project's tasks.
+  // Resetting during render (rather than in an effect) avoids an
+  // extra render pass when the project changes.
+  if (collapseStateProjectId !== selectedProjectId) {
+    setCollapseStateProjectId(selectedProjectId)
+    setCollapsedTaskIds(new Set())
+  }
 
   const projectTasks = useMemo(() => {
     if (!selectedProjectId) {
@@ -271,6 +286,96 @@ function Timeline() {
       end,
     }
   }, [timelineTasks])
+
+  const timelineTaskMap = useMemo(() => {
+    const map = new Map()
+
+    timelineTasks.forEach((task) => {
+      map.set(String(task._id), task)
+    })
+
+    return map
+  }, [timelineTasks])
+
+  // Ids of tasks that have at least one subtask rendered in the
+  // timeline. Only these tasks get a collapse/expand toggle.
+  const taskIdsWithChildren = useMemo(() => {
+    const ids = new Set()
+
+    timelineTasks.forEach((task) => {
+      const parentId = task.parentTaskId
+        ? String(task.parentTaskId)
+        : null
+
+      if (parentId && timelineTaskMap.has(parentId)) {
+        ids.add(parentId)
+      }
+    })
+
+    return ids
+  }, [timelineTasks, timelineTaskMap])
+
+  // Rows hidden by a collapsed ancestor. timelineRange/days are still
+  // derived from timelineTasks so the timeline length never shifts
+  // when tasks are collapsed or expanded.
+  const visibleTimelineTasks = useMemo(() => {
+    function isTaskVisible(task) {
+      let currentTask = task
+      const visited = new Set()
+
+      while (currentTask?.parentTaskId) {
+        const parentId = String(
+          currentTask.parentTaskId
+        )
+
+        if (visited.has(parentId)) {
+          break
+        }
+
+        visited.add(parentId)
+
+        const parentTask = timelineTaskMap.get(parentId)
+
+        if (!parentTask) {
+          break
+        }
+
+        if (collapsedTaskIds.has(parentId)) {
+          return false
+        }
+
+        currentTask = parentTask
+      }
+
+      return true
+    }
+
+    return timelineTasks.filter((task) =>
+      isTaskVisible(task)
+    )
+  }, [timelineTasks, timelineTaskMap, collapsedTaskIds])
+
+  function toggleTaskCollapse(taskId) {
+    setCollapsedTaskIds((previous) => {
+      const next = new Set(previous)
+
+      if (next.has(taskId)) {
+        next.delete(taskId)
+      } else {
+        next.add(taskId)
+      }
+
+      return next
+    })
+  }
+
+  function collapseAllTasks() {
+    setCollapsedTaskIds(new Set(taskIdsWithChildren))
+  }
+
+  function expandAllTasks() {
+    setCollapsedTaskIds(new Set())
+  }
 
   const days = useMemo(() => {
     const result = []
@@ -528,6 +633,26 @@ function Timeline() {
             ))}
           </select>
         </div>
+
+        <div className="timeline-collapse-actions">
+          <button
+            type="button"
+            className="timeline-toolbar-btn"
+            onClick={collapseAllTasks}
+            disabled={taskIdsWithChildren.size === 0}
+          >
+            Collapse all
+          </button>
+
+          <button
+            type="button"
+            className="timeline-toolbar-btn"
+            onClick={expandAllTasks}
+            disabled={collapsedTaskIds.size === 0}
+          >
+            Expand all
+          </button>
+        </div>
       </section>
 
       {loading && (
@@ -614,12 +739,18 @@ function Timeline() {
                   </div>
                 </div>
 
-                {timelineTasks.map((task) => {
+                {visibleTimelineTasks.map((task) => {
                   const position =
                     getTaskPosition(task)
 
                   const indent =
                     getTaskIndent(task)
+
+                  const taskId = String(task._id)
+                  const hasChildren =
+                    taskIdsWithChildren.has(taskId)
+                  const isCollapsed =
+                    collapsedTaskIds.has(taskId)
 
                   return (
                     <div
@@ -634,9 +765,34 @@ function Timeline() {
                           }px`,
                         }}
                       >
-                        <span className="timeline-task-title">
-                          {task.title}
-                        </span>
+                        <div className="timeline-task-title-row">
+                          {hasChildren ? (
+                            <button
+                              type="button"
+                              className="timeline-collapse-toggle"
+                              aria-expanded={!isCollapsed}
+                              aria-label={
+                                isCollapsed
+                                  ? `Expand ${task.title}`
+                                  : `Collapse ${task.title}`
+                              }
+                              onClick={() =>
+                                toggleTaskCollapse(taskId)
+                              }
+                            >
+                              {isCollapsed ? '▸' : '▾'}
+                            </button>
+                          ) : (
+                            <span
+                              className="timeline-collapse-spacer"
+                              aria-hidden="true"
+                            />
+                          )}
+
+                          <span className="timeline-task-title">
+                            {task.title}
+                          </span>
+                        </div>
 
                         <span className="timeline-task-status">
                           {getStatusLabel(
