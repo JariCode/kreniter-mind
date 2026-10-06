@@ -1,0 +1,818 @@
+:root {
+  --color-background: #08090b;
+  --color-surface: #101216;
+  --color-surface-light: #16191e;
+  --color-border: #242930;
+  --color-border-soft: rgba(255, 255, 255, 0.055);
+  --color-text: #e7e7e5;
+  --color-text-soft: #b7b9bd;
+  --color-muted: #85888d;
+  --color-accent: #1688ff;
+  --color-accent-rgb: 22, 136, 255;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+html {
+  background: var(--color-background);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+/* =========================================================
+   Clerk modal - keskitys ja Kreniter-glow
+   ========================================================= */
+
+.cl-modal {
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cl-modalBackdrop {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cl-card {
+  margin: auto !important;
+}
+
+/* Koko Clerk-modalin ympärille Kreniter-sininen glow */
+.cl-cardBox {
+  border: 1px solid rgba(var(--color-accent-rgb), 0.38) !important;
+  border-radius: 10px !important;
+
+  box-shadow:
+    0 0 0 1px rgba(var(--color-accent-rgb), 0.14),
+    0 0 24px rgba(var(--color-accent-rgb), 0.16),
+    0 10px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* =========================================================
+   Clerk verification code / OTP
+   ========================================================= */
+
+.cl-otpCodeField {
+  gap: 8px !important;
+}
+
+.cl-otpCodeFieldInput {
+  background-color: #080b10 !important;
+  border: 1px solid #202730 !important;
+  border-radius: 6px !important;
+  color: #e7edf5 !important;
+  box-shadow: none !important;
+}
+
+/* Aktiivinen numeroruutu */
+.cl-otpCodeFieldInput:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--color-accent-rgb), 0.22),
+    0 0 10px rgba(var(--color-accent-rgb), 0.16) !important;
+  outline: none !important;
+}
+
+/* =========================================================
+   Clerk - UserButton dropdown
+   ========================================================= */
+
+.cl-userButtonPopoverCard {
+  background-color: #0d131d !important;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.28) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--color-accent-rgb), 0.10),
+    0 0 24px rgba(var(--color-accent-rgb), 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.30) !important;
+}
+
+.cl-userButtonPopoverActionButton {
+  color: #b7c2ce !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background-color: #151f2c !important;
+  color: #e7edf5 !important;
+}
+
+.cl-userButtonPopoverActionButtonIcon {
+  color: #b7c2ce !important;
+}
+
+.cl-userButtonPopoverFooter {
+  background-color: #0d131d !important;
+  border-top: 1px solid #202730 !important;
+}
+
+
+/* =========================================================
+   Clerk - UserProfile
+   ========================================================= */
+
+.cl-profileSection {
+  border-color: #202730 !important;
+}
+
+.cl-profileSectionTitle {
+  color: #e7edf5 !important;
+}
+
+.cl-profileSectionContent {
+  color: #b7c2ce !important;
+}
+
+
+/* Upload / avatar section */
+.cl-profileSectionPrimaryButton {
+  color: var(--color-accent) !important;
+}
+
+.cl-avatarBox {
+  border: 1px solid rgba(var(--color-accent-rgb), 0.30) !important;
+}
+
+
+/* Primary badge */
+.cl-badge {
+  background-color: rgba(var(--color-accent-rgb), 0.10) !important;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.30) !important;
+  color: var(--color-accent) !important;
+}
+
+
+/* =========================================================
+   Clerk - Connected accounts / Google
+   ========================================================= */
+
+.cl-menuButton {
+  color: #b7c2ce !important;
+}
+
+.cl-menuButton:hover {
+  background-color: #151f2c !important;
+  color: #e7edf5 !important;
+}
+
+.cl-menuList__connectedAccounts {
+  background-color: #0d131d !important;
+  border: 1px solid #202730 !important;
+}
+
+.cl-menuItem__connectedAccounts {
+  background-color: #111a26 !important;
+  border: 1px solid #202730 !important;
+  color: #e7edf5 !important;
+}
+
+.cl-menuItem__connectedAccounts:hover {
+  background-color: #151f2c !important;
+  border-color: rgba(var(--color-accent-rgb), 0.45) !important;
+}
+
+
+/* =========================================================
+   Clerk - UserProfile modal
+   ========================================================= */
+
+.cl-modalBackdrop {
+  background-color: rgba(5, 7, 11, 0.82) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.cl-userProfile {
+  border: 1px solid rgba(var(--color-accent-rgb), 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--color-accent-rgb), 0.12),
+    0 0 28px rgba(var(--color-accent-rgb), 0.16),
+    0 16px 40px rgba(0, 0, 0, 0.30) !important;
+}
+
+
+/* =========================================================
+   Clerk - General buttons inside UserProfile
+   ========================================================= */
+
+.cl-button {
+  color: #b7c2ce !important;
+}
+
+.cl-button:hover {
+  color: #e7edf5 !important;
+  background-color: #151f2c !important;
+}
+
+
+/* Primary buttons */
+.cl-formButtonPrimary {
+  background-color: var(--color-accent) !important;
+  color: #ffffff !important;
+}
+
+.cl-formButtonPrimary:hover {
+  background-color: var(--color-accent) !important;
+}
+
+
+/* =========================================================
+   Clerk - Inputs
+   ========================================================= */
+
+.cl-formFieldInput {
+  background-color: #080b10 !important;
+  border-color: #202730 !important;
+  color: #e7edf5 !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--color-accent-rgb), 0.20),
+    0 0 10px rgba(var(--color-accent-rgb), 0.12) !important;
+}
+
+
+/* =========================================================
+   Clerk - Links
+   ========================================================= */
+
+.cl-footerActionLink,
+.cl-profileSectionPrimaryButton {
+  color: var(--color-accent) !important;
+}
+
+.cl-footerActionLink:hover,
+.cl-profileSectionPrimaryButton:hover {
+  color: #4da3ff !important;
+}
+
+/* =========================================================
+   Shared delete dialog
+   ========================================================= */
+
+.delete-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 7, 11, 0.78);
+  backdrop-filter: blur(5px);
+}
+.delete-dialog {
+  width: min(440px, 100%);
+  padding: 26px;
+  border: 1px solid rgba(255, 80, 80, 0.28);
+  border-radius: 10px;
+  background: #0d131d;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+.delete-dialog-kicker {
+  display: block;
+  margin-bottom: 8px;
+  color: #ff7777;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.delete-dialog h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 600;
+}
+.delete-dialog p {
+  margin: 12px 0 0;
+  color: var(--color-text-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.delete-dialog p strong {
+  color: var(--color-text);
+}
+.delete-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.delete-dialog-actions button {
+  padding: 10px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-light);
+  color: var(--color-text-soft);
+  font-size: 13px;
+  cursor: pointer;
+}
+.delete-dialog-actions button:hover {
+  border-color: rgba(var(--color-accent-rgb), 0.4);
+  color: var(--color-text);
+}
+.delete-dialog-actions .delete-dialog-confirm {
+  border-color: rgba(255, 80, 80, 0.45);
+  background: rgba(255, 80, 80, 0.10);
+  color: #ff8d8d;
+}
+.delete-dialog-actions .delete-dialog-confirm:hover {
+  border-color: rgba(255, 80, 80, 0.7);
+  background: rgba(255, 80, 80, 0.16);
+  color: #ffaaaa;
+}
+.delete-dialog-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   Shared scrollbar
+   ========================================================= */
+
+.assistant-conversations::-webkit-scrollbar,
+.assistant-messages::-webkit-scrollbar,
+.assistant-page::-webkit-scrollbar,
+.assistant-input-wrapper textarea::-webkit-scrollbar,
+.projects-page::-webkit-scrollbar,
+.project-form-grid textarea::-webkit-scrollbar,
+.reports-page::-webkit-scrollbar,
+.tasks-page::-webkit-scrollbar,
+.task-form-grid textarea::-webkit-scrollbar,
+.time-page::-webkit-scrollbar,
+.timeline-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.assistant-conversations::-webkit-scrollbar-track,
+.assistant-messages::-webkit-scrollbar-track,
+.assistant-page::-webkit-scrollbar-track,
+.assistant-input-wrapper textarea::-webkit-scrollbar-track,
+.projects-page::-webkit-scrollbar-track,
+.project-form-grid textarea::-webkit-scrollbar-track,
+.reports-page::-webkit-scrollbar-track,
+.tasks-page::-webkit-scrollbar-track,
+.task-form-grid textarea::-webkit-scrollbar-track,
+.time-page::-webkit-scrollbar-track,
+.timeline-page::-webkit-scrollbar-track {
+  background: #080b10;
+}
+
+.assistant-conversations::-webkit-scrollbar-thumb,
+.assistant-messages::-webkit-scrollbar-thumb,
+.assistant-page::-webkit-scrollbar-thumb,
+.assistant-input-wrapper textarea::-webkit-scrollbar-thumb,
+.projects-page::-webkit-scrollbar-thumb,
+.project-form-grid textarea::-webkit-scrollbar-thumb,
+.reports-page::-webkit-scrollbar-thumb,
+.tasks-page::-webkit-scrollbar-thumb,
+.task-form-grid textarea::-webkit-scrollbar-thumb,
+.time-page::-webkit-scrollbar-thumb,
+.timeline-page::-webkit-scrollbar-thumb {
+  border: 2px solid #080b10;
+  border-radius: 6px;
+  background: #263545;
+}
+
+.assistant-conversations::-webkit-scrollbar-thumb:hover,
+.assistant-messages::-webkit-scrollbar-thumb:hover,
+.assistant-page::-webkit-scrollbar-thumb:hover,
+.assistant-input-wrapper textarea::-webkit-scrollbar-thumb:hover,
+.projects-page::-webkit-scrollbar-thumb:hover,
+.project-form-grid textarea::-webkit-scrollbar-thumb:hover,
+.reports-page::-webkit-scrollbar-thumb:hover,
+.tasks-page::-webkit-scrollbar-thumb:hover,
+.task-form-grid textarea::-webkit-scrollbar-thumb:hover,
+.time-page::-webkit-scrollbar-thumb:hover,
+.timeline-page::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* =========================================================
+   Shared accent button
+   ========================================================= */
+
+.assistant-new-button,
+.notes-create-button,
+.projects-create-button,
+.tasks-create-button,
+.calendar-add-button,
+.action-card-confirm {
+  padding: 11px 16px;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.45);
+  border-radius: 7px;
+  background: rgba(var(--color-accent-rgb), 0.10);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.assistant-new-button:hover,
+.notes-create-button:hover,
+.projects-create-button:hover,
+.tasks-create-button:hover,
+.calendar-add-button:hover,
+.files-action-button:hover:not(:disabled),
+.reports-print-button:hover:not(:disabled),
+.action-card-confirm:hover:not(:disabled) {
+  border-color: rgba(var(--color-accent-rgb), 0.75);
+  background: rgba(var(--color-accent-rgb), 0.16);
+  box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.12);
+}
+
+/* =========================================================
+   Shared secondary button
+   ========================================================= */
+
+.project-form-actions button,
+.task-form-actions button,
+.calendar-form-actions button,
+.files-delete-dialog-actions button,
+.action-card-cancel {
+  padding: 10px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-light);
+  color: var(--color-text-soft);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.project-form-actions button:hover,
+.task-form-actions button:hover,
+.calendar-form-actions button:hover,
+.files-delete-dialog-actions button:hover,
+.action-card-cancel:hover:not(:disabled) {
+  border-color: rgba(var(--color-accent-rgb), 0.4);
+  color: var(--color-text);
+}
+
+.project-form-actions button:disabled,
+.task-form-actions button:disabled,
+.calendar-form-actions button:disabled,
+.action-card-confirm:disabled,
+.action-card-cancel:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   Shared project select
+   ========================================================= */
+
+.reports-project-select select,
+.time-project-select select,
+.timeline-project-select select {
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color-scheme: dark;
+}
+.reports-project-select select:hover,
+.time-project-select select:hover,
+.timeline-project-select select:hover {
+  border-color: #34485d;
+}
+.reports-project-select select:focus,
+.time-project-select select:focus,
+.timeline-project-select select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb), 0.12);
+}
+.reports-project-select select:disabled,
+.time-project-select select:disabled,
+.timeline-project-select select:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* =========================================================
+   Shared page header
+   ========================================================= */
+
+.timeline-intro,
+.time-intro,
+.reports-intro,
+.tasks-intro,
+.projects-intro,
+.files-intro,
+.assistant-header,
+.calendar-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 28px;
+}
+
+.reports-kicker,
+.tasks-kicker,
+.projects-kicker,
+.files-kicker,
+.assistant-kicker,
+.calendar-kicker,
+.dashboard-kicker,
+.notes-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: #5f9ed8;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.reports-title,
+.tasks-intro h1,
+.projects-intro h1,
+.files-title,
+.assistant-title,
+.calendar-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.timeline-intro h1,
+.time-intro h1,
+.notes-intro h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.reports-description,
+.tasks-intro p,
+.projects-intro p,
+.files-description,
+.dashboard-intro p {
+  margin: 4px 0 0;
+  color: #858f9c;
+  font-size: 0.82rem;
+}
+
+.timeline-intro p,
+.time-intro p {
+  max-width: 620px;
+  margin: 4px 0 0;
+  color: #858f9c;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   Shared page container
+   ========================================================= */
+
+.reports-page,
+.time-page,
+.timeline-page {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 36px 38px 46px;
+  scrollbar-width: thin;
+  scrollbar-color: #263545 #080b10;
+}
+
+/* =========================================================
+   Shared error box
+   ========================================================= */
+
+.projects-error,
+.reports-error,
+.tasks-error {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  border-radius: 7px;
+  background: rgba(255, 80, 80, 0.08);
+  color: #ff9b9b;
+  font-size: 13px;
+}
+
+/* =========================================================
+   Shared form (Project <-> Task)
+   ========================================================= */
+
+.project-form-panel,
+.task-form-panel {
+  margin-bottom: 28px;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.project-form-header,
+.task-form-header {
+  margin-bottom: 24px;
+}
+
+.project-form-header h3,
+.task-form-header h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.project-form-grid label,
+.task-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-form-grid label span,
+.task-form-grid label span {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.project-form-grid input,
+.project-form-grid select,
+.project-form-grid textarea,
+.task-form-grid input,
+.task-form-grid select,
+.task-form-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  outline: none;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.project-form-grid select,
+.task-form-grid select {
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.project-form-grid select option,
+.task-form-grid select option {
+  background: #0d131d;
+  color: #e7edf5;
+}
+
+.project-form-grid select option:checked,
+.task-form-grid select option:checked {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.project-form-grid textarea,
+.task-form-grid textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.project-form-grid input:focus,
+.project-form-grid textarea:focus,
+.task-form-grid input:focus,
+.task-form-grid textarea:focus {
+  border-color: rgba(var(--color-accent-rgb), 0.65);
+  box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.08);
+}
+
+.project-form-grid select:focus,
+.project-form-grid select:focus-visible,
+.task-form-grid select:focus,
+.task-form-grid select:focus-visible {
+  border-color: var(--color-accent);
+  outline: 1px solid var(--color-accent);
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    0 0 0 4px rgba(var(--color-accent-rgb), 0.08);
+}
+
+.project-form-actions,
+.task-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.project-form-actions .project-save-button,
+.task-form-actions .task-save-button,
+.calendar-form-actions .calendar-save-button {
+  border-color: rgba(var(--color-accent-rgb), 0.55);
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.project-form-actions .project-save-button:hover,
+.task-form-actions .task-save-button:hover,
+.calendar-form-actions .calendar-save-button:hover {
+  border-color: var(--color-accent);
+  background: #0f7be8;
+}
+
+.projects-list-header,
+.tasks-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.projects-list,
+.tasks-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.projects-empty,
+.tasks-empty {
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.projects-empty h3,
+.tasks-empty h3 {
+  margin: 0 0 8px;
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.projects-empty p,
+.tasks-empty p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}

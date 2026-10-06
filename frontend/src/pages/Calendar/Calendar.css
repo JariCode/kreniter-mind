@@ -1,0 +1,81 @@
+.calendar-page {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 36px 38px 46px;
+  overflow-y: auto;
+  color: var(--color-text);
+}
+
+.calendar-description {
+  margin: 4px 0 0;
+  max-width: 560px;
+  color: #858f9c;
+  font-size: 0.82rem;
+}
+
+/* Same technique as the AI Assistant page: an explicit height (dvh with
+   a vh fallback) rather than letting content decide, so the calendar
+   fills down to the bottom of the viewport without the page itself
+   scrolling. 267px/296px/289px = the app header + this page's own
+   title area + padding at each width, measured the same way as
+   Assistant.css (identical header/title-area markup, so the same
+   offsets apply here). */
+.calendar-workspace {
+  min-height: 420px;
+  height: calc(100vh - 267px);
+  height: calc(100dvh - 267px);
+  overflow: hidden;
+  display: flex;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.25);
+  border-radius: 10px;
+  padding: 18px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(
+      var(--color-surface),
+      var(--color-surface)
+    ) padding-box,
+    linear-gradient(
+      135deg,
+      rgba(var(--color-accent-rgb), 0.42),
+      rgba(var(--color-accent-rgb), 0.05),
+      rgba(var(--color-accent-rgb), 0.22)
+    ) border-box;
+  box-shadow: 0 0 28px rgba(var(--color-accent-rgb), 0.035);
+}
+
+.calendar-workspace .calendar-view {
+  flex: 1;
+  min-height: 0;
+}
+
+.calendar-workspace .calendar-body {
+  overflow: auto;
+}
+
+@media (max-width: 860px) {
+  .calendar-page {
+    padding: 20px;
+  }
+  .calendar-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .calendar-workspace {
+    height: calc(100vh - 296px);
+    height: calc(100dvh - 296px);
+  }
+}
+
+@media (max-width: 620px) {
+  .calendar-page {
+    padding: 14px;
+  }
+  .calendar-workspace {
+    height: calc(100vh - 289px);
+    height: calc(100dvh - 289px);
+    padding: 12px;
+  }
+}

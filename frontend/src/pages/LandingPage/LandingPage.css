@@ -1,0 +1,422 @@
+.landing-page {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgba(var(--color-accent-rgb), 0.10),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 75% 18%,
+      rgba(22, 110, 210, 0.07),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 20% 85%,
+      rgba(8, 70, 135, 0.06),
+      transparent 32%
+    ),
+    #05070b;
+  color: #e7edf5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* -------------------------------- */
+/* Vignette                         */
+/* -------------------------------- */
+
+.landing-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent 32%,
+      rgba(0, 0, 0, 0.22) 68%,
+      rgba(0, 0, 0, 0.72) 100%
+    );
+  pointer-events: none;
+}
+
+/* -------------------------------- */
+/* Subtle background glow           */
+/* -------------------------------- */
+
+.landing-page::after {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      rgba(var(--color-accent-rgb), 0.055),
+      transparent 68%
+    );
+  filter: blur(20px);
+  animation:
+    background-breathe 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* -------------------------------- */
+/* Content                          */
+/* -------------------------------- */
+
+.landing-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+  padding: 60px 30px;
+  text-align: center;
+}
+
+/* -------------------------------- */
+/* Title                            */
+/* -------------------------------- */
+
+.landing-title {
+  margin: 0;
+  color: #edf3fa;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-shadow:
+    0 0 25px rgba(var(--color-accent-rgb), 0.06);
+}
+
+/* -------------------------------- */
+/* Subtitle                         */
+/* -------------------------------- */
+
+.landing-subtitle {
+  margin: 18px 0 0;
+  color: #6f8297;
+  font-size: 0.72rem;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+}
+
+/* -------------------------------- */
+/* Entity                           */
+/* -------------------------------- */
+
+.entity-container {
+  width: min(400px, 70vw);
+  margin: 55px auto 40px;
+  position: relative;
+}
+
+.k-entity {
+  width: 100%;
+  aspect-ratio: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-10px);
+}
+
+/* -------------------------------- */
+/* K Entity animation               */
+/* -------------------------------- */
+
+.k-entity::before {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      rgba(var(--color-accent-rgb), 0.16) 0%,
+      rgba(var(--color-accent-rgb), 0.06) 35%,
+      transparent 72%
+    );
+  filter: blur(7px);
+  animation:
+    k-ambient 4s ease-in-out infinite;
+}
+
+.k-entity::after {
+  content: "";
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.22);
+  transform: rotate(45deg);
+  animation:
+    k-frame 6s ease-in-out infinite;
+}
+
+.k-entity-line {
+  position: absolute;
+  z-index: 2;
+  width: 240px;
+  height: 1px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(var(--color-accent-rgb), 0.8),
+      transparent
+    );
+  transform-origin: center;
+  animation:
+    k-line 4s ease-in-out infinite;
+}
+
+.k-entity-line-one {
+  transform: rotate(45deg);
+}
+
+.k-entity-line-two {
+  transform: rotate(-45deg);
+  animation-delay: -2s;
+}
+
+.k-entity-core {
+  position: relative;
+  z-index: 3;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b9e1ff;
+  font-size: 0;
+  background:
+    radial-gradient(
+      circle,
+      rgba(66, 165, 255, 0.22) 0%,
+      rgba(var(--color-accent-rgb), 0.09) 42%,
+      transparent 72%
+    );
+  border: 1px solid rgba(66, 165, 255, 0.38);
+  box-shadow:
+    0 0 18px rgba(var(--color-accent-rgb), 0.16);
+  animation:
+    k-core 4s ease-in-out infinite;
+}
+
+.k-entity-core::after {
+  content: "K";
+  position: absolute;
+  color: #b9e1ff;
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-shadow:
+    0 0 10px rgba(var(--color-accent-rgb), 0.45);
+}
+
+.k-entity-core::before {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #65b7ff;
+  box-shadow:
+    0 0 9px rgba(var(--color-accent-rgb), 0.7);
+  animation:
+    k-particle 3.5s ease-in-out infinite;
+}
+
+/* -------------------------------- */
+/* Description                      */
+/* -------------------------------- */
+
+.landing-description {
+  margin: 0;
+  color: #8c9aaa;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+}
+
+/* -------------------------------- */
+/* Button                           */
+/* -------------------------------- */
+
+.landing-button {
+  margin-top: 35px;
+  padding: 14px 30px;
+  background: rgba(var(--color-accent-rgb), 0.015);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.38);
+  border-radius: 4px;
+  color: #dce8f4;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  box-shadow:
+    0 0 20px rgba(var(--color-accent-rgb), 0.025);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+}
+
+.landing-button:hover {
+  background: rgba(var(--color-accent-rgb), 0.07);
+  border-color: rgba(66, 165, 255, 0.75);
+  box-shadow:
+    0 0 25px rgba(var(--color-accent-rgb), 0.14);
+  transform: translateY(-2px);
+}
+
+/* -------------------------------- */
+/* Animations                       */
+/* -------------------------------- */
+
+@keyframes background-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform:
+      translate(-50%, -50%)
+      scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1.08);
+  }
+}
+
+@keyframes k-ambient {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes k-frame {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: rotate(45deg) scale(0.94);
+  }
+  50% {
+    opacity: 0.75;
+    transform: rotate(45deg) scale(1.06);
+  }
+}
+
+@keyframes k-line {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: rotate(45deg) scaleX(0.75);
+  }
+  50% {
+    opacity: 0.9;
+    transform: rotate(45deg) scaleX(1.08);
+  }
+}
+
+@keyframes k-core {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.9);
+    box-shadow:
+      0 0 12px rgba(var(--color-accent-rgb), 0.1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow:
+      0 0 25px rgba(var(--color-accent-rgb), 0.28);
+  }
+}
+
+@keyframes k-particle {
+  0%,
+  100% {
+    transform: translate(-7px, -7px);
+    opacity: 0.2;
+  }
+  25% {
+    transform: translate(7px, -7px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(7px, 7px);
+    opacity: 0.35;
+  }
+  75% {
+    transform: translate(-7px, 7px);
+    opacity: 0.9;
+  }
+}
+
+/* -------------------------------- */
+/* Responsive                       */
+/* -------------------------------- */
+
+@media (max-width: 700px) {
+  .landing-content {
+    padding: 50px 22px;
+  }
+
+  .landing-title {
+    letter-spacing: 0.16em;
+  }
+
+  .landing-subtitle {
+    font-size: 0.64rem;
+    letter-spacing: 0.28em;
+  }
+
+  .entity-container {
+    margin-top: 42px;
+    margin-bottom: 32px;
+  }
+
+  .landing-description {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .k-entity::before {
+    width: 210px;
+    height: 210px;
+  }
+
+  .k-entity::after {
+    width: 200px;
+    height: 200px;
+  }
+
+  .k-entity-line {
+    width: 190px;
+  }
+
+  .k-entity-core {
+    width: 90px;
+    height: 90px;
+  }
+
+  .k-entity-core::after {
+    font-size: 1.2rem;
+  }
+}

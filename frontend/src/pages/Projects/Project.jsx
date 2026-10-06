@@ -1,0 +1,633 @@
+import { useEffect, useState } from 'react'
+import {
+  createProject,
+  deleteProject,
+  getProjectDeletePreview,
+  getProjects,
+  updateProject,
+} from '../../api/projects'
+import { getTasks } from '../../api/tasks'
+import { getTimeEntries } from '../../api/timeEntries'
+import './Project.css'
+
+// Only fully-qualified http(s) URLs are ever rendered as a clickable link.
+// new URL() without a base throws for relative or scheme-less values, so
+// those are rejected along with javascript:, data:, etc. This also guards
+// values that were already saved before the backend started validating
+// repositoryUrl.
+function isSafeHttpUrl(value) {
+  if (typeof value !== 'string' || !value) {
+    return false
+  }
+
+  try {
+    const url = new URL(value)
+
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+// "12 tasks, 4 notes and 3 files" -- lists only the counts that are
+// actually blocking the delete, in a natural comma-and-"and" list.
+function describeBlockingCounts(preview) {
+  const parts = []
+
+  if (preview.taskCount > 0) {
+    parts.push(
+      `${preview.taskCount} task${
+        preview.taskCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (preview.noteCount > 0) {
+    parts.push(
+      `${preview.noteCount} note${
+        preview.noteCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (preview.folderCount > 0) {
+    parts.push(
+      `${preview.folderCount} folder${
+        preview.folderCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (preview.fileCount > 0) {
+    parts.push(
+      `${preview.fileCount} file${
+        preview.fileCount === 1 ? '' : 's'
+      }`
+    )
+  }
+
+  if (parts.length <= 1) {
+    return parts.join('')
+  }
+
+  return `${parts
+    .slice(0, -1)
+    .join(', ')} and ${parts[parts.length - 1]}`
+}
+
+function Projects() {
+  const [projects, setProjects] = useState([])
+  const [tasks, setTasks] = useState([])
+  const [timeEntries, setTimeEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [editingProject, setEditingProject] = useState(null)
+  const [projectToDelete, setProjectToDelete] = useState(null)
+  const [deletePreview, setDeletePreview] = useState(null)
+  const [deletePreviewLoading, setDeletePreviewLoading] =
+    useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [repositoryUrl, setRepositoryUrl] = useState('')
+  const [status, setStatus] = useState('active')
+  const [color, setColor] = useState('#1688ff')
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function loadProjects() {
+    try {
+      setError('')
+
+      const [projectsData, tasksData, timeEntriesData] =
+        await Promise.all([
+          getProjects(),
+          getTasks(),
+          getTimeEntries(),
+        ])
+
+      setProjects(projectsData)
+      setTasks(tasksData)
+      setTimeEntries(timeEntriesData)
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProjects()
+  }, [])
+
+  // Close the delete dialog on Escape, following the same condition as the overlay click.
+  useEffect(() => {
+    if (!projectToDelete) {
+      return
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !deleting) {
+        setProjectToDelete(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [projectToDelete, deleting])
+
+  function resetForm() {
+    setName('')
+    setDescription('')
+    setRepositoryUrl('')
+    setStatus('active')
+    setColor('#1688ff')
+    setEditingProject(null)
+    setShowForm(false)
+  }
+
+  function startCreate() {
+    resetForm()
+    setShowForm(true)
+  }
+
+  function startEdit(project) {
+    setName(project.name || '')
+    setDescription(project.description || '')
+    setRepositoryUrl(project.repositoryUrl || '')
+    setStatus(project.status || 'active')
+    setColor(project.color || '#1688ff')
+    setEditingProject(project)
+    setShowForm(true)
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+
+    if (!name.trim()) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      setError('')
+
+      const project = {
+        name: name.trim(),
+        description: description.trim(),
+        repositoryUrl: repositoryUrl.trim(),
+        status,
+        color,
+      }
+
+      if (editingProject) {
+        await updateProject(editingProject._id, project)
+      } else {
+        await createProject(project)
+      }
+
+      await loadProjects()
+      resetForm()
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleDelete(project) {
+    setProjectToDelete(project)
+    setDeletePreview(null)
+    setDeletePreviewLoading(true)
+
+    getProjectDeletePreview(project._id)
+      .then(setDeletePreview)
+      .catch((error) => {
+        setError(error.message)
+      })
+      .finally(() => {
+        setDeletePreviewLoading(false)
+      })
+  }
+
+  async function confirmDelete() {
+    if (!projectToDelete) {
+      return
+    }
+
+    try {
+      setDeleting(true)
+      setError('')
+      await deleteProject(projectToDelete._id)
+
+      const [projectsData, tasksData, timeEntriesData] =
+        await Promise.all([
+          getProjects(),
+          getTasks(),
+          getTimeEntries(),
+        ])
+
+      setProjects(projectsData)
+      setTasks(tasksData)
+      setTimeEntries(timeEntriesData)
+
+      setProjectToDelete(null)
+      setDeletePreview(null)
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  function getProjectTaskMinutes(projectId) {
+    return tasks
+      .filter(
+        (task) =>
+          String(task.projectId) === String(projectId)
+      )
+      .reduce(
+        (total, task) =>
+          total + (Number(task.estimatedMinutes) || 0),
+        0
+      )
+  }
+
+  function getProjectTrackedMinutes(projectId) {
+    const projectTaskIds = new Set(
+      tasks
+        .filter(
+          (task) =>
+            String(task.projectId) === String(projectId)
+        )
+        .map((task) => String(task._id))
+    )
+
+    return timeEntries
+      .filter(
+        (entry) =>
+          String(entry.projectId) === String(projectId) ||
+          (entry.taskId &&
+            projectTaskIds.has(String(entry.taskId)))
+      )
+      .reduce(
+        (total, entry) =>
+          total + (Number(entry.duration) || 0),
+        0
+      )
+  }
+
+  function getProjectTotalMinutes(projectId) {
+    const taskMinutes = getProjectTaskMinutes(projectId)
+    const trackedMinutes = getProjectTrackedMinutes(projectId)
+
+    return taskMinutes + trackedMinutes
+  }
+
+  function formatDuration(minutes) {
+    if (!minutes || minutes <= 0) {
+      return '0 h'
+    }
+
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+
+    if (hours === 0) {
+      return `${remainingMinutes} min`
+    }
+
+    if (remainingMinutes === 0) {
+      return `${hours} h`
+    }
+
+    return `${hours} h ${remainingMinutes} min`
+  }
+
+  return (
+    <main className="projects-page">
+      <section className="projects-intro">
+        <div>
+          <span className="projects-kicker">
+            WORKSPACE
+          </span>
+
+          <h1>
+            Projects
+          </h1>
+
+          <p>
+            Manage your projects and keep your work organized.
+          </p>
+        </div>
+
+        <button
+          className="projects-create-button"
+          type="button"
+          onClick={startCreate}
+        >
+          + New project
+        </button>
+      </section>
+
+      {error && (
+        <div className="projects-error">
+          {error}
+        </div>
+      )}
+
+      {showForm && (
+        <section className="project-form-panel">
+          <div className="project-form-header">
+            <div>
+              <h3>
+                {editingProject ? 'Edit project' : 'Create project'}
+              </h3>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="project-form-grid">
+              <label>
+                <span>Name</span>
+
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  maxLength={150}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Status</span>
+
+                <select
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value)}
+                >
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Repository</span>
+
+                <input
+                  type="url"
+                  value={repositoryUrl}
+                  onChange={(event) => setRepositoryUrl(event.target.value)}
+                  maxLength={500}
+                  placeholder="https://github.com/..."
+                />
+              </label>
+
+              <label className="project-form-full">
+                <span>Description</span>
+
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  maxLength={2000}
+                  rows={4}
+                />
+              </label>
+
+              <label>
+                <span>Color</span>
+
+                <input
+                  className="project-color-input"
+                  type="color"
+                  value={color}
+                  onChange={(event) => setColor(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="project-form-actions">
+              <button
+                type="button"
+                onClick={resetForm}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="project-save-button"
+                type="submit"
+                disabled={saving}
+              >
+                {saving
+                  ? 'Saving...'
+                  : editingProject
+                    ? 'Save changes'
+                    : 'Create project'}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
+      <section className="projects-list">
+        <div className="projects-list-header">
+          <span>
+            PROJECTS
+          </span>
+
+          <span>
+            {projects.length}
+          </span>
+        </div>
+
+        {loading && (
+          <div className="projects-empty">
+            Loading projects...
+          </div>
+        )}
+
+        {!loading && projects.length === 0 && (
+          <div className="projects-empty">
+            <h3>
+              No projects yet
+            </h3>
+
+            <p>
+              Create your first project to get started.
+            </p>
+          </div>
+        )}
+
+        {!loading && projects.length > 0 && (
+          <div className="project-list">
+            {projects.map((project) => (
+              <article
+                className="project-item"
+                key={project._id}
+              >
+                <div
+                  className="project-color"
+                  style={{
+                    backgroundColor: project.color || '#1688ff',
+                  }}
+                />
+
+                <div className="project-info">
+                  <div className="project-name-row">
+                    <h3>
+                      {project.name}
+                    </h3>
+
+                    <span className={`project-status ${project.status}`}>
+                      {project.status}
+                    </span>
+                  </div>
+
+                  <p>
+                    {project.description || 'No description'}
+                  </p>
+
+                  {project.repositoryUrl && (
+                    <>
+                      <span className="project-meta-label">
+                        Repository
+                      </span>
+
+                      {isSafeHttpUrl(project.repositoryUrl) ? (
+                        <a
+                          className="project-repository"
+                          href={project.repositoryUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {project.repositoryUrl}
+                        </a>
+                      ) : (
+                        <span className="project-repository">
+                          {project.repositoryUrl}
+                        </span>
+                      )}
+                    </>
+                  )}
+
+                  <span className="project-meta-label">
+                    Total time
+                  </span>
+
+                  <span className="project-tracked-time">
+                    {formatDuration(
+                      getProjectTotalMinutes(project._id)
+                    )}
+                  </span>
+                </div>
+
+                <div className="project-actions">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(project)}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(project)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {projectToDelete && (
+        <div
+          className="delete-dialog-overlay"
+          onClick={() => {
+            if (!deleting) {
+              setProjectToDelete(null)
+            }
+          }}
+        >
+          <div
+            className="delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-delete-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="delete-dialog-kicker">
+              CONFIRM ACTION
+            </span>
+
+            <h3 id="project-delete-dialog-title">
+              Delete project?
+            </h3>
+
+            {deletePreview &&
+            deletePreview.isEmpty === false ? (
+              <p>
+                {`This project still has ${describeBlockingCounts(
+                  deletePreview
+                )}. Delete them first.`}
+              </p>
+            ) : (
+              <>
+                <p>
+                  Are you sure you want to delete{' '}
+                  <strong>{projectToDelete.name}</strong>?
+                  This action cannot be undone.
+                </p>
+
+                {deletePreview &&
+                  deletePreview.trackedMinutes > 0 && (
+                    <p>
+                      {`This project has ${formatDuration(
+                        deletePreview.trackedMinutes
+                      )} of tracked time. It will be deleted.`}
+                    </p>
+                  )}
+              </>
+            )}
+
+            <div className="delete-dialog-actions">
+              <button
+                type="button"
+                onClick={() => setProjectToDelete(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+
+              {(!deletePreview ||
+                deletePreview.isEmpty !== false) && (
+                <button
+                  className="delete-dialog-confirm"
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={
+                    deleting || deletePreviewLoading
+                  }
+                >
+                  {deleting
+                    ? 'Deleting...'
+                    : 'Delete project'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  )
+}
+
+export default Projects
