@@ -144,13 +144,85 @@ function Timeline() {
     })
   }, [tasks, selectedProjectId])
 
+  // Orders tasks as a tree: each parent is followed by its subtasks.
+  // A parent without dates is kept when one of its subtasks has dates.
   const timelineTasks = useMemo(() => {
-    return projectTasks.filter(
-      (task) =>
+    function hasDates(task) {
+      return Boolean(
+        task.startDate ||
+          task.completedDate ||
+          task.dueDate
+      )
+    }
+
+    function getSortTime(task) {
+      const value =
         task.startDate ||
         task.completedDate ||
         task.dueDate
+
+      return value
+        ? new Date(value).getTime()
+        : Number.MAX_SAFE_INTEGER
+    }
+
+    function compareByStart(a, b) {
+      return getSortTime(a) - getSortTime(b)
+    }
+
+    const taskIds = new Set(
+      projectTasks.map((task) => String(task._id))
     )
+    const childrenByParent = new Map()
+    const rootTasks = []
+
+    projectTasks.forEach((task) => {
+      const parentId = task.parentTaskId
+        ? String(task.parentTaskId)
+        : null
+
+      if (
+        parentId &&
+        parentId !== String(task._id) &&
+        taskIds.has(parentId)
+      ) {
+        if (!childrenByParent.has(parentId)) {
+          childrenByParent.set(parentId, [])
+        }
+
+        childrenByParent.get(parentId).push(task)
+      } else {
+        rootTasks.push(task)
+      }
+    })
+
+    const visited = new Set()
+
+    function collect(task) {
+      const taskId = String(task._id)
+
+      if (visited.has(taskId)) {
+        return []
+      }
+
+      visited.add(taskId)
+
+      const children = [
+        ...(childrenByParent.get(taskId) || []),
+      ]
+        .sort(compareByStart)
+        .flatMap(collect)
+
+      if (!hasDates(task) && children.length === 0) {
+        return []
+      }
+
+      return [task, ...children]
+    }
+
+    return [...rootTasks]
+      .sort(compareByStart)
+      .flatMap(collect)
   }, [projectTasks])
 
   const timelineRange = useMemo(() => {
