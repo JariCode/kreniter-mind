@@ -371,7 +371,8 @@ function CalendarWidget({ onViewAll }) {
                 key={item.key}
                 type="button"
                 className={`calendar-task-marker ${taskMarkerVariantClassName(
-                  item.kind
+                  item.kind,
+                  item.task.status
                 )}`}
                 onClick={(domEvent) =>
                   domEvent.preventDefault()

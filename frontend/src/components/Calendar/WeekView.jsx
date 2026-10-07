@@ -71,7 +71,8 @@ function WeekDayColumn({
             key={`${kind}-${task._id}`}
             type="button"
             className={`calendar-task-marker ${taskMarkerVariantClassName(
-              kind
+              kind,
+              task.status
             )}`}
             onClick={(event) => event.stopPropagation()}
             onMouseEnter={(event) =>

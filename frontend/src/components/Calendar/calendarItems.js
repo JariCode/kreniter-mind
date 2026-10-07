@@ -41,8 +41,12 @@ export function taskMarkerLabel(kind) {
 
 // The extra class that visually distinguishes a completed-date marker
 // (the app's existing completed-green) from the start/due markers.
-export function taskMarkerVariantClassName(kind) {
-  return kind === 'completed' ? 'calendar-task-marker-completed' : ''
+// A completed task's start/due markers also get this class, so every
+// marker of a completed task shows as completed-green.
+export function taskMarkerVariantClassName(kind, status) {
+  return kind === 'completed' || status === 'completed'
+    ? 'calendar-task-marker-completed'
+    : ''
 }
 
 export function findProjectName(projects, projectId) {

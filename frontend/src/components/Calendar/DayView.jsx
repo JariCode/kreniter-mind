@@ -69,7 +69,8 @@ function DayView({
           key={`${kind}-${task._id}`}
           type="button"
           className={`calendar-task-marker calendar-day-list-item ${taskMarkerVariantClassName(
-            kind
+            kind,
+            task.status
           )}`}
           onClick={(event) => event.stopPropagation()}
           onMouseEnter={(event) =>
