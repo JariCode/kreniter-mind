@@ -20,6 +20,9 @@ const NO_PROJECT = 'no-project'
 const PROJECT_STORAGE_KEY = 'kreniter-files-project'
 const FOLDER_DROP_MESSAGE =
   "Folders can't be uploaded. Open the folder and drag the files instead."
+const MAX_UPLOAD_SIZE = 100 * 1024 * 1024
+const UPLOAD_SIZE_ERROR =
+  'File is too large. Maximum size is 100 MB.'
 
 // Shown inline inside whichever Files dialog is open, in the same style as
 // the page-level actionError banner. An error for an in-progress dialog
@@ -45,6 +48,11 @@ function Files() {
   const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadingFileName, setUploadingFileName] = useState('')
+  // Mirrors `uploading`, checked synchronously in uploadFiles so a drop or
+  // file selection that fires before the state update from a previous
+  // upload has re-rendered still can't start a second, concurrent queue.
+  const uploadingRef = useRef(false)
   const [dragActive, setDragActive] = useState(false)
   const [dragOverFolderId, setDragOverFolderId] = useState(null)
   const [draggedFile, setDraggedFile] = useState(null)
@@ -362,11 +370,37 @@ function Files() {
       return
     }
 
-    if (!preserveActionError) {
+    if (uploadingRef.current) {
+      setActionError(
+        'Please wait for the current upload to finish.'
+      )
+      return
+    }
+
+    const tooLargeFiles = selectedFiles.filter(
+      (file) => file.size > MAX_UPLOAD_SIZE
+    )
+    const uploadableFiles = selectedFiles.filter(
+      (file) => file.size <= MAX_UPLOAD_SIZE
+    )
+
+    if (tooLargeFiles.length > 0) {
+      setActionError(
+        tooLargeFiles.length === selectedFiles.length
+          ? UPLOAD_SIZE_ERROR
+          : `${UPLOAD_SIZE_ERROR} Skipped: ${tooLargeFiles
+              .map((file) => file.name)
+              .join(', ')}`
+      )
+    } else if (!preserveActionError) {
       setActionError('')
     }
 
-    await processUploadQueue(selectedFiles, targetFolderId)
+    if (uploadableFiles.length === 0) {
+      return
+    }
+
+    await processUploadQueue(uploadableFiles, targetFolderId)
   }
 
   // Uploads the queue one file at a time. A 409 duplicate pauses the queue
@@ -379,6 +413,8 @@ function Files() {
   ) {
     if (queue.length === 0) {
       setUploading(false)
+      uploadingRef.current = false
+      setUploadingFileName('')
       await loadCurrentFolder()
       return
     }
@@ -387,6 +423,8 @@ function Files() {
 
     try {
       setUploading(true)
+      uploadingRef.current = true
+      setUploadingFileName(nextFile.name)
 
       await uploadFile(
         nextFile,
@@ -401,6 +439,8 @@ function Files() {
     } catch (error) {
       if (error.status === 409 && error.data?.existingFileId) {
         setUploading(false)
+        uploadingRef.current = false
+        setUploadingFileName('')
         setDialog({
           type: 'duplicate',
           file: nextFile,
@@ -412,6 +452,8 @@ function Files() {
       }
 
       setUploading(false)
+      uploadingRef.current = false
+      setUploadingFileName('')
       setActionError(
         error.message === 'Failed to fetch'
           ? 'Upload failed. Check your connection and try again.'
@@ -436,6 +478,8 @@ function Files() {
 
     try {
       setUploading(true)
+      uploadingRef.current = true
+      setUploadingFileName(file.name)
       setActionError('')
       await updateFileContent(existingFileId, file)
     } catch (error) {
@@ -1294,6 +1338,12 @@ function Files() {
             />
           </div>
         </div>
+
+        {uploading && uploadingFileName && (
+          <div className="files-status">
+            Uploading {uploadingFileName}…
+          </div>
+        )}
 
         {(error || actionError) && (
           <div className="files-error">

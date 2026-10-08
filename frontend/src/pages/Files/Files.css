@@ -193,6 +193,18 @@
   line-height: 1.5;
 }
 
+.files-status {
+  flex: 0 0 auto;
+  margin: 14px 20px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(95, 158, 216, 0.28);
+  border-radius: 8px;
+  background: rgba(95, 158, 216, 0.06);
+  color: #9cc3e6;
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
 .files-content {
   min-height: 396px;
 }

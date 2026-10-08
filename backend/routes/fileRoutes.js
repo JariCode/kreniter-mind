@@ -313,16 +313,41 @@ router.post(
           .on('error', reject)
       })
 
-      const file = await File.create({
-        userId: req.user._id,
-        projectId,
-        folderId,
-        name,
-        originalName: req.file.originalname,
-        mimeType: req.file.mimetype,
-        size: req.file.size,
-        gridFsId: uploadStream.id,
-      })
+      let file
+
+      try {
+        file = await File.create({
+          userId: req.user._id,
+          projectId,
+          folderId,
+          name,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          size: req.file.size,
+          gridFsId: uploadStream.id,
+        })
+      } catch (error) {
+        if (error.code === 11000) {
+          // Lost a race with a concurrent upload of the same name: the
+          // GridFS blob just written above is now orphaned, since no File
+          // document ends up pointing to it.
+          await deleteGridFsFile(uploadStream.id)
+
+          const duplicate = await findDuplicateFile({
+            userId: req.user._id,
+            projectId,
+            folderId,
+            name,
+          })
+
+          return res.status(409).json({
+            error: 'File already exists',
+            existingFileId: duplicate?._id,
+          })
+        }
+
+        throw error
+      }
 
       res.status(201).json(file)
     } catch (error) {
@@ -562,7 +587,19 @@ router.put('/:id', async (req, res, next) => {
     file.name = nextName
     file.folderId = nextFolderId
 
-    await file.save()
+    try {
+      await file.save()
+    } catch (error) {
+      if (error.code === 11000) {
+        // Lost a race with a concurrent rename/upload landing on the same
+        // name between the pre-check above and this save.
+        return res.status(409).json({
+          error: 'A file with this name already exists here',
+        })
+      }
+
+      throw error
+    }
 
     res.json(file)
   } catch (error) {

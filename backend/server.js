@@ -92,6 +92,21 @@ app.use('/api/webhooks', webhookRoutes)
 // Rate limiting
 app.use('/api', apiLimiter)
 
+// AI routes accept base64-encoded file/audio attachments up to 10MB raw.
+// Base64 encoding inflates that by roughly a third, so this scoped, larger
+// limit is mounted ahead of the global one below -- it lets a request body
+// that size actually finish parsing, so the attachment/audio size checks in
+// aiRoutes.js run and return their specific error instead of the generic
+// one below. The underlying request stream is fully consumed by the time
+// this runs, so the stricter global parser skips re-parsing for these
+// routes instead of double-reading it.
+app.use(
+  '/api/ai',
+  express.json({
+    limit: '15mb',
+  })
+)
+
 // Request body limits
 app.use(
   express.json({
@@ -175,6 +190,14 @@ app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') {
     return res.status(413).json({
       error: 'Request too large',
+    })
+  }
+
+  // Multer's upload size limit, raised in fileRoutes.js. Multer cleans up
+  // the partial temp file on disk itself before raising this.
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      error: 'File is too large. Maximum size is 100 MB.',
     })
   }
 

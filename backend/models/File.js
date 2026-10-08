@@ -45,4 +45,25 @@ const fileSchema = new mongoose.Schema(
   }
 )
 
+// Backs findDuplicateFile's pre-check in fileRoutes.js with a hard
+// constraint, so two concurrent uploads of the same name can't both pass
+// that check and create two File documents. Same collation (case-insensitive,
+// matching how Windows/macOS treat file names) so the index agrees with the
+// pre-check on what counts as a duplicate.
+fileSchema.index(
+  {
+    userId: 1,
+    projectId: 1,
+    folderId: 1,
+    name: 1,
+  },
+  {
+    unique: true,
+    collation: {
+      locale: 'en',
+      strength: 2,
+    },
+  }
+)
+
 module.exports = mongoose.model('File', fileSchema)
