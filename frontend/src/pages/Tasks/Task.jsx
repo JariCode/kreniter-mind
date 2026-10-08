@@ -565,6 +565,14 @@ function Task() {
     return false
   }
 
+  // task.projectId can be a populated object or a plain id string,
+  // depending on how the task was fetched -- same handling as projectTasks.
+  function getTaskProjectId(task) {
+    return typeof task.projectId === 'object'
+      ? task.projectId?._id
+      : task.projectId
+  }
+
   function getAvailableParentTasks() {
     return tasks.filter((task) => {
       if (
@@ -585,7 +593,16 @@ function Task() {
         return false
       }
 
-      return true
+      // Only tasks in the form's currently selected project (or, if none
+      // is selected, only tasks that also have no project) can be a parent.
+      if (!projectId) {
+        return !getTaskProjectId(task)
+      }
+
+      return (
+        String(getTaskProjectId(task)) ===
+        String(projectId)
+      )
     })
   }
 
@@ -1038,9 +1055,35 @@ function Task() {
                 <select
                   value={projectId}
                   onChange={(event) => {
-                    setProjectId(
+                    const nextProjectId =
                       event.target.value
+
+                    setProjectId(nextProjectId)
+
+                    // The selected parent only stays valid if it still
+                    // belongs to the project just chosen.
+                    const parentTask = tasks.find(
+                      (task) =>
+                        String(task._id) ===
+                        String(parentTaskId)
                     )
+
+                    if (parentTask) {
+                      const parentProjectId =
+                        getTaskProjectId(parentTask)
+
+                      const parentStillMatches =
+                        nextProjectId
+                          ? String(
+                              parentProjectId
+                            ) ===
+                            String(nextProjectId)
+                          : !parentProjectId
+
+                      if (!parentStillMatches) {
+                        setParentTaskId('')
+                      }
+                    }
                   }}
                 >
                   <option value="">

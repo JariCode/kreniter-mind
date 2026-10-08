@@ -5,6 +5,9 @@ const Project = require('../models/Project')
 const validateStringFields = require('../middleware/validateStringFields')
 const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
 const {
+  cascadeProjectToSubtasks,
+} = require('../utils/taskProjectCascade')
+const {
   getTaskDeletePreview,
   deleteTask,
 } = require('../utils/deleteActions')
@@ -83,9 +86,11 @@ router.post(
           })
         }
 
+        // Compared unconditionally, including when neither task has a
+        // project: null and null match, but a project and null don't.
         if (
-          req.body.projectId &&
-          String(parentTask.projectId) !== String(req.body.projectId)
+          String(parentTask.projectId || '') !==
+          String(req.body.projectId || '')
         ) {
           return res.status(400).json({
             error: 'Parent task must belong to the same project',
@@ -177,9 +182,11 @@ router.patch(
           })
         }
 
+        // Compared unconditionally, including when neither task has a
+        // project: null and null match, but a project and null don't.
         if (
-          req.body.projectId &&
-          String(parentTask.projectId) !== String(req.body.projectId)
+          String(parentTask.projectId || '') !==
+          String(req.body.projectId || '')
         ) {
           return res.status(400).json({
             error: 'Parent task must belong to the same project',
@@ -208,6 +215,8 @@ router.patch(
         getTodayDateOnly()
       )
 
+      const previousProjectId = task.projectId
+
       task.projectId = req.body.projectId
       task.parentTaskId = req.body.parentTaskId
       task.title = req.body.title
@@ -220,6 +229,19 @@ router.patch(
       task.estimatedMinutes = req.body.estimatedMinutes
 
       await task.save()
+
+      // Keeps the whole subtree in one project: a task's own project
+      // change would otherwise leave its subtasks behind in the old one.
+      if (
+        String(task.projectId || '') !==
+        String(previousProjectId || '')
+      ) {
+        await cascadeProjectToSubtasks(
+          req.user._id,
+          task._id,
+          task.projectId
+        )
+      }
 
       res.json(task)
     } catch (error) {

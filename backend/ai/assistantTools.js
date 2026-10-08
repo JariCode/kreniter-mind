@@ -17,6 +17,9 @@ const {
 const { buildCalendarItems } = require('../utils/calendarItems')
 const { wouldCreateParentCycle } = require('../utils/taskParentCycle')
 const {
+  cascadeProjectToSubtasks,
+} = require('../utils/taskProjectCascade')
+const {
   getElapsedMs,
   elapsedMsToDurationMinutes,
   stopActiveTimerAndSaveEntry,
@@ -1089,9 +1092,10 @@ async function createTaskTool(context, args) {
 
     parentTask = task
 
+    // Compared unconditionally, including when neither task has a project:
+    // null and null match, but a project and null don't.
     if (
-      projectId &&
-      String(parentTask.projectId || '') !== String(projectId)
+      String(parentTask.projectId || '') !== String(projectId || '')
     ) {
       return { error: 'Parent task must belong to the same project' }
     }
@@ -1380,10 +1384,11 @@ async function updateTaskTool(context, args) {
         ? payload.projectId
         : currentTask.projectId
 
+    // Compared unconditionally, including when neither task has a project:
+    // null and null match, but a project and null don't.
     if (
-      effectiveProjectId &&
       String(newParentTask.projectId || '') !==
-        String(effectiveProjectId)
+      String(effectiveProjectId || '')
     ) {
       return { error: 'Parent task must belong to the same project' }
     }
@@ -2130,6 +2135,19 @@ async function executeCreateTask(userId, payload) {
     if (!parentTask) {
       return { status: 'failed', result: { error: 'Not found' } }
     }
+
+    // Compared unconditionally, including when neither task has a project:
+    // null and null match, but a project and null don't. Same rule as
+    // taskRoutes.js and createTaskTool above.
+    if (
+      String(parentTask.projectId || '') !==
+      String(payload.projectId || '')
+    ) {
+      return {
+        status: 'failed',
+        result: { error: 'Parent task must belong to the same project' },
+      }
+    }
   }
 
   const task = await Task.create({ userId, ...payload })
@@ -2163,6 +2181,24 @@ async function executeUpdateTask(userId, targetId, payload) {
       return { status: 'failed', result: { error: 'Not found' } }
     }
 
+    const effectiveProjectId =
+      payload.projectId !== undefined
+        ? payload.projectId
+        : task.projectId
+
+    // Compared unconditionally, including when neither task has a project:
+    // null and null match, but a project and null don't. Same rule as
+    // taskRoutes.js and updateTaskTool above.
+    if (
+      String(parentTask.projectId || '') !==
+      String(effectiveProjectId || '')
+    ) {
+      return {
+        status: 'failed',
+        result: { error: 'Parent task must belong to the same project' },
+      }
+    }
+
     const hasCycle = await wouldCreateParentCycle(
       userId,
       task._id,
@@ -2174,9 +2210,20 @@ async function executeUpdateTask(userId, targetId, payload) {
     }
   }
 
+  const previousProjectId = task.projectId
+
   Object.assign(task, payload)
 
   await task.save()
+
+  // Keeps the whole subtree in one project: a task's own project change
+  // would otherwise leave its subtasks behind in the old one.
+  if (
+    payload.projectId !== undefined &&
+    String(task.projectId || '') !== String(previousProjectId || '')
+  ) {
+    await cascadeProjectToSubtasks(userId, task._id, task.projectId)
+  }
 
   return { status: 'executed', result: { taskId: task._id } }
 }
