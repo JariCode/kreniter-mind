@@ -6,7 +6,7 @@ const helmet = require('helmet')
 const { clerkMiddleware } = require('@clerk/express')
 
 const connectDatabase = require('./utils/database')
-const { apiLimiter, aiLimiter } = require('./middleware/rateLimiter')
+const { apiLimiter, aiLimiter, webhookLimiter } = require('./middleware/rateLimiter')
 const authMiddleware = require('./middleware/authMiddleware')
 const sanitize = require('./middleware/sanitize')
 
@@ -87,7 +87,7 @@ app.use(
 // Clerk webhooks: mounted before the app-wide body parsers below, since
 // signature verification needs the exact raw request body. Not behind
 // authMiddleware -- the caller is Clerk, not a signed-in user.
-app.use('/api/webhooks', webhookRoutes)
+app.use('/api/webhooks', webhookLimiter, webhookRoutes)
 
 // Rate limiting
 app.use('/api', apiLimiter)

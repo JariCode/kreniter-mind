@@ -52,8 +52,23 @@ const aiImageLimiter = rateLimit({
   },
 })
 
+// Clerk webhook rate limiting. No Clerk user on these requests, so the key
+// is always the IP.
+
+const webhookLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  message: {
+    error: 'Too many requests. Please try again later.',
+  },
+})
+
 module.exports = {
   apiLimiter,
   aiLimiter,
   aiImageLimiter,
+  webhookLimiter,
 }
